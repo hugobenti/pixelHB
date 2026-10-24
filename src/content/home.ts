@@ -2,6 +2,8 @@ import type { IHomeContent } from "./content.type";
 
 export const home: IHomeContent = {
   metaTitle: { absolute: "PixelHB · Pixel art, right in your browser" },
+  metaDescription:
+    "Free online pixel art editor. Draw sprites, icons and tiles with layers and palettes up to 256 colors, then export PNG. No account, no install: your art stays in your browser.",
   h1: "Pixel art, right in your browser.",
   lead: "Draw sprites, icons and tiles with layers, a reference image and your own palette. No account, no install.",
   primary: "Start drawing",

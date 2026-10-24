@@ -5,6 +5,7 @@ export const site: ISiteContent = {
   description: "Pixel-art editor for the browser",
   metaDescription:
     "Draw pixel art in your browser. No account, no install. Your work stays on your device.",
+  url: "https://pixelhb.vercel.app",
   author: "Hugo Bentivegna",
   email: "hugobenti@gmail.com",
   repoUrl: "https://github.com/hugobenti/pixelHB",

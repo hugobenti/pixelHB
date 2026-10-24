@@ -3,6 +3,8 @@ export interface ISiteContent {
   name: string;
   description: string;
   metaDescription: string;
+  /** Production origin, no trailing slash; the base for canonical, sitemap and social URLs. */
+  url: string;
   author: string;
   email: string;
   repoUrl: string;
@@ -134,6 +136,7 @@ export interface ISharedContent {
 }
 
 export interface IGalleryContent {
+  metaDescription: string;
   screen: {
     heading: string;
     countLabel: (n: number) => string;
@@ -376,6 +379,7 @@ export interface IHomeBlurb {
 /** Copy for the Home page. */
 export interface IHomeContent {
   metaTitle: { absolute: string };
+  metaDescription: string;
   h1: string;
   lead: string;
   primary: string;
