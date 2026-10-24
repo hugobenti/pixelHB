@@ -1,6 +1,8 @@
 import type { IGalleryContent } from "./content.type";
 
 export const gallery: IGalleryContent = {
+  metaDescription:
+    "Create, rename, clone, import and delete your pixel-art canvases. Everything is saved in this browser.",
   screen: {
     heading: "Your artworks",
     countLabel: (n) => (n === 1 ? "1 artwork" : `${n} artworks`),
