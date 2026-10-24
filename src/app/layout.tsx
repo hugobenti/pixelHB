@@ -6,6 +6,7 @@
  * The inline <head> script sets `data-theme` before first paint, so the page never flashes the wrong
  * theme; React doesn't know that attribute, hence suppressHydrationWarning on <html>.
  */
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata, Viewport } from "next";
 
 import { AppProviders } from "@/app/AppProviders";
@@ -37,6 +38,7 @@ export default function RootLayout({
       </head>
       <body className={rootLayout.body}>
         <AppProviders>{children}</AppProviders>
+        <Analytics />
       </body>
     </html>
   );
