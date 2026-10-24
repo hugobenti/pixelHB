@@ -432,7 +432,7 @@ Restrained and tactile: flat fills, 1px borders, color changes on hover, no moti
 
 ### Site header and footer
 
-- `src/features/shared/site/`: `SiteShell` wraps every page except the editor (skip link first, then header, `<main id="main">`, footer). Each page passes its own **primary action**; the default is a "Start drawing" link to `/gallery`, the gallery passes a "New artwork" button. On phones the labels shorten to "Start" and "New" so the header never wraps.
+- `src/features/shared/site/`: `SiteShell` wraps every page except the editor (skip link first, then header, `<main id="main">`, footer). Each page passes its own **primary action**; the default is a "Start drawing" link to `/gallery`, the gallery passes a "New artwork" button. On phones the labels shorten to "Draw" and "New" so the header never wraps.
 - **Header.** A bottom `line` border on `bg`, one row at `max-w-6xl`: the logo (a link to `/`), the links Gallery, Help and About from `sm` (the current page has `aria-current="page"` and a `line-strong` underline; others are `fg-soft`), a flexible spacer, the theme icon button (from `sm`), then the primary action, the only accent on the page apart from the Home step numerals (The One Accent Rule).
 - **Phone menu.** Under `sm` a menu icon button opens a bottom-sheet `Modal` (size sm) holding the links, Contact included, as 48px rows (the current one on `surface-muted`), then the theme row. Choosing a link closes the sheet, and so does navigating any other way (Back, Forward), so a sheet never reopens by itself.
 - **Footer.** A top `line` border on `bg`, `text-sm muted`: the pencil mark with the tagline, the links (Gallery, Help, About, Contact, GitHub; 44px targets on coarse pointers), then the credit and copyright on one wrapping line.

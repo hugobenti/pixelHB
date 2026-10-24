@@ -12,7 +12,7 @@ export const shell: IShellContent = {
   },
   menu: { open: "Open menu", title: "Menu" },
   theme: { toDark: "Switch to dark theme", toLight: "Switch to light theme" },
-  primary: { start: "Start drawing", startCompact: "Start" },
+  primary: { start: "Start drawing", startCompact: "Draw" },
   footer: {
     tagline: "Pixel-art editor for the browser.",
     credit: "Made by Hugo Bentivegna",
