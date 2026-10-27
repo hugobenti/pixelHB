@@ -44,7 +44,7 @@ export function useGalleryScreen() {
   const phase = useSyncStore((state) => state.phase);
   const firstListPending = useSyncStore((state) => state.lastSyncedAt === null);
   const message = useSyncMessage();
-  const { items: driveOnly, release } = useHeldRemoteOnly(remoteOnly, artworks);
+  const { items: driveOnly, release } = useHeldRemoteOnly(remoteOnly, artworks, phase);
   const cards = useMemo(
     () => galleryCards(artworks, driveOnly, phase === "syncing"),
     [artworks, driveOnly, phase],
