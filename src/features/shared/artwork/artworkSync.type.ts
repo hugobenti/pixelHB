@@ -20,3 +20,10 @@ export interface IArtworkDeletion {
   ownerId: string;
   deletedAt: number;
 }
+
+/** The local row an engine write was decided on; the write only lands while the row still looks like this. */
+export interface ISyncExpectedRow {
+  ownerId: string | null;
+  updatedAt: number;
+  state: TArtworkSyncState;
+}

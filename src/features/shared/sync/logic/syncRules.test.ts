@@ -25,6 +25,7 @@ describe("decidePull", () => {
     ["too large, gone from Drive", L(100, "tooLarge"), undefined, false, "none"],
     ["too large, Drive older", L(200, "tooLarge"), R(100), false, "none"],
     ["too large, Drive newer", L(100, "tooLarge"), R(200), false, "download"],
+    ["too large, tie (Drive wins)", L(100, "tooLarge"), R(100), false, "download"],
     ["open: download over local copy deferred", L(100, "synced"), R(200), true, "defer"],
     ["open: removal deferred", L(100, "synced"), undefined, true, "defer"],
     ["open: no local copy, download is safe", undefined, R(100), true, "download"],

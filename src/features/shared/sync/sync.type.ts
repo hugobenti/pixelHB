@@ -1,5 +1,5 @@
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import type { IArtworkDeletion, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
+import type { IArtworkDeletion, ISyncExpectedRow, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 import type { IGalleryListItem } from "@/features/shared/drive/galleryApi.type";
 import type { IGalleryApiClient, TApiResult } from "@/features/shared/drive/galleryApiClient.type";
 
@@ -21,6 +21,18 @@ export type TSyncApiFailure = Extract<TApiResult<never>, { ok: false }>;
 
 /** What happened to one Drive copy the engine tried to apply locally. */
 export type TSyncApplyOutcome = "written" | "deferred" | "skipped";
+
+/** Per-pass state shared by the pull and push helpers. */
+export interface ISyncPassContext {
+  owner: string;
+  gen: number;
+  signal: AbortSignal;
+  /** Ids whose destructive write waits for an editor to close. */
+  deferredIds: Set<string>;
+  /** Ids whose push failed for a reason that is theirs alone; the pass goes on without them. */
+  failedIds: Set<string>;
+  hooks: ISyncPullHooks;
+}
 
 export interface ISyncPullHooks {
   /** True once the caller gave up or the engine stopped: nothing may be written. */
@@ -50,9 +62,12 @@ export interface ISyncLocalStore {
   listOwned(ownerId: string): Promise<IStoredArtwork[]>;
   listDirty(ownerId: string): Promise<IStoredArtwork[]>;
   markSynced(id: string, syncedUpdatedAt: number): Promise<void>;
-  markTooLarge(id: string): Promise<void>;
-  putFromRemote(ownerId: string, artwork: IArtwork): Promise<void>;
-  removeLocal(id: string): Promise<void>;
+  /** Only marks the version that was pushed; resolves whether it marked. */
+  markTooLarge(id: string, pushedUpdatedAt: number): Promise<boolean>;
+  /** Conditional on the local row still matching `expected` (`undefined`: still absent); resolves whether it wrote. */
+  putFromRemote(ownerId: string, artwork: IArtwork, expected: ISyncExpectedRow | undefined): Promise<boolean>;
+  /** Conditional on the local row still matching `expected`; resolves whether it deleted. */
+  removeLocal(id: string, expected: ISyncExpectedRow): Promise<boolean>;
   listDeletions(ownerId: string): Promise<IArtworkDeletion[]>;
   dropDeletion(id: string): Promise<void>;
   adoptUnowned(ownerId: string): Promise<number>;
@@ -62,10 +77,13 @@ export interface ISyncLocalStore {
 export interface IArtworkPresence {
   /** Artworks currently open in an editor in any tab. */
   openIds(): Promise<ReadonlySet<string>>;
-  /** Resolves once no editor holds the artwork open. */
-  waitForRelease(id: string): Promise<void>;
-  /** Serializes sync passes across tabs. */
-  runExclusive<T>(task: () => Promise<T>): Promise<T>;
+  /** Resolves once no editor holds the artwork open; rejects when `signal` aborts first. */
+  waitForRelease(id: string, signal: AbortSignal): Promise<void>;
+  /**
+   * Serializes sync passes across tabs. Aborting `signal` cancels a request still waiting for the
+   * lock (it rejects); a task that already started is not interrupted.
+   */
+  runExclusive<T>(task: () => Promise<T>, signal: AbortSignal): Promise<T>;
 }
 
 export interface ISyncEnvironment {

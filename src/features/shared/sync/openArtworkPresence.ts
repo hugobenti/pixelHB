@@ -5,7 +5,8 @@
  *
  * Notes:
  * The browser releases a lock when its tab closes or crashes, so presence never goes stale.
- * `navigator.locks` is read at call time, never at module load.
+ * `navigator.locks` is read at call time, never at module load. Requests take an abort signal so the
+ * engine's `stop()` can cancel a wait that has not been granted yet.
  */
 import { openIdsFromLocks, openLockName, SYNC_LOCK_NAME } from "./logic/presenceLocks";
 import { isDriveSyncSupported } from "./syncEngine";
@@ -27,11 +28,11 @@ export function createLocksPresence(): IArtworkPresence {
     async openIds() {
       return openIdsFromLocks(await navigator.locks.query());
     },
-    async waitForRelease(id) {
-      await navigator.locks.request(openLockName(id), { mode: "exclusive" }, async () => {});
+    async waitForRelease(id, signal) {
+      await navigator.locks.request(openLockName(id), { mode: "exclusive", signal }, async () => {});
     },
-    runExclusive(task) {
-      return navigator.locks.request(SYNC_LOCK_NAME, { mode: "exclusive" }, task);
+    runExclusive(task, signal) {
+      return navigator.locks.request(SYNC_LOCK_NAME, { mode: "exclusive", signal }, task);
     },
   };
 }

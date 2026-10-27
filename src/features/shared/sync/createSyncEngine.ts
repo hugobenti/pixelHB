@@ -7,19 +7,27 @@
  * - The most recent `updatedAt` wins, a tie goes to Drive (`decidePull`).
  * - Passes are single-flight per tab and run inside `presence.runExclusive` (one pass across tabs).
  * - Every store write and status update is preceded by a generation check, so after `stop()` nothing
- *   lands. Destructive writes also re-read the row and re-check presence right before writing.
- * - Offline, reauth and Drive errors abort the pass and never delete or overwrite anything.
+ *   lands, and `stop()` waits for the writes already in flight. Writes over an existing row go
+ *   through conditional store calls (same `updatedAt`, state and owner as when it was decided) and
+ *   re-check presence right before, so an edit or an editor that appeared mid-download wins.
+ * - Offline, reauth and Drive errors abort the pass and never delete or overwrite anything. A push
+ *   that fails for one row alone is skipped, so one poisoned row cannot starve the others.
+ * - `stop()` aborts a pass still waiting for the cross-tab lock and waits only for work that is
+ *   running; every request has a timeout, so a stalled one cannot hold it forever.
  */
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import type { IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
+import { isThumbnailCurrent } from "@/features/shared/artwork/thumbnailFreshness";
 import type { IGalleryListItem } from "@/features/shared/drive/galleryApi.type";
+import type { IGalleryApiClient, TApiResult } from "@/features/shared/drive/galleryApiClient.type";
 import { pngBase64FromDataUrl, remoteFileToArtwork } from "./logic/remoteArtwork";
 import { decidePull, planPush, planSync, retryDelayMs } from "./logic/syncRules";
 import type { ILocalSyncFacts } from "./logic/syncRules.type";
 import type {
   ISyncEngine,
   ISyncEngineDeps,
+  ISyncPassContext,
   ISyncPullHooks,
   ISyncStatus,
   TSyncApiFailure,
@@ -29,6 +37,8 @@ import type {
 } from "./sync.type";
 
 export const PUSH_DEBOUNCE_MS = 10_000;
+/** A request that has not answered by then counts as a failure to retry; it cannot hold a pass or `stop()`. */
+export const REQUEST_TIMEOUT_MS = 30_000;
 
 export const INITIAL_SYNC_STATUS: ISyncStatus = {
   phase: "disabled",
@@ -41,31 +51,65 @@ export const INITIAL_SYNC_STATUS: ISyncStatus = {
 /** Thrown to unwind a pass that was stopped or already reported its failure. */
 class PassAbort extends Error {}
 
+const noop = () => {};
+
 const toFacts = (row: IStoredArtwork): ILocalSyncFacts => ({
   id: row.id,
   updatedAt: row.updatedAt,
   state: row.sync.state,
 });
 
+const expectedOf = (row: IStoredArtwork) => ({
+  ownerId: row.ownerId,
+  updatedAt: row.updatedAt,
+  state: row.sync.state,
+});
+
 export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
-  const { api, store, presence, environment, timers } = deps;
+  const { store, presence, environment, timers } = deps;
+
+  function withTimeout<T>(call: Promise<TApiResult<T>>): Promise<TApiResult<T>> {
+    let cancel = noop;
+    const timeout = new Promise<TApiResult<T>>((resolve) => {
+      cancel = timers.after(REQUEST_TIMEOUT_MS, () =>
+        resolve({ ok: false, kind: "retry", retryAfterMs: 0 }),
+      );
+    });
+    return Promise.race([call, timeout]).finally(cancel);
+  }
+
+  const api: IGalleryApiClient = {
+    list: () => withTimeout(deps.api.list()),
+    get: (id) => withTimeout(deps.api.get(id)),
+    save: (request) => withTimeout(deps.api.save(request)),
+    remove: (id, deletedAt) => withTimeout(deps.api.remove(id, deletedAt)),
+  };
 
   let ownerId: string | null = null;
   let generation = 0;
+  let controller = new AbortController();
   let attempt = 0;
   let phase: TSyncPhase = "disabled";
   let remoteOnly: IGalleryListItem[] = [];
-  let adoptPending = false;
+  let adoption: Promise<void> | null = null;
   let queued: TSyncPassKind | null = null;
   let waiters: Array<() => void> = [];
+  let serving: Array<() => void> = [];
   let loop: Promise<void> | null = null;
-  let currentPass: Promise<void> = Promise.resolve();
   let debounceCancel: (() => void) | null = null;
   let retryCancel: (() => void) | null = null;
   let unsubscribers: Array<() => void> = [];
+  /** Work that may write to the store; `stop()` waits for it, never for a pass still queued for the lock. */
+  const running = new Set<Promise<void>>();
   const deferred = new Set<string>();
   const tooLarge = new Set<string>();
   const rowListeners = new Set<() => void>();
+
+  function track(work: Promise<unknown>): void {
+    const settled = work.then(noop, noop);
+    running.add(settled);
+    void settled.then(() => running.delete(settled));
+  }
 
   function guard(gen: number): void {
     if (gen !== generation) throw new PassAbort();
@@ -130,6 +174,17 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     throw new PassAbort();
   }
 
+  /** Publishes the unsynced count and too-large ids; never throws, so every exit path can call it. */
+  async function publishPending(owner: string, gen: number): Promise<void> {
+    if (gen !== generation) return;
+    try {
+      const pendingCount = await store.countUnsynced(owner);
+      update(gen, { pendingCount, tooLargeIds: [...tooLarge] });
+    } catch {
+      // A failed count leaves the previous one; the next pass publishes again.
+    }
+  }
+
   function dropRemoteOnly(gen: number, id: string): void {
     if (!remoteOnly.some((item) => item.id === id)) return;
     remoteOnly = remoteOnly.filter((item) => item.id !== id);
@@ -144,17 +199,20 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     }
   }
 
+  /** A real PNG for Drive: the stored thumbnail when current, else a fresh render, else a stale PNG; null when none. */
+  function previewFor(row: IStoredArtwork): string | null {
+    const stored = pngBase64FromDataUrl(row.thumbnail);
+    if (stored && isThumbnailCurrent(row.thumbnail, row.width, row.height)) return stored;
+    return pngBase64FromDataUrl(safeThumbnail(row)) ?? stored;
+  }
+
   /**
    * Fetches one Drive copy and applies it. The decision is re-made on the freshest local row and
-   * presence right before the write: a GET can take seconds, during which the user may have edited
-   * the row or an editor may have opened it.
+   * presence right before the write, and the write itself is conditional on that row: a GET can
+   * take seconds, during which the user may have edited the row or an editor may have opened it.
    */
-  async function pullOne(
-    owner: string,
-    gen: number,
-    id: string,
-    hooks: ISyncPullHooks,
-  ): Promise<TSyncApplyOutcome> {
+  async function pullOne(ctx: ISyncPassContext, id: string): Promise<TSyncApplyOutcome> {
+    const { owner, gen, hooks } = ctx;
     const result = await api.get(id);
     guard(gen);
     if (hooks.isStale()) return "skipped";
@@ -172,29 +230,27 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       dropRemoteOnly(gen, id);
       return "skipped";
     }
-    const local = await store.getStored(id);
     const open = (await presence.openIds()).has(id);
+    const local = await store.getStored(id);
     guard(gen);
     if (hooks.isStale()) return "skipped";
     if (local && local.ownerId !== owner) return "skipped";
     const action = decidePull(local ? toFacts(local) : undefined, { id, updatedAt: artwork.updatedAt }, open);
     if (action === "defer") return "deferred";
     if (action !== "download") return "skipped";
-    await store.putFromRemote(owner, { ...artwork, thumbnail: safeThumbnail(artwork) });
+    const thumbnail = safeThumbnail(artwork);
+    const written = await store.putFromRemote(owner, { ...artwork, thumbnail }, local ? expectedOf(local) : undefined);
+    if (!written) return "skipped";
     tooLarge.delete(id);
     dropRemoteOnly(gen, id);
     emitRows(gen);
     return "written";
   }
 
-  async function removeOne(
-    owner: string,
-    gen: number,
-    id: string,
-    plannedUpdatedAt: number,
-  ): Promise<TSyncApplyOutcome> {
-    const local = await store.getStored(id);
+  async function removeOne(ctx: ISyncPassContext, id: string, plannedUpdatedAt: number): Promise<TSyncApplyOutcome> {
+    const { owner, gen } = ctx;
     const open = (await presence.openIds()).has(id);
+    const local = await store.getStored(id);
     guard(gen);
     if (
       !local ||
@@ -205,24 +261,23 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       return "skipped";
     }
     if (open) return "deferred";
-    await store.removeLocal(id);
+    if (!(await store.removeLocal(id, expectedOf(local)))) return "skipped";
     tooLarge.delete(id);
     emitRows(gen);
     return "written";
   }
 
-  async function pushOne(
-    owner: string,
-    gen: number,
-    id: string,
-    deferredIds: Set<string>,
-    hooks: ISyncPullHooks,
-  ): Promise<void> {
+  async function pushOne(ctx: ISyncPassContext, id: string): Promise<void> {
+    const { owner, gen } = ctx;
     const row = await store.getStored(id);
     guard(gen);
     if (!row || row.ownerId !== owner || row.sync.state === "tooLarge") return;
-    const previewPngBase64 =
-      pngBase64FromDataUrl(row.thumbnail) ?? pngBase64FromDataUrl(safeThumbnail(row)) ?? "";
+    const previewPngBase64 = previewFor(row);
+    if (previewPngBase64 === null) {
+      deps.warn("No preview could be made for artwork", id);
+      ctx.failedIds.add(id);
+      return;
+    }
     const result = await api.save({ artwork: serializeArtworkFile(row), previewPngBase64 });
     guard(gen);
     if (result.ok) {
@@ -230,21 +285,24 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       tooLarge.delete(id);
       emitRows(gen);
     } else if (result.kind === "conflict") {
-      if ((await pullOne(owner, gen, id, hooks)) === "deferred") deferredIds.add(id);
+      if ((await pullOne(ctx, id)) === "deferred") ctx.deferredIds.add(id);
     } else if (result.kind === "tooLarge") {
-      await store.markTooLarge(id);
-      tooLarge.add(id);
+      if (await store.markTooLarge(id, row.updatedAt)) tooLarge.add(id);
       emitRows(gen);
+    } else if (result.kind === "failed") {
+      deps.warn("Drive rejected artwork", id);
+      ctx.failedIds.add(id);
     } else {
       fail(gen, result);
     }
   }
 
-  function registerDeferred(gen: number, ids: Iterable<string>): void {
-    for (const id of ids) {
+  function registerDeferred(ctx: ISyncPassContext): void {
+    const { gen, signal } = ctx;
+    for (const id of ctx.deferredIds) {
       if (deferred.has(id)) continue;
       deferred.add(id);
-      presence.waitForRelease(id).then(
+      presence.waitForRelease(id, signal).then(
         () => {
           if (gen !== generation) return;
           deferred.delete(id);
@@ -257,20 +315,30 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     }
   }
 
-  async function runPass(kind: TSyncPassKind, owner: string, gen: number): Promise<void> {
-    guard(gen);
-    const hooks: ISyncPullHooks = { isStale: () => false, onFailure: (result) => fail(gen, result) };
-    const deferredIds = new Set<string>();
-
-    if (adoptPending) {
+  /** Adopts signed-out rows for the new owner and tells the gallery; per generation, retried after a failure. */
+  function adopt(owner: string, gen: number): Promise<void> {
+    const work = (async () => {
       await store.adoptUnowned(owner);
-      adoptPending = false;
       // Also with nothing to adopt: the owner switch changes what the gallery shows.
       emitRows(gen);
-    }
+    })();
+    adoption = work;
+    track(work);
+    work.catch(() => {
+      if (adoption === work) adoption = null;
+    });
+    return work;
+  }
+
+  /** Returns false when it ended without publishing the final status itself. */
+  async function passBody(kind: TSyncPassKind, ctx: ISyncPassContext): Promise<boolean> {
+    const { owner, gen } = ctx;
+    guard(gen);
+    await (adoption ?? adopt(owner, gen));
+    guard(gen);
     if (!environment.isOnline()) {
       update(gen, { phase: "offline" });
-      return;
+      return false;
     }
     update(gen, { phase: "syncing" });
 
@@ -292,9 +360,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       } else if (result.kind === "conflict") {
         // Edited on another device after the delete: the edit wins, so pull it back.
         await store.dropDeletion(deletion.id);
-        if (!remote && (await pullOne(owner, gen, deletion.id, hooks)) === "deferred") {
-          deferredIds.add(deletion.id);
-        }
+        if (!remote && (await pullOne(ctx, deletion.id)) === "deferred") ctx.deferredIds.add(deletion.id);
       } else {
         fail(gen, result);
       }
@@ -313,25 +379,27 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       update(gen, { remoteOnly });
 
       for (const id of plan.removals) {
-        const outcome = await removeOne(owner, gen, id, localById.get(id)?.updatedAt ?? -1);
-        if (outcome === "deferred") deferredIds.add(id);
+        if ((await removeOne(ctx, id, localById.get(id)?.updatedAt ?? -1)) === "deferred") ctx.deferredIds.add(id);
       }
       for (const id of plan.downloads) {
-        if ((await pullOne(owner, gen, id, hooks)) === "deferred") deferredIds.add(id);
+        if ((await pullOne(ctx, id)) === "deferred") ctx.deferredIds.add(id);
       }
-      for (const id of plan.uploads) await pushOne(owner, gen, id, deferredIds, hooks);
-      for (const id of plan.deferred) deferredIds.add(id);
+      for (const id of plan.uploads) await pushOne(ctx, id);
+      for (const id of plan.deferred) ctx.deferredIds.add(id);
     } else {
       const dirty = await store.listDirty(owner);
       guard(gen);
       for (const row of dirty) tooLarge.delete(row.id);
-      for (const id of planPush(dirty.map(toFacts), deferred)) {
-        await pushOne(owner, gen, id, deferredIds, hooks);
-      }
+      for (const id of planPush(dirty.map(toFacts), deferred)) await pushOne(ctx, id);
     }
 
-    registerDeferred(gen, deferredIds);
+    registerDeferred(ctx);
     const pendingCount = await store.countUnsynced(owner);
+    if (ctx.failedIds.size > 0) {
+      update(gen, { pendingCount, tooLargeIds: [...tooLarge], phase: "error" });
+      scheduleRetry(gen, retryDelayMs(attempt++, null));
+      return true;
+    }
     update(gen, {
       pendingCount,
       tooLargeIds: [...tooLarge],
@@ -342,11 +410,35 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       attempt = 0;
       cancelRetry();
     }
+    return true;
+  }
+
+  async function runPass(kind: TSyncPassKind, owner: string, gen: number, signal: AbortSignal): Promise<void> {
+    const ctx: ISyncPassContext = {
+      owner,
+      gen,
+      signal,
+      deferredIds: new Set(),
+      failedIds: new Set(),
+      hooks: { isStale: () => false, onFailure: (result) => fail(gen, result) },
+    };
+    let published = false;
+    try {
+      published = await passBody(kind, ctx);
+    } finally {
+      // Offline, error and reauth exits leave the count current too.
+      if (!published) await publishPending(owner, gen);
+    }
   }
 
   async function runGuarded(kind: TSyncPassKind, owner: string, gen: number): Promise<void> {
+    const signal = controller.signal;
     try {
-      await presence.runExclusive(() => runPass(kind, owner, gen));
+      await presence.runExclusive(() => {
+        const pass = runPass(kind, owner, gen, signal);
+        track(pass);
+        return pass;
+      }, signal);
     } catch (error) {
       if (error instanceof PassAbort || gen !== generation) return;
       deps.warn(String(error), owner);
@@ -355,24 +447,18 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     }
   }
 
-  async function drain(): Promise<void> {
-    try {
-      while (queued !== null && ownerId !== null) {
-        const kind = queued;
-        queued = null;
-        const mine = waiters;
-        waiters = [];
-        const pass = runGuarded(kind, ownerId, generation);
-        currentPass = pass;
-        await pass;
-        for (const resolve of mine) resolve();
-      }
-    } finally {
-      loop = null;
-      const rest = waiters;
+  async function drain(gen: number): Promise<void> {
+    while (queued !== null && gen === generation && ownerId !== null) {
+      const kind = queued;
+      queued = null;
+      const mine = waiters;
       waiters = [];
-      for (const resolve of rest) resolve();
+      serving = mine;
+      await runGuarded(kind, ownerId, gen);
+      for (const resolve of mine) resolve();
+      serving = [];
     }
+    if (gen === generation) loop = null;
   }
 
   /** Resolves when the pass that serves this request ends; a request during a pass queues one follow-up. */
@@ -381,39 +467,46 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     return new Promise<void>((resolve) => {
       queued = queued === "full" || kind === "full" ? "full" : "push";
       waiters.push(resolve);
-      loop ??= drain();
+      loop ??= drain(generation);
     });
   }
 
   async function stop(): Promise<void> {
     generation += 1;
     ownerId = null;
-    adoptPending = false;
+    adoption = null;
     attempt = 0;
     phase = "disabled";
     remoteOnly = [];
     queued = null;
+    loop = null;
     deferred.clear();
     tooLarge.clear();
     cancelDebounce();
     cancelRetry();
     for (const unsubscribe of unsubscribers) unsubscribe();
     unsubscribers = [];
-    const released = waiters;
+    controller.abort();
+    controller = new AbortController();
+    // Requests whose pass will never finish (stuck behind the lock) must not leave callers hanging.
+    const released = [...serving, ...waiters];
+    serving = [];
     waiters = [];
     for (const resolve of released) resolve();
     deps.setStatus(INITIAL_SYNC_STATUS);
-    await currentPass;
+    await Promise.all([...running]);
   }
 
   async function start(owner: string): Promise<void> {
     if (ownerId === owner) return;
     if (ownerId !== null) await stop();
+    if (ownerId !== null) return;
     ownerId = owner;
-    adoptPending = true;
     attempt = 0;
+    const gen = generation;
     unsubscribers = [
       deps.onArtworkChanged(() => {
+        void publishPending(owner, gen);
         if (phase === "reauth") return;
         cancelDebounce();
         debounceCancel = timers.after(PUSH_DEBOUNCE_MS, () => {
@@ -430,12 +523,13 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
         if (phase !== "reauth") void request("push");
       }),
     ];
+    void adopt(owner, gen).catch(noop);
     await request("full");
   }
 
   async function flush(timeoutMs: number): Promise<void> {
     if (ownerId === null) return;
-    let cancel = () => {};
+    let cancel = noop;
     const timeout = new Promise<void>((resolve) => {
       cancel = timers.after(timeoutMs, resolve);
     });
@@ -458,12 +552,22 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     if (isStale()) return;
     if (!listed.ok) return onFailure(listed);
     const remote = listed.value.find((item) => item.id === id);
-    const local = await store.getStored(id);
     const open = (await presence.openIds()).has(id);
+    const local = await store.getStored(id);
     guard(gen);
     if (isStale() || (local && local.ownerId !== owner)) return;
     if (decidePull(local ? toFacts(local) : undefined, remote, open) !== "download") return;
-    await pullOne(owner, gen, id, { isStale, onFailure });
+    await pullOne(
+      {
+        owner,
+        gen,
+        signal: controller.signal,
+        deferredIds: new Set(),
+        failedIds: new Set(),
+        hooks: { isStale, onFailure } satisfies ISyncPullHooks,
+      },
+      id,
+    );
   }
 
   async function refreshOne(id: string, timeoutMs: number): Promise<void> {
@@ -471,14 +575,15 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     if (owner === null || !environment.isOnline()) return;
     const gen = generation;
     let abandoned = false;
-    let cancel = () => {};
+    let cancel = noop;
     const timeout = new Promise<void>((resolve) => {
       cancel = timers.after(timeoutMs, () => {
         abandoned = true;
         resolve();
       });
     });
-    const work = refreshWork(owner, gen, id, () => abandoned || gen !== generation).catch(() => {});
+    const work = refreshWork(owner, gen, id, () => abandoned || gen !== generation).catch(noop);
+    track(work);
     try {
       await Promise.race([work, timeout]);
     } finally {

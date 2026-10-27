@@ -8,7 +8,7 @@
  * owners only and `adoptUnowned` filters instead.
  */
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import type { IArtworkDeletion, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
+import type { IArtworkDeletion, ISyncExpectedRow, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 import { hydrateArtwork } from "@/features/shared/artwork/artworkService";
 import { db } from "@/features/shared/db/dexie.config";
 import { clonePixelBuffer } from "@/features/shared/utils/binaryHelpers";
@@ -47,32 +47,66 @@ export async function markSynced(id: string, syncedUpdatedAt: number): Promise<v
   });
 }
 
-export async function markTooLarge(id: string): Promise<void> {
-  await db.transaction("rw", db.artworks, async () => {
+/** Stays dirty when the row was edited after the pushed version (the new version may fit). */
+export async function markTooLarge(id: string, pushedUpdatedAt: number): Promise<boolean> {
+  return db.transaction("rw", db.artworks, async () => {
     const row = await db.artworks.get(id);
-    if (!row) return;
+    if (!row || row.updatedAt !== pushedUpdatedAt) return false;
     await db.artworks.update(id, {
       sync: { state: "tooLarge", syncedUpdatedAt: row.sync.syncedUpdatedAt },
     });
+    return true;
   });
 }
 
-/** Stores a Drive copy as synced, keeping the remote `updatedAt`. */
-export async function putFromRemote(ownerId: string, artwork: IArtwork): Promise<void> {
-  await db.artworks.put({
-    ...artwork,
-    layers: artwork.layers.map((layer) => ({
-      ...layer,
-      pixelData: clonePixelBuffer(layer.pixelData),
-    })),
-    ownerId,
-    sync: { state: "synced", syncedUpdatedAt: artwork.updatedAt },
+/** True when the row in IndexedDB still is the one `expected` describes (`undefined`: still absent). */
+function stillMatches(row: IStoredArtwork | undefined, expected: ISyncExpectedRow | undefined): boolean {
+  if (!row) return expected === undefined;
+  return (
+    expected !== undefined &&
+    row.ownerId === expected.ownerId &&
+    row.updatedAt === expected.updatedAt &&
+    row.sync.state === expected.state
+  );
+}
+
+/**
+ * Stores a Drive copy as synced, keeping the remote `updatedAt`, only while the local row is still
+ * the one the decision was made on (`expected`; `undefined` = there was no row). The check and the
+ * write share one transaction, so an edit that landed during the download is never overwritten.
+ * Returns whether it wrote.
+ */
+export async function putFromRemote(
+  ownerId: string,
+  artwork: IArtwork,
+  expected: ISyncExpectedRow | undefined,
+): Promise<boolean> {
+  return db.transaction("rw", db.artworks, async () => {
+    if (!stillMatches(await db.artworks.get(artwork.id), expected)) return false;
+    await db.artworks.put({
+      ...artwork,
+      layers: artwork.layers.map((layer) => ({
+        ...layer,
+        pixelData: clonePixelBuffer(layer.pixelData),
+      })),
+      ownerId,
+      sync: { state: "synced", syncedUpdatedAt: artwork.updatedAt },
+    });
+    return true;
   });
 }
 
-/** Deletes a row without leaving a tombstone (the deletion came from Drive or sign-out). */
-export async function removeLocal(id: string): Promise<void> {
-  await db.artworks.delete(id);
+/**
+ * Deletes a row without leaving a tombstone (the deletion came from Drive or sign-out), only while
+ * it is still the one the decision was made on. Returns whether it deleted.
+ */
+export async function removeLocal(id: string, expected: ISyncExpectedRow): Promise<boolean> {
+  return db.transaction("rw", db.artworks, async () => {
+    const row = await db.artworks.get(id);
+    if (!row || !stillMatches(row, expected)) return false;
+    await db.artworks.delete(id);
+    return true;
+  });
 }
 
 export function listDeletions(ownerId: string): Promise<IArtworkDeletion[]> {

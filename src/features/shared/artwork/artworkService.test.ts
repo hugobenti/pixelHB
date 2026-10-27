@@ -112,7 +112,7 @@ describe("with an active owner", () => {
     const unowned = await artworkService.createArtwork(input);
     artworkService.setActiveOwner("u1");
     const removed = await artworkService.createArtwork(input);
-    await syncStore.removeLocal(removed.id);
+    await db.artworks.delete(removed.id);
     at(2000);
     await artworkService.saveArtwork({ ...unowned, title: "Hijack" });
     await artworkService.renameArtwork(unowned.id, "Hijack");
