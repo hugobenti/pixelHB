@@ -13,14 +13,18 @@ const driveJson = () => JSON.parse(JSON.stringify(serializeArtworkFile(artwork))
 
 describe("remoteFileToArtwork", () => {
   it("restores the artwork with Drive's id and timestamps", () => {
-    const { thumbnail: _t, ...expected } = artwork;
+    const expected: Partial<IArtwork> = { ...artwork };
+    delete expected.thumbnail;
     expect(remoteFileToArtwork(driveJson(), "a")).toEqual(expected);
   });
   it("skips a hand-edited file that no longer parses", () => {
     expect(remoteFileToArtwork({ ...driveJson(), layers: "oops" }, "a")).toBeNull();
   });
   it("skips a file with no v3 metadata", () => {
-    const { id: _i, createdAt: _c, updatedAt: _u, ...v2 } = driveJson();
+    const v2 = driveJson();
+    delete v2.id;
+    delete v2.createdAt;
+    delete v2.updatedAt;
     expect(remoteFileToArtwork({ ...v2, version: 2 }, "a")).toBeNull();
   });
   it("skips a file whose id is not the one requested", () => {
