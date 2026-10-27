@@ -120,11 +120,19 @@ describe("galleryRouteHelpers", () => {
 
   it("withGalleryAccess runs the handler with a store and maps a Drive 401 thrown inside to reauth", async () => {
     vi.mocked(getDriveAccess).mockResolvedValue({ kind: "ok", accessToken: "tok" });
-    const ok = await withGalleryAccess(new Request(URL_), ID, async (store) => {
-      expect(typeof store.upsert).toBe("function");
-      return new Response(null, { status: 204 });
-    });
-    expect(ok.status).toBe(204);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ files: [] }));
+    try {
+      const ok = await withGalleryAccess(new Request(URL_), ID, async (store) => {
+        expect(await store.list()).toEqual([]);
+        return new Response(null, { status: 204 });
+      });
+      expect(ok.status).toBe(204);
+      const [url, init] = fetchSpy.mock.calls[0];
+      expect(String(url)).toContain("https://www.googleapis.com/drive/v3/files");
+      expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer tok");
+    } finally {
+      fetchSpy.mockRestore();
+    }
     const revoked = await withGalleryAccess(new Request(URL_), ID, async () => {
       throw new DriveError(401, "authError", null);
     });
@@ -135,14 +143,35 @@ describe("galleryRouteHelpers", () => {
   it("withGalleryAccess answers a bare 404 without touching auth when the flag is off", async () => {
     vi.resetModules();
     vi.doMock("@/features/shared/auth/driveSyncFlag", () => ({ DRIVE_SYNC_ENABLED: false }));
-    const gated = await import("./galleryRouteHelpers");
-    const access = await import("@/features/shared/auth/server/driveAccess");
-    const run = vi.fn();
-    const response = await gated.withGalleryAccess(new Request(URL_), ID, run);
-    expect(response.status).toBe(404);
-    expect(await response.text()).toBe("");
-    expect(access.getDriveAccess).not.toHaveBeenCalled();
-    expect(run).not.toHaveBeenCalled();
-    vi.doMock("@/features/shared/auth/driveSyncFlag", () => ({ DRIVE_SYNC_ENABLED: true }));
+    try {
+      const gated = await import("./galleryRouteHelpers");
+      const access = await import("@/features/shared/auth/server/driveAccess");
+      const run = vi.fn();
+      const response = await gated.withGalleryAccess(new Request(URL_), ID, run);
+      expect(response.status).toBe(404);
+      expect(await response.text()).toBe("");
+      expect(access.getDriveAccess).not.toHaveBeenCalled();
+      expect(run).not.toHaveBeenCalled();
+    } finally {
+      vi.doMock("@/features/shared/auth/driveSyncFlag", () => ({ DRIVE_SYNC_ENABLED: true }));
+    }
+  });
+
+  it("readSaveRequest drops unknown keys from the stored JSON", async () => {
+    const withExtras = { ...artwork, evil: "x".repeat(10), layers: artwork.layers.map((l) => ({ ...l, extra: 1 })) };
+    const result = await readSaveRequest(await saveRequest({ artwork: withExtras, previewPngBase64: PNG_BASE64 }), ID);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.upsert.artworkJson).toBe(JSON.stringify(artwork));
+      expect(result.upsert.artworkJson).not.toContain("evil");
+    }
+  });
+
+  it.each([
+    ["updatedAt", { updatedAt: 2 ** 60 }],
+    ["createdAt", { createdAt: 1e21 }],
+  ])("readSaveRequest rejects an unsafe %s with 400", async (_label, override) => {
+    const request = await saveRequest({ artwork: { ...artwork, ...override }, previewPngBase64: PNG_BASE64 });
+    expect(await readSaveRequest(request, ID)).toEqual(BAD);
   });
 });

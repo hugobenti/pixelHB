@@ -210,4 +210,12 @@ describe("driveArtworkStore", () => {
       "appProperties has { key='artworkId' and value='a\\'b\\\\c' } and trashed=false",
     );
   });
+
+  it("ensureRootFolder retries after a rejected first attempt", async () => {
+    const { fetchFn, calls } = recorder([new TypeError("fetch failed"), json({ files: [ROOT] })]);
+    const s = store(fetchFn);
+    await expect(s.ensureRootFolder()).rejects.toMatchObject({ status: 0 });
+    expect(await s.ensureRootFolder()).toBe("root-1");
+    expect(calls).toHaveLength(2);
+  });
 });

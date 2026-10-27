@@ -9,7 +9,7 @@
  * handed to the store; it is never logged or returned. Request bodies and artwork payloads are never
  * logged. A non-Drive exception rethrows (a 500 is a bug, not a Drive state).
  */
-import { parseArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
+import { parseArtworkFile, serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import { DRIVE_SYNC_ENABLED } from "@/features/shared/auth/driveSyncFlag";
 import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
 import { ARTWORK_ID_PATTERN, MAX_SYNC_BODY_BYTES } from "../galleryApi";
@@ -88,7 +88,9 @@ async function readCapped(stream: ReadableStream<Uint8Array>, maxBytes: number):
   for (;;) {
     const { done, value } = await reader.read();
     if (done) {
-      return concat(chunks, total);
+      const bytes = concat(chunks, total);
+      chunks.length = 0;
+      return bytes;
     }
     total += value.byteLength;
     if (total > maxBytes) {
@@ -137,6 +139,10 @@ function parseSaveBody(body: unknown, id: string): TSaveRequestResult {
   if (!parsed || !parsed.meta || parsed.meta.id !== id) {
     return BAD_REQUEST;
   }
+  const { meta, data } = parsed;
+  if (!Number.isSafeInteger(meta.createdAt) || !Number.isSafeInteger(meta.updatedAt)) {
+    return BAD_REQUEST;
+  }
   const previewPng = decodePng(previewPngBase64);
   if (!previewPng) {
     return BAD_REQUEST;
@@ -145,12 +151,13 @@ function parseSaveBody(body: unknown, id: string): TSaveRequestResult {
     ok: true,
     upsert: {
       id,
-      title: parsed.data.title,
-      width: parsed.data.width,
-      height: parsed.data.height,
-      createdAt: parsed.meta.createdAt,
-      updatedAt: parsed.meta.updatedAt,
-      artworkJson: JSON.stringify(artwork),
+      title: data.title,
+      width: data.width,
+      height: data.height,
+      createdAt: meta.createdAt,
+      updatedAt: meta.updatedAt,
+      // Rebuilt from the validated fields so unknown client keys never reach the user's Drive.
+      artworkJson: JSON.stringify(serializeArtworkFile({ ...data, id, createdAt: meta.createdAt, updatedAt: meta.updatedAt, thumbnail: "" })),
       previewPng,
     },
   };

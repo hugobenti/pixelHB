@@ -33,6 +33,14 @@ const NETWORK_REASON = "network";
 const BAD_RESPONSE_REASON = "badResponse";
 const BAD_GATEWAY = 502;
 
+function isGoogleUrl(value: string): boolean {
+  try {
+    return new URL(value).origin === DRIVE_ORIGIN;
+  } catch {
+    return false;
+  }
+}
+
 export class DriveError extends Error {
   readonly status: number;
   readonly reason: string | null;
@@ -162,13 +170,14 @@ export function createDriveRest(options: IDriveRestOptions): IDriveRest {
       }),
     );
     const location = session.headers.get("Location");
-    if (!location || new URL(location).origin !== DRIVE_ORIGIN) {
+    if (!location || !isGoogleUrl(location)) {
       throw new DriveError(BAD_GATEWAY, BAD_RESPONSE_REASON, null);
     }
     // The session URI is itself the credential: the token is not sent to it.
     const response = await expectOk(
       await call(location, {
         method: "PUT",
+        redirect: "error",
         headers: { "Content-Type": mimeType },
         body: new Blob([content as BlobPart]),
       }),

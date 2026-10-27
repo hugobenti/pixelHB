@@ -75,4 +75,16 @@ describe("galleryApiClient", () => {
     expect(init?.method).toBe("DELETE");
     expect(JSON.parse(String(init?.body))).toEqual({ deletedAt: 2500 });
   });
+
+  it.each(["get", "list"] as const)("%s maps a body stream that errors mid-read to offline", async (method) => {
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.error(new TypeError("network error"));
+      },
+    });
+    const fetchFn = fetchReturning(new Response(body, { status: 200 }));
+    const client = createGalleryApiClient(fetchFn);
+    const result = method === "get" ? await client.get(ID) : await client.list();
+    expect(result).toEqual({ ok: false, kind: "offline" });
+  });
 });

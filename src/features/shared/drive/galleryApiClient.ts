@@ -85,6 +85,10 @@ async function send<T>(
     if (error instanceof SyntaxError) {
       return { ok: false, kind: "failed", status: response.status };
     }
+    // The connection dropped while the body was streaming.
+    if (error instanceof TypeError) {
+      return { ok: false, kind: "offline" };
+    }
     throw error;
   }
 }

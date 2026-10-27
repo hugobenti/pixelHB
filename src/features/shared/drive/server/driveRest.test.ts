@@ -106,4 +106,42 @@ describe("driveRest", () => {
     expect(calls[1].url.href).toBe("https://www.googleapis.com/drive/v3/files/gone?fields=id");
     expect(JSON.parse(latin1(calls[1].body))).toEqual({ trashed: true });
   });
+
+  it("sends the resumable PUT without Authorization", async () => {
+    const big = new Uint8Array(5 * 1024 * 1024 + 1);
+    const session = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=abc";
+    const { fetchFn, calls } = recorder([
+      new Response(null, { status: 200, headers: { Location: session } }),
+      Response.json({ id: "f-1", name: "big.json" }),
+    ]);
+    await createDriveRest({ accessToken: "tok", fetchFn }).uploadNew({ name: "big.json" }, big, "application/json");
+    expect(calls[0].headers.get("Authorization")).toBe("Bearer tok");
+    expect(calls[1].method).toBe("PUT");
+    expect(calls[1].headers.has("Authorization")).toBe(false);
+  });
+
+  it.each([
+    ["a foreign origin", "https://evil.example/upload?id=1"],
+    ["an unparsable URL", "not a url"],
+    ["a missing header", null],
+  ])("rejects a resumable session with %s as a 502 and never sends the bytes", async (_label, location) => {
+    const big = new Uint8Array(5 * 1024 * 1024 + 1);
+    const headers: Record<string, string> = location === null ? {} : { Location: location };
+    const { fetchFn, calls } = recorder([new Response(null, { status: 200, headers })]);
+    await expect(createDriveRest({ accessToken: "tok", fetchFn }).uploadNew({ name: "b" }, big, "application/json"))
+      .rejects.toMatchObject({ status: 502 });
+    expect(calls).toHaveLength(1);
+  });
+
+  it.each([
+    ["404", 404, "notFound"],
+    ["403 rateLimitExceeded", 403, "rateLimitExceeded"],
+    ["502", 502, null],
+    ["503", 503, null],
+  ])("keeps status and reason for Drive %s", async (_label, status, reason) => {
+    const body = reason === null ? "<html>" : JSON.stringify({ error: { errors: [{ reason }] } });
+    const { fetchFn } = recorder([new Response(body, { status })]);
+    await expect(createDriveRest({ accessToken: "tok", fetchFn }).listAll({ q: "trashed=false" }))
+      .rejects.toMatchObject({ status, reason });
+  });
 });
