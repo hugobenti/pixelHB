@@ -5,9 +5,11 @@
 import Dexie, { type Table } from "dexie";
 
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
+import type { IArtworkDeletion, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 
 export class PixelCraftDB extends Dexie {
-  artworks!: Table<IArtwork, string>;
+  artworks!: Table<IStoredArtwork, string>;
+  deletions!: Table<IArtworkDeletion, string>;
 
   constructor() {
     super("PixelCraftDB");
@@ -42,6 +44,22 @@ export class PixelCraftDB extends Dexie {
             }
             if (typeof record.activeLayerId !== "string") {
               record.activeLayerId = "";
+            }
+          })
+      );
+    this.version(4)
+      .stores({
+        artworks: "id, updatedAt, title, ownerId",
+        deletions: "id, ownerId",
+      })
+      .upgrade((tx) =>
+        tx
+          .table("artworks")
+          .toCollection()
+          .modify((record: Partial<IStoredArtwork>) => {
+            if (record.ownerId === undefined) {
+              record.ownerId = null;
+              record.sync = { state: "local", syncedUpdatedAt: null };
             }
           })
       );
