@@ -68,7 +68,7 @@ Shortcuts are ignored while focus is in a text field.
 
 | Area      | Library                                                         |
 | --------- | --------------------------------------------------------------- |
-| Framework | [Next.js](https://nextjs.org) 16.2.5 (App Router), React 19.2.4 |
+| Framework | [Next.js](https://nextjs.org) 16.4.3 (App Router), React 19.3.1 |
 | Language  | TypeScript 5                                                    |
 | Styling   | Tailwind CSS v4 (semantic tokens in `src/app/globals.css`)      |
 | State     | Zustand 5                                                       |
