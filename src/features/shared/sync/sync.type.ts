@@ -1,7 +1,7 @@
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import type { IArtworkDeletion, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 import type { IGalleryListItem } from "@/features/shared/drive/galleryApi.type";
-import type { IGalleryApiClient } from "@/features/shared/drive/galleryApiClient.type";
+import type { IGalleryApiClient, TApiResult } from "@/features/shared/drive/galleryApiClient.type";
 
 export type TSyncPhase = "disabled" | "idle" | "syncing" | "offline" | "reauth" | "error";
 
@@ -13,6 +13,19 @@ export interface ISyncStatus {
   remoteOnly: IGalleryListItem[];
   tooLargeIds: string[];
   lastSyncedAt: number | null;
+}
+
+export type TSyncPassKind = "full" | "push";
+
+export type TSyncApiFailure = Extract<TApiResult<never>, { ok: false }>;
+
+/** What happened to one Drive copy the engine tried to apply locally. */
+export type TSyncApplyOutcome = "written" | "deferred" | "skipped";
+
+export interface ISyncPullHooks {
+  /** True once the caller gave up or the engine stopped: nothing may be written. */
+  isStale(): boolean;
+  onFailure(result: TSyncApiFailure): void;
 }
 
 export type TPullAction = "download" | "upload" | "removeLocal" | "defer" | "none";
