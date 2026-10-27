@@ -4,10 +4,10 @@
  *
  * Notes:
  * New cells use fillPaletteIndexForExpansion (the lightest palette color, so white when present).
- * Validation delegates to artworkService.validateDimensions.
+ * Validation delegates to artworkLimits.validateDimensions.
  */
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import { validateDimensions } from "@/features/shared/artwork/artworkService";
+import { validateDimensions } from "@/features/shared/artwork/artworkLimits";
 import { relativeLuminance } from "@/features/shared/utils/colorContrast";
 import { parseHexColor } from "@/features/shared/utils/colorConverter";
 

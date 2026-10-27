@@ -113,22 +113,7 @@ export interface ISharedContent {
   /** Errors from reading and writing artwork files (JSON import, PNG export). */
   artworkFile: {
     errors: {
-      invalidBase64: string;
       invalidFormat: string;
-      unsupportedVersion: string;
-      invalidTitle: string;
-      invalidDimensions: string;
-      paletteMissing: string;
-      invalidPaletteEntry: string;
-      layersMissing: string;
-      layerInvalid: (position: number) => string;
-      layerInvalidId: (position: number) => string;
-      layerInvalidName: (position: number) => string;
-      layerMissingCompactData: (name: string) => string;
-      layerInvalidLength: (name: string) => string;
-      layerMissingPixelData: (name: string) => string;
-      layerPaletteOutOfRange: (name: string) => string;
-      invalidReferenceImage: string;
       canvasUnavailable: string;
       invalidJson: string;
     };

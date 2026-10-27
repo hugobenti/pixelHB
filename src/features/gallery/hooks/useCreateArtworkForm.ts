@@ -9,7 +9,8 @@ import { useCallback, useId, useRef, useState, type FormEvent } from "react";
 
 import { gallery } from "@/content/gallery";
 import { shared } from "@/content/shared";
-import { DEFAULT_PALETTE, MAX_CANVAS_DIMENSION } from "@/features/shared/artwork/artworkService";
+import { MAX_CANVAS_DIMENSION } from "@/features/shared/artwork/artworkLimits";
+import { DEFAULT_PALETTE } from "@/features/shared/artwork/artworkService";
 import { parseCanvasSizeFields } from "@/features/shared/logic/canvasSizeFields";
 import type {
   TCreateArtworkFormErrors,

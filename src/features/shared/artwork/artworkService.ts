@@ -9,16 +9,15 @@
  */
 import { shared } from "@/content/shared";
 import { db } from "@/features/shared/db/dexie.config";
-import type { IArtwork, IArtworkLayer } from "@/features/shared/artwork/artwork.type";
+import type { IArtwork, IArtworkLayer, IArtworkSummary } from "@/features/shared/artwork/artwork.type";
 import type { IImportedArtworkData } from "@/features/shared/artwork/artworkFileService.type";
 import { normalizeHexColor } from "@/features/shared/utils/colorConverter";
 import { clonePixelBuffer, ensureUint8PixelData } from "@/features/shared/utils/binaryHelpers";
+import { MAX_PALETTE_ENTRIES, validateDimensions } from "./artworkLimits";
 import type { ICreateArtworkInput } from "./artworkService.type";
 
 const CANON_HEX6 = /^#[0-9A-F]{6}$/;
 
-export const MAX_CANVAS_DIMENSION = 1000;
-export const MAX_PALETTE_ENTRIES = 256;
 /** Pixel value for "no color": any value at or above the palette length draws nothing; 255 is the one written. */
 export const TRANSPARENT_PIXEL_INDEX = 255;
 
@@ -70,22 +69,23 @@ function buildFallbackLayer(pixelCount: number): IArtworkLayer {
   };
 }
 
-export function validateDimensions(width: number, height: number): void {
-  if (
-    !Number.isFinite(width) ||
-    !Number.isFinite(height) ||
-    width < 1 ||
-    height < 1 ||
-    width > MAX_CANVAS_DIMENSION ||
-    height > MAX_CANVAS_DIMENSION
-  ) {
-    throw new Error(shared.artwork.errors.dimensionsOutOfRange(MAX_CANVAS_DIMENSION));
-  }
-}
-
-export async function listArtworks(): Promise<IArtwork[]> {
-  const rows = await db.artworks.orderBy("updatedAt").reverse().toArray();
-  return rows.map(hydrateArtwork);
+export async function listArtworkSummaries(): Promise<IArtworkSummary[]> {
+  const summaries: IArtworkSummary[] = [];
+  await db.artworks
+    .orderBy("updatedAt")
+    .reverse()
+    .each((row) => {
+      summaries.push({
+        id: row.id,
+        title: row.title,
+        width: row.width,
+        height: row.height,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        thumbnail: row.thumbnail,
+      });
+    });
+  return summaries;
 }
 
 export async function getArtwork(id: string): Promise<IArtwork | undefined> {

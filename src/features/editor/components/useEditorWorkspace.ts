@@ -36,7 +36,7 @@ import { clampPaletteIndex } from "@/features/editor/logic/paletteMutations";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
 import type { IHistoryCommand } from "@/features/editor/types/editor.type";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import * as artworkService from "@/features/shared/artwork/artworkService";
+import { MAX_PALETTE_ENTRIES } from "@/features/shared/artwork/artworkLimits";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 import type { IEditorWorkspaceProps } from "./EditorWorkspace.type";
 
@@ -321,7 +321,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     openPaletteModal: () => setPaletteModalOpen(true),
     closePaletteModal: () => setPaletteModalOpen(false),
     canRemoveSwatch: artwork.palette.length > 1,
-    maxPaletteReached: artwork.palette.length >= artworkService.MAX_PALETTE_ENTRIES,
+    maxPaletteReached: artwork.palette.length >= MAX_PALETTE_ENTRIES,
     wrapRef,
     artworkCanvasRef,
     referenceImageCanvasRef,
