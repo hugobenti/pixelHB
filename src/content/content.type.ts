@@ -35,6 +35,18 @@ export interface IShellContent {
     signOut: string;
     signInAgain: string;
     reauthNote: string;
+    signingOut: string;
+    signOutDialog: {
+      title: string;
+      description: (artworks: number, deletions: number) => string;
+      download: string;
+      signOutAnyway: string;
+      downloadedTitle: string;
+      downloadedDescription: (files: number) => string;
+      signOut: string;
+      failed: string;
+      downloadFailed: string;
+    };
   };
   footer: { tagline: string; credit: string; copyright: string; linksLabel: string };
 }
