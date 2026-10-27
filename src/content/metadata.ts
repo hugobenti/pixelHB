@@ -4,6 +4,7 @@ import { contact } from "./contact";
 import { gallery } from "./gallery";
 import { help } from "./help";
 import { home } from "./home";
+import { privacy } from "./privacy";
 import { site } from "./site";
 import { statusPages } from "./statusPages";
 
@@ -22,6 +23,7 @@ export const siteMetadata: Metadata = {
     description: site.metaDescription,
   },
   twitter: { card: "summary_large_image" },
+  verification: { google: site.googleSiteVerification },
 };
 
 /** The gallery tab reads "Your artworks · PixelHB". */
@@ -42,6 +44,12 @@ export const aboutMetadata: Metadata = {
   title: about.metaTitle,
   description: about.metaDescription,
   alternates: { canonical: "/about" },
+};
+
+export const privacyMetadata: Metadata = {
+  title: privacy.metaTitle,
+  description: privacy.metaDescription,
+  alternates: { canonical: "/privacy" },
 };
 
 export const contactMetadata: Metadata = {

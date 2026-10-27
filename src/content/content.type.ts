@@ -9,6 +9,8 @@ export interface ISiteContent {
   email: string;
   repoUrl: string;
   issuesUrl: string;
+  /** Search Console site-verification token (the meta tag content attribute). */
+  googleSiteVerification: string;
 }
 
 /** Copy for the site shell: header, menu, theme toggle and footer. */
@@ -19,6 +21,7 @@ export interface IShellContent {
     help: string;
     about: string;
     contact: string;
+    privacy: string;
     github: string;
     label: string;
   };
@@ -419,6 +422,21 @@ export interface IAboutContent {
   feedbackLink: string;
   githubLink: string;
   signature: string;
+}
+
+/** Copy for the Privacy page. */
+export interface IPrivacyContent {
+  metaTitle: string;
+  metaDescription: string;
+  h1: string;
+  intro: string;
+  /** "Last updated: <date>" */
+  updated: string;
+  sections: { id: string; title: string; paragraphs: string[] }[];
+  /** Rendered inside section "revoke". */
+  revokeLink: { label: string; href: string };
+  /** Rendered inside section "contact", linking to /contact. */
+  contactLink: string;
 }
 
 /** Copy for the Feedback & contact page. */

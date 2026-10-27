@@ -7,6 +7,7 @@ export const shell: IShellContent = {
     help: "Help",
     about: "About",
     contact: "Feedback & contact",
+    privacy: "Privacy",
     github: "GitHub",
     label: "Main",
   },
