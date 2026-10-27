@@ -18,7 +18,7 @@ import { Modal } from "./Modal";
 import { useConfirmDialog } from "./useConfirmDialog";
 
 export function ConfirmDialog(props: IConfirmDialogProps) {
-  const { options, onConfirm, onCancel, children } = props;
+  const { options, onConfirm, onCancel, extraAction, children } = props;
   const { open, portalTarget, descriptionId, warningId, describedBy } = useConfirmDialog(props);
 
   if (!portalTarget) return null;
@@ -49,6 +49,11 @@ export function ConfirmDialog(props: IConfirmDialogProps) {
           <Button variant="ghost" data-autofocus onClick={onCancel}>
             {shared.actions.cancel}
           </Button>
+          {extraAction ? (
+            <Button variant="outline" onClick={extraAction.onClick}>
+              {extraAction.label}
+            </Button>
+          ) : null}
           <Button variant="danger" onClick={onConfirm}>
             {options?.confirmLabel}
           </Button>
