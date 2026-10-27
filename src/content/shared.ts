@@ -2,6 +2,19 @@ import type { ISharedContent } from "./content.type";
 
 export const shared: ISharedContent = {
   loading: "Loading…",
+  sync: {
+    thisBrowserOnly: "Saved in this browser only.",
+    syncing: "Syncing with your Google Drive…",
+    saved: "Saved to your Drive.",
+    offline: "Couldn’t reach Drive. Your work is saved on this device.",
+    signInAgain: "Sign in again to keep syncing.",
+    tooLarge: (count) =>
+      count === 1
+        ? "Too large to sync. Export it to keep a copy."
+        : `${count} artworks are too large to sync. Export them to keep a copy.`,
+    openDriveFolder: "Open PixelHB folder in Drive",
+    opensInNewTab: "(opens in a new tab)",
+  },
   actions: {
     save: "Save",
     cancel: "Cancel",

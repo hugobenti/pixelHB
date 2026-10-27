@@ -6,7 +6,6 @@ export const gallery: IGalleryContent = {
   screen: {
     heading: "Your artworks",
     countLabel: (n) => (n === 1 ? "1 artwork" : `${n} artworks`),
-    storageNote: "Saved in this browser only.",
     storageLink: "Learn more",
     importFile: "Import file",
     importLabel: "Import file (.json)",
@@ -26,6 +25,10 @@ export const gallery: IGalleryContent = {
     delete: "Delete",
     titleLabel: "Artwork title",
     actionsLabel: (title) => `Actions for ${title}`,
+    downloading: "Downloading from Drive…",
+    inDrive: "In your Drive",
+    notSynced: "Not synced yet",
+    tooLarge: "Too large to sync",
   },
   create: {
     title: "New artwork",
@@ -58,6 +61,8 @@ export const gallery: IGalleryContent = {
     title: (title) => `Delete “${title}”?`,
     description:
       "The artwork and all its layers are removed from this browser. This can’t be undone.",
+    descriptionSignedIn:
+      "The artwork and all its layers are removed from this browser. If it has a copy in your Google Drive, that copy is moved to the Drive trash.",
     confirm: "Delete artwork",
   },
 };

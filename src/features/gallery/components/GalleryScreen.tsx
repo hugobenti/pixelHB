@@ -11,6 +11,7 @@ import Link from "next/link";
 
 import { gallery } from "@/content/gallery";
 import { Button } from "@/features/shared/components/Button";
+import { cx } from "@/features/shared/utils/cx";
 import { SiteShell } from "@/features/shared/site/SiteShell";
 import { siteType } from "@/features/shared/site/siteType.style";
 
@@ -23,6 +24,7 @@ import { useGalleryScreen } from "./useGalleryScreen";
 export function GalleryScreen() {
   const {
     artworks,
+    storageNote,
     now,
     loaded,
     showSkeleton,
@@ -75,8 +77,16 @@ export function GalleryScreen() {
               {gallery.screen.importFile}
             </Button>
           </div>
-          <p className={galleryScreen.note}>
-            {gallery.screen.storageNote}{" "}
+          <p className={cx(galleryScreen.note, galleryScreen.noteTone[storageNote.tone])}>
+            {storageNote.tone === "progress" ? (
+              <span aria-hidden className={galleryScreen.progressDot} />
+            ) : null}
+            <span className={galleryScreen.noteText}>
+              {storageNote.tone === "attention" ? null : storageNote.text}
+            </span>
+            <span role="status" className={galleryScreen.noteText}>
+              {storageNote.tone === "attention" ? storageNote.text : null}
+            </span>
             <Link href="/help#saving" className={siteType.linkStandalone}>
               {gallery.screen.storageLink}
             </Link>

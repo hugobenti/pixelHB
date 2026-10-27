@@ -31,6 +31,11 @@ export const accountControl = {
   userName: "truncate text-sm font-medium text-fg",
   userEmail: "truncate text-sm text-muted",
   note: "text-sm text-muted",
+  driveLink: cx(
+    "inline-flex min-h-10 items-center rounded-sm text-sm text-fg underline underline-offset-4 hover:text-fg-soft pointer-coarse:min-h-11",
+    focusRing,
+  ),
+  srOnly: "sr-only",
   action: {
     bar: "w-full",
     sheet: "min-h-12 w-full",

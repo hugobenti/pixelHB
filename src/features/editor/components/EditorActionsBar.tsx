@@ -44,7 +44,7 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     settingsDrawerOpen,
     onToggleSettingsDrawer,
   } = props;
-  const { slotLabel, slotAriaLabel } = useEditorActionsBar(props);
+  const { slotLabel, slotAriaLabel, syncStatus } = useEditorActionsBar(props);
   const { toolbar } = editor;
 
   return (
@@ -55,6 +55,9 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
           {toolbar.back}
         </Link>
         <h1 className={editorActionsBar.heading}>{title}</h1>
+        {syncStatus ? (
+          <p className={editorActionsBar.status[syncStatus.tone]}>{syncStatus.text}</p>
+        ) : null}
       </div>
       <div className={editorActionsBar.actions} role="group" aria-label={toolbar.groupLabel}>
         <IconButton

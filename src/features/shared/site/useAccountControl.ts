@@ -14,9 +14,15 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
 import { useAccount } from "@/features/shared/auth/useAccount";
+import { syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
+import { useSyncMessage } from "@/features/shared/sync/useSyncMessage";
+
+/** The client never learns the folder id, so this is a Drive search for the folder's name. */
+const DRIVE_FOLDER_URL = "https://drive.google.com/drive/search?q=PixelHB";
 
 export function useAccountControl() {
   const account = useAccount();
+  const syncMessage = useSyncMessage();
   const pathname = usePathname();
   const triggerId = useId();
   const panelId = useId();
@@ -40,10 +46,15 @@ export function useAccountControl() {
     return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
   }, [open]);
 
+  /** Hidden while the sign-in expired: the panel's reauth note already says so. */
+  const message = account.status === "signedIn" && !account.needsReauth ? syncMessage : null;
   const label = account.user?.name || account.user?.email || "";
 
   return {
     account,
+    /** Unscoped, same mapping as the gallery note; null unless signed in. */
+    syncStatusText: message ? syncStatusText(message) : null,
+    driveFolderUrl: DRIVE_FOLDER_URL,
     /** First character (code point) of the name, falling back to the email. */
     initial: (Array.from(label)[0] ?? "").toUpperCase(),
     open,

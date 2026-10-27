@@ -78,6 +78,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
       <header className={editorWorkspace.chrome}>
         <EditorActionsBar
           title={artwork.title}
+          artworkId={artwork.id}
           canUndo={canUndo}
           canRedo={canRedo}
           onUndo={undo}
