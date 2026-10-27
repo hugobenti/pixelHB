@@ -44,7 +44,7 @@ export function useGalleryScreen() {
   const phase = useSyncStore((state) => state.phase);
   const firstListPending = useSyncStore((state) => state.lastSyncedAt === null);
   const message = useSyncMessage();
-  const { items: driveOnly, release } = useHeldRemoteOnly(remoteOnly, artworks, phase);
+  const driveOnly = useHeldRemoteOnly(remoteOnly, artworks, phase, loadArtworks);
   const cards = useMemo(
     () => galleryCards(artworks, driveOnly, phase === "syncing"),
     [artworks, driveOnly, phase],
@@ -66,11 +66,7 @@ export function useGalleryScreen() {
     void loadArtworks();
     const engine = getSyncEngine();
     void engine.syncNow();
-    return engine.onLocalRowsChanged(
-      () => void loadArtworks().then(() => release(useSyncStore.getState().remoteOnly)),
-    );
-    // `release` only sets state; its identity changes every render and must not rerun the effect.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return engine.onLocalRowsChanged(() => void loadArtworks());
   }, [loadArtworks]);
 
   useStaleThumbnailRefresh(artworks, updateThumbnail);

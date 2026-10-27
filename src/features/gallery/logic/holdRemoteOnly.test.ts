@@ -26,32 +26,24 @@ const local = (id: string): IArtworkSummary => ({
 
 describe("holdRemoteOnly", () => {
   it("returns the current Drive-only items when nothing was dropped", () => {
-    expect(holdRemoteOnly([remote("a")], [remote("a"), remote("b")], [], "syncing")).toHaveLength(
-      2,
-    );
+    expect(holdRemoteOnly([remote("a")], [remote("a"), remote("b")], [])).toHaveLength(2);
   });
 
-  it("keeps an item the engine dropped while syncing, until the local list contains it", () => {
+  it("keeps an item the engine dropped until the local list contains it", () => {
     const shown = [remote("a")];
-    expect(holdRemoteOnly(shown, [], [], "syncing")).toEqual([remote("a")]);
-    expect(holdRemoteOnly(shown, [], [local("a")], "syncing")).toEqual([]);
-  });
-
-  it("drops a vanished item with no local row once the sync pass is over", () => {
-    const shown = [remote("a")];
-    expect(holdRemoteOnly(shown, [], [], "idle")).toEqual([]);
-    expect(holdRemoteOnly(shown, [], [], "offline")).toEqual([]);
+    expect(holdRemoteOnly(shown, [], [])).toEqual([remote("a")]);
+    expect(holdRemoteOnly(shown, [], [local("a")])).toEqual([]);
   });
 
   it("uses the current object for an item still listed", () => {
     const fresh = remote("a", "Renamed");
-    expect(holdRemoteOnly([remote("a")], [fresh], [], "idle")[0]).toBe(fresh);
+    expect(holdRemoteOnly([remote("a")], [fresh], [])[0]).toBe(fresh);
   });
 
   it("returns the previous array when nothing changed", () => {
     const a = remote("a");
     const shown = [a];
-    expect(holdRemoteOnly(shown, [a], [], "idle")).toBe(shown);
-    expect(holdRemoteOnly(shown, [], [], "syncing")).toBe(shown);
+    expect(holdRemoteOnly(shown, [a], [])).toBe(shown);
+    expect(holdRemoteOnly(shown, [], [])).toBe(shown);
   });
 });
