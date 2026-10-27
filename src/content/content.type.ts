@@ -45,6 +45,9 @@ export interface IShellContent {
       downloadedDescription: (files: number) => string;
       signOut: string;
       failed: string;
+      unreadableTitle: string;
+      unreadableDescription: string;
+      wipeFailed: string;
       downloadFailed: string;
     };
   };

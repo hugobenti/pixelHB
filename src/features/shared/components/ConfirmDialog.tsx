@@ -18,8 +18,8 @@ import { Modal } from "./Modal";
 import { useConfirmDialog } from "./useConfirmDialog";
 
 export function ConfirmDialog(props: IConfirmDialogProps) {
-  const { options, onConfirm, onCancel, extraAction, children } = props;
-  const { open, portalTarget, descriptionId, warningId, describedBy } = useConfirmDialog(props);
+  const { options, onConfirm, onCancel, extraAction, busy, children } = props;
+  const { open, contentRef, portalTarget, descriptionId, warningId, describedBy } = useConfirmDialog(props);
 
   if (!portalTarget) return null;
 
@@ -33,8 +33,8 @@ export function ConfirmDialog(props: IConfirmDialogProps) {
       closeOnEscape={false}
       panelProps={{ role: "alertdialog", "aria-describedby": describedBy }}
     >
-      <div className={confirmDialog.content}>
-        <div className={confirmDialog.text}>
+      <div ref={contentRef} className={confirmDialog.content}>
+        <div className={confirmDialog.text} aria-live="polite" aria-atomic="true">
           <p id={descriptionId} className={confirmDialog.body}>
             {options?.description}
           </p>
@@ -46,15 +46,15 @@ export function ConfirmDialog(props: IConfirmDialogProps) {
           </p>
         ) : null}
         <div className={confirmDialog.actions}>
-          <Button variant="ghost" data-autofocus onClick={onCancel}>
+          <Button variant="ghost" data-autofocus aria-disabled={busy || undefined} onClick={onCancel}>
             {shared.actions.cancel}
           </Button>
           {extraAction ? (
-            <Button variant="outline" onClick={extraAction.onClick}>
+            <Button variant="outline" aria-disabled={busy || undefined} onClick={extraAction.onClick}>
               {extraAction.label}
             </Button>
           ) : null}
-          <Button variant="danger" onClick={onConfirm}>
+          <Button variant="danger" aria-disabled={busy || undefined} onClick={onConfirm}>
             {options?.confirmLabel}
           </Button>
         </div>

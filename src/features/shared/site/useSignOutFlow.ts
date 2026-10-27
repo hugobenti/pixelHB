@@ -5,14 +5,15 @@
  * account's local copies.
  *
  * Notes:
- * Nothing is deleted before the user confirmed. Auth.js signs out first: offline the HttpOnly session
- * cookie cannot be cleared, so a failure there keeps every local row. Only after it succeeds does the
- * flow stop the sync engine and wipe the rows and tombstones of that one owner, then reload so the
- * gallery restarts signed out. A failed download keeps the dialog open and deletes nothing.
+ * Nothing is deleted before the user confirmed. The destructive order lives in `runSignOut`: Auth.js
+ * signs out first and is verified (offline the HttpOnly cookie cannot be cleared), then a durable
+ * wipe marker is written, the engine stops and only that owner's rows and tombstones are wiped. A
+ * failed download keeps the dialog open and deletes nothing. While files download the dialog is
+ * disabled, not dead: Cancel works again once the last file was triggered.
  */
 "use client";
 
-import { signOut } from "next-auth/react";
+import { getSession, signOut } from "next-auth/react";
 import { useState } from "react";
 
 import { shell } from "@/content/shell";
@@ -20,11 +21,15 @@ import * as artworkService from "@/features/shared/artwork/artworkService";
 import { exportArtworkAsJson } from "@/features/shared/artwork/artworkFileService";
 import { listDeletions, listOwned, wipeOwner } from "@/features/shared/artwork/artworkSyncStore";
 import type { IAccountState } from "@/features/shared/auth/auth.type";
+import { verifySignOutResult } from "@/features/shared/auth/logic/signOutResult";
+import { runSignOut } from "@/features/shared/auth/logic/signOutRun";
+import { clearPendingWipe, writePendingWipe } from "@/features/shared/auth/pendingWipeMarker";
 import type { IConfirmDialogProps } from "@/features/shared/components/ConfirmDialog.type";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 import { getSyncEngine } from "@/features/shared/sync/syncEngine";
 import { decideSignOut, summarizeUnsynced } from "./logic/signOutDecision";
 import type { IUnsyncedWork } from "./logic/signOutDecision.type";
+import { signOutDialogView } from "./logic/signOutDialogView";
 import type { TSignOutPhase } from "./useSignOutFlow.type";
 
 export const SIGN_OUT_FLUSH_TIMEOUT_MS = 10_000;
@@ -54,21 +59,27 @@ export function useSignOutFlow(account: IAccountState): {
 
   const finish = async (owner: string) => {
     setPhase("signingOut");
-    try {
-      await signOut({ redirect: false });
-    } catch {
+    const outcome = await runSignOut(owner, {
+      signOut: () => signOut({ redirect: false }),
+      verifySignedOut: async (result) =>
+        verifySignOutResult(result) === "ok" && (await getSession({ broadcast: false })) === null,
+      writeMarker: writePendingWipe,
+      stopEngine: () => getSyncEngine().stop(),
+      wipeOwner,
+      clearMarker: clearPendingWipe,
+      setActiveOwner: artworkService.setActiveOwner,
+    });
+    if (outcome === "signOutFailed") {
       showToast({ message: copy.failed, tone: "error" });
       setPhase("idle");
       return;
     }
-    try {
-      await getSyncEngine().stop();
-      await wipeOwner(owner);
-    } catch (error) {
-      // The rows stay under this owner id, invisible when signed out, and return on the next sign-in.
-      console.error("Couldn't remove this account's local copies", error);
+    if (outcome === "wipeFailed") {
+      // Signed out, but the copies are still here: the marker finishes the wipe on the next start.
+      showToast({ message: copy.wipeFailed, tone: "error" });
+      setPhase("idle");
+      return;
     }
-    artworkService.setActiveOwner(null);
     window.location.reload();
   };
 
@@ -76,8 +87,13 @@ export function useSignOutFlow(account: IAccountState): {
     if (phase !== "idle" || ownerId === null) return;
     setPhase("checking");
     void (async () => {
-      await getSyncEngine().flush(SIGN_OUT_FLUSH_TIMEOUT_MS);
-      const unsynced = await readUnsynced(ownerId);
+      let unsynced: IUnsyncedWork | null = null;
+      try {
+        await getSyncEngine().flush(SIGN_OUT_FLUSH_TIMEOUT_MS);
+        unsynced = await readUnsynced(ownerId);
+      } catch {
+        unsynced = null;
+      }
       if (decideSignOut(unsynced) === "signOutNow") {
         await finish(ownerId);
         return;
@@ -105,30 +121,39 @@ export function useSignOutFlow(account: IAccountState): {
     })();
   };
 
+  const view = signOutDialogView(phase, work);
   const artworkCount = work?.artworks.length ?? 0;
-  const dialog: IConfirmDialogProps = {
-    options:
-      (phase === "asking" || phase === "downloading") && work
+  const options: IConfirmDialogProps["options"] =
+    view.step === "unsynced" && work
+      ? {
+          title: copy.title,
+          description: copy.description(artworkCount, work.deletionCount),
+          confirmLabel: copy.signOutAnyway,
+        }
+      : view.step === "unreadable"
         ? {
-            title: copy.title,
-            description: copy.description(artworkCount, work.deletionCount),
+            title: copy.unreadableTitle,
+            description: copy.unreadableDescription,
             confirmLabel: copy.signOutAnyway,
           }
-        : phase === "downloaded"
+        : view.step === "downloaded"
           ? {
               title: copy.downloadedTitle,
               description: copy.downloadedDescription(artworkCount),
               confirmLabel: copy.signOut,
             }
-          : null,
+          : null;
+
+  const dialog: IConfirmDialogProps = {
+    options,
+    busy: view.busy,
     onConfirm: () => {
       if ((phase === "asking" || phase === "downloaded") && ownerId !== null) void finish(ownerId);
     },
     onCancel: () => {
       if (phase === "asking" || phase === "downloaded") setPhase("idle");
     },
-    extraAction:
-      phase === "asking" && artworkCount > 0 ? { label: copy.download, onClick: download } : undefined,
+    extraAction: view.canDownload ? { label: copy.download, onClick: download } : undefined,
   };
 
   return { start, busy: phase === "checking" || phase === "signingOut", dialog };

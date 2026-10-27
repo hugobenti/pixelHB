@@ -47,6 +47,11 @@ export const shell: IShellContent = {
         `${count} ${count === 1 ? "file" : "files"} downloaded. If your browser blocked some, cancel and try again. You can import them from the gallery.`,
       signOut: "Sign out",
       failed: "Couldn’t sign out. Check your connection and try again.",
+      unreadableTitle: "Couldn’t check for unsynced changes",
+      unreadableDescription:
+        "We couldn’t check this browser for unsynced changes. Signing out removes this account’s artworks from it. Sign out anyway?",
+      wipeFailed:
+        "Signed out, but this account’s artworks are still in this browser. They’ll be removed the next time PixelHB starts.",
       downloadFailed: "Couldn’t download your artworks. Nothing was removed.",
     },
   },
