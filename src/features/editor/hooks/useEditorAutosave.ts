@@ -8,9 +8,10 @@
  */
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import * as artworkService from "@/features/shared/artwork/artworkService";
+import { createAutosaveGate } from "@/features/editor/logic/autosaveGate";
 import { artworkToPngThumbnail } from "@/features/shared/artwork/thumbnail";
 import type { IUseEditorAutosaveParams } from "./useEditorAutosave.type";
 
@@ -22,7 +23,12 @@ export function useEditorAutosave({
   paintRevision,
   historyRevision,
 }: IUseEditorAutosaveParams) {
-  const persistCurrent = useCallback(() => {
+  const [gate] = useState(() => createAutosaveGate({ paintRevision, historyRevision }));
+
+  const persistIfEdited = useCallback(() => {
+    if (!gate.takePending()) {
+      return;
+    }
     const current = artworkRef.current;
     if (!current || typeof document === "undefined") {
       return;
@@ -32,31 +38,26 @@ export function useEditorAutosave({
       ...current,
       thumbnail: thumb || current.thumbnail,
     });
-  }, [artworkRef]);
-
-  const skipInitialAutosave = useRef(true);
+  }, [artworkRef, gate]);
 
   useEffect(() => {
-    if (skipInitialAutosave.current) {
-      skipInitialAutosave.current = false;
-      return;
-    }
-    const handle = window.setTimeout(persistCurrent, AUTOSAVE_DEBOUNCE_MS);
+    gate.observe({ paintRevision, historyRevision });
+    const handle = window.setTimeout(persistIfEdited, AUTOSAVE_DEBOUNCE_MS);
     return () => window.clearTimeout(handle);
-  }, [artworkId, paintRevision, historyRevision, persistCurrent]);
+  }, [artworkId, paintRevision, historyRevision, gate, persistIfEdited]);
 
   useEffect(() => {
     const flushWhenHidden = () => {
       if (document.visibilityState === "hidden") {
-        persistCurrent();
+        persistIfEdited();
       }
     };
-    window.addEventListener("pagehide", persistCurrent);
+    window.addEventListener("pagehide", persistIfEdited);
     document.addEventListener("visibilitychange", flushWhenHidden);
     return () => {
-      window.removeEventListener("pagehide", persistCurrent);
+      window.removeEventListener("pagehide", persistIfEdited);
       document.removeEventListener("visibilitychange", flushWhenHidden);
-      persistCurrent();
+      persistIfEdited();
     };
-  }, [persistCurrent]);
+  }, [persistIfEdited]);
 }

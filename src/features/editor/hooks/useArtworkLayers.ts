@@ -48,6 +48,7 @@ export function useArtworkLayers({
 
   const setActiveLayerId = useCallback(
     (layerId: string) => {
+      let didChange = false;
       setArtwork((prev) => {
         if (prev.activeLayerId === layerId) {
           return prev;
@@ -55,9 +56,12 @@ export function useArtworkLayers({
         if (!prev.layers.some((layer) => layer.id === layerId)) {
           return prev;
         }
+        didChange = true;
         return { ...prev, activeLayerId: layerId };
       });
-      onLayersChanged();
+      if (didChange) {
+        onLayersChanged();
+      }
     },
     [setArtwork, onLayersChanged]
   );
