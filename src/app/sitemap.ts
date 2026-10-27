@@ -6,7 +6,7 @@ import type { MetadataRoute } from "next";
 
 import { site } from "@/content/site";
 
-const PUBLIC_PATHS = ["/", "/gallery", "/help", "/about", "/contact"];
+const PUBLIC_PATHS = ["/", "/gallery", "/help", "/about", "/contact", "/privacy"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return PUBLIC_PATHS.map((path) => ({ url: `${site.url}${path}` }));

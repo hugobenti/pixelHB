@@ -4,9 +4,16 @@ import robots from "./robots";
 import sitemap from "./sitemap";
 
 describe("sitemap", () => {
-  it("lists only public pages as absolute URLs", () => {
+  it("lists exactly the public pages as absolute URLs", () => {
     const urls = sitemap().map((entry) => entry.url);
-    expect(urls.length).toBeGreaterThan(0);
+    expect(urls.map((url) => new URL(url).pathname)).toEqual([
+      "/",
+      "/gallery",
+      "/help",
+      "/about",
+      "/contact",
+      "/privacy",
+    ]);
     for (const url of urls) {
       expect(url).toMatch(/^https:\/\/[^/]+(\/[^/]*)?$/);
       expect(url).not.toContain("/editor");
