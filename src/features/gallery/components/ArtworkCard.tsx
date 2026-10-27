@@ -23,6 +23,8 @@ export function ArtworkCard(props: IArtworkCardProps) {
   const {
     href,
     thumbnail,
+    openable,
+    marker,
     size,
     edited,
     renaming,
@@ -34,19 +36,27 @@ export function ArtworkCard(props: IArtworkCardProps) {
     deleteDialog,
   } = useArtworkCard(props);
 
+  const image = (
+    <Image
+      src={thumbnail.src}
+      alt=""
+      fill
+      className={artworkCard.thumbnail}
+      sizes="(min-width: 1280px) 270px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+      unoptimized={thumbnail.unoptimized}
+    />
+  );
+
   return (
     <article>
       <Card>
-        <Link href={href} aria-hidden tabIndex={-1} className={artworkCard.thumbnailLink}>
-          <Image
-            src={thumbnail.src}
-            alt=""
-            fill
-            className={artworkCard.thumbnail}
-            sizes="(min-width: 1280px) 270px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-            unoptimized={thumbnail.unoptimized}
-          />
-        </Link>
+        {openable ? (
+          <Link href={href} aria-hidden tabIndex={-1} className={artworkCard.thumbnailLink}>
+            {image}
+          </Link>
+        ) : (
+          <div className={artworkCard.thumbnailLink}>{image}</div>
+        )}
 
         <div className={artworkCard.body}>
           {renaming ? (
@@ -67,20 +77,26 @@ export function ArtworkCard(props: IArtworkCardProps) {
             </form>
           ) : (
             <div className={artworkCard.titleRow}>
-              <Link href={href} className={artworkCard.titleLink}>
-                {artwork.title}
-              </Link>
-              <Menu
-                label={gallery.card.actionsLabel(artwork.title)}
-                sheetTitle={artwork.title}
-                items={menuItems}
-              />
+              {openable ? (
+                <Link href={href} className={artworkCard.titleLink}>
+                  {artwork.title}
+                </Link>
+              ) : (
+                <span className={artworkCard.titleLink}>{artwork.title}</span>
+              )}
+              {openable ? (
+                <Menu
+                  label={gallery.card.actionsLabel(artwork.title)}
+                  sheetTitle={artwork.title}
+                  items={menuItems}
+                />
+              ) : null}
             </div>
           )}
           <p className={artworkCard.meta}>
             <span className={artworkCard.size}>{size}</span>
             {gallery.card.metaSeparator}
-            {edited}
+            {marker ?? edited}
           </p>
         </div>
       </Card>

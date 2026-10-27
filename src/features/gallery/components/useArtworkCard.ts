@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * ArtworkCard behavior and view model: editor link, thumbnail, inline rename, action menu and confirmed delete.
+ * ArtworkCard behavior and view model: editor link, thumbnail, sync marker, inline rename, action menu and confirmed delete.
  */
 "use client";
 
@@ -9,7 +9,8 @@ import { useState, type FormEvent } from "react";
 import { gallery } from "@/content/gallery";
 import { shared } from "@/content/shared";
 import { relativeTimeParts } from "@/features/gallery/logic/relativeTime";
-import { artworkThumbnail, editorPath } from "@/features/gallery/logic/artworkLinks";
+import { editorPath } from "@/features/gallery/logic/artworkLinks";
+import { useAccount } from "@/features/shared/auth/useAccount";
 import type { IMenuItem } from "@/features/shared/components/Menu.type";
 import { useConfirm } from "@/features/shared/components/useConfirm";
 import type { IArtworkCardProps } from "./ArtworkCard.type";
@@ -20,6 +21,7 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(artwork.title);
   const { confirm, dialog: deleteDialog } = useConfirm();
+  const signedIn = useAccount().status === "signedIn";
 
   const parts = relativeTimeParts(artwork.updatedAt, now);
   const edited = gallery.card.edited(
@@ -40,7 +42,9 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
   const confirmDelete = async () => {
     const confirmed = await confirm({
       title: gallery.deleteDialog.title(artwork.title),
-      description: gallery.deleteDialog.description,
+      description: signedIn
+        ? gallery.deleteDialog.descriptionSignedIn
+        : gallery.deleteDialog.description,
       confirmLabel: gallery.deleteDialog.confirm,
     });
     if (confirmed) await onDelete(artwork.id);
@@ -59,7 +63,9 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
 
   return {
     href: editorPath(artwork.id),
-    thumbnail: artworkThumbnail(artwork.thumbnail),
+    thumbnail: artwork.thumbnail,
+    openable: artwork.openable,
+    marker: artwork.marker ? gallery.card[artwork.marker] : null,
     size: gallery.card.size(artwork.width, artwork.height),
     edited,
     renaming,
