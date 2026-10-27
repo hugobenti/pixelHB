@@ -47,7 +47,6 @@ export function useHistory({ documentKey, getDocument }: IUseHistoryParams) {
       redoStack.current = [];
       setCanUndo(false);
       setCanRedo(false);
-      setHistoryRevision((r) => r + 1);
     });
   }, [documentKey]);
 

@@ -10,6 +10,7 @@
 import { shared } from "@/content/shared";
 import { db } from "@/features/shared/db/dexie.config";
 import type { IArtwork, IArtworkLayer, IArtworkSummary } from "@/features/shared/artwork/artwork.type";
+import type { IArtworkSyncState, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 import type { IImportedArtworkData } from "@/features/shared/artwork/artworkFileService.type";
 import { normalizeHexColor } from "@/features/shared/utils/colorConverter";
 import { clonePixelBuffer, ensureUint8PixelData } from "@/features/shared/utils/binaryHelpers";
@@ -17,6 +18,40 @@ import { MAX_PALETTE_ENTRIES, validateDimensions } from "./artworkLimits";
 import type { ICreateArtworkInput } from "./artworkService.type";
 
 const CANON_HEX6 = /^#[0-9A-F]{6}$/;
+
+let activeOwner: string | null = null;
+const changeListeners = new Set<(id: string) => void>();
+
+/** Scopes every read and write to one account; `null` is the signed-out gallery. */
+export function setActiveOwner(ownerId: string | null): void {
+  activeOwner = ownerId;
+}
+
+/** Fires after create, import, clone, save, rename and delete resolve; never for thumbnails or sync-store writes. */
+export function onArtworkChanged(listener: (id: string) => void): () => void {
+  changeListeners.add(listener);
+  return () => {
+    changeListeners.delete(listener);
+  };
+}
+
+function emitChanged(id: string): void {
+  for (const listener of changeListeners) {
+    try {
+      listener(id);
+    } catch {
+      // A failing listener must not undo or fail a write that already landed.
+    }
+  }
+}
+
+function newRowSync(owner: string | null): IArtworkSyncState {
+  return { state: owner ? "dirty" : "local", syncedUpdatedAt: null };
+}
+
+function editedRowSync(owner: string | null, stored: IArtworkSyncState): IArtworkSyncState {
+  return owner ? { state: "dirty", syncedUpdatedAt: stored.syncedUpdatedAt } : stored;
+}
 
 /** Pixel value for "no color": any value at or above the palette length draws nothing; 255 is the one written. */
 export const TRANSPARENT_PIXEL_INDEX = 255;
@@ -70,10 +105,12 @@ function buildFallbackLayer(pixelCount: number): IArtworkLayer {
 }
 
 export async function listArtworkSummaries(): Promise<IArtworkSummary[]> {
+  const owner = activeOwner;
   const summaries: IArtworkSummary[] = [];
   await db.artworks
     .orderBy("updatedAt")
     .reverse()
+    .filter((row) => row.ownerId === owner)
     .each((row) => {
       summaries.push({
         id: row.id,
@@ -83,6 +120,7 @@ export async function listArtworkSummaries(): Promise<IArtworkSummary[]> {
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         thumbnail: row.thumbnail,
+        syncState: row.sync.state,
       });
     });
   return summaries;
@@ -90,10 +128,11 @@ export async function listArtworkSummaries(): Promise<IArtworkSummary[]> {
 
 export async function getArtwork(id: string): Promise<IArtwork | undefined> {
   const row = await db.artworks.get(id);
-  return row ? hydrateArtwork(row) : undefined;
+  return row && row.ownerId === activeOwner ? hydrateArtwork(row) : undefined;
 }
 
-function hydrateArtwork(row: IArtwork): IArtwork {
+/** Normalizes layers and palette of a stored row; extra fields (owner, sync) pass through. */
+export function hydrateArtwork<T extends IArtwork>(row: T): T {
   const n = row.width * row.height;
   const referenceImageDataUrl =
     typeof row.referenceImageDataUrl === "string" &&
@@ -144,6 +183,7 @@ export async function createArtwork(input: ICreateArtworkInput): Promise<IArtwor
     bgIndex = palette.length - 1;
   }
 
+  const owner = activeOwner;
   const now = Date.now();
   const pixelData = new Uint8Array(input.width * input.height);
   pixelData.fill(bgIndex);
@@ -154,7 +194,7 @@ export async function createArtwork(input: ICreateArtworkInput): Promise<IArtwor
     pixelData,
   };
 
-  const artwork: IArtwork = {
+  const artwork: IStoredArtwork = {
     id: newId(),
     title: input.title.trim() || shared.artwork.untitled,
     width: input.width,
@@ -166,9 +206,12 @@ export async function createArtwork(input: ICreateArtworkInput): Promise<IArtwor
     layers: [baseLayer],
     activeLayerId: baseLayer.id,
     referenceImageDataUrl: undefined,
+    ownerId: owner,
+    sync: newRowSync(owner),
   };
 
   await db.artworks.put(artwork);
+  emitChanged(artwork.id);
   return hydrateArtwork(artwork);
 }
 
@@ -183,6 +226,7 @@ export async function createArtworkFromImport(
     throw new Error(shared.artwork.errors.paletteTooLarge(MAX_PALETTE_ENTRIES));
   }
 
+  const owner = activeOwner;
   const now = Date.now();
   const layers =
     imported.layers.length > 0
@@ -195,7 +239,7 @@ export async function createArtworkFromImport(
   const activeLayerId =
     layers.find((layer) => layer.id === imported.activeLayerId)?.id ?? layers[0].id;
 
-  const artwork: IArtwork = {
+  const artwork: IStoredArtwork = {
     id: newId(),
     title: imported.title.trim() || shared.artwork.untitled,
     width: imported.width,
@@ -207,9 +251,12 @@ export async function createArtworkFromImport(
     layers,
     activeLayerId,
     referenceImageDataUrl: imported.referenceImageDataUrl,
+    ownerId: owner,
+    sync: newRowSync(owner),
   };
 
   await db.artworks.put(artwork);
+  emitChanged(artwork.id);
   return hydrateArtwork(artwork);
 }
 
@@ -226,7 +273,8 @@ export async function saveArtwork(artwork: IArtwork): Promise<void> {
   const activeLayerId =
     normalizedLayers.find((layer) => layer.id === artwork.activeLayerId)?.id ??
     normalizedLayers[0].id;
-  const toStore: IArtwork = {
+  const owner = activeOwner;
+  const edited: IArtwork = {
     ...artwork,
     updatedAt: Date.now(),
     layers: normalizedLayers.map((layer) => ({
@@ -238,18 +286,47 @@ export async function saveArtwork(artwork: IArtwork): Promise<void> {
     palette: [...artwork.palette],
     referenceImageDataUrl: artwork.referenceImageDataUrl,
   };
-  await db.artworks.put(toStore);
+  const written = await db.transaction("rw", db.artworks, async () => {
+    const stored = await db.artworks.get(artwork.id);
+    if (!stored || stored.ownerId !== owner) return false;
+    await db.artworks.put({
+      ...edited,
+      ownerId: stored.ownerId,
+      sync: editedRowSync(owner, stored.sync),
+    });
+    return true;
+  });
+  if (written) emitChanged(artwork.id);
 }
 
 export async function deleteArtwork(id: string): Promise<void> {
-  await db.artworks.delete(id);
+  const owner = activeOwner;
+  const deleted = await db.transaction("rw", db.artworks, db.deletions, async () => {
+    const row = await db.artworks.get(id);
+    if (!row || row.ownerId !== owner) return false;
+    await db.artworks.delete(id);
+    if (row.ownerId !== null && row.sync.syncedUpdatedAt !== null) {
+      await db.deletions.put({ id, ownerId: row.ownerId, deletedAt: Date.now() });
+    }
+    return true;
+  });
+  if (deleted) emitChanged(id);
 }
 
 export async function renameArtwork(id: string, title: string): Promise<void> {
-  await db.artworks.update(id, {
-    title: title.trim() || shared.artwork.untitled,
-    updatedAt: Date.now(),
+  const owner = activeOwner;
+  const renamed = await db.transaction("rw", db.artworks, async () => {
+    const stored = await db.artworks.get(id);
+    if (!stored || stored.ownerId !== owner) return false;
+    await db.artworks.put({
+      ...stored,
+      title: title.trim() || shared.artwork.untitled,
+      updatedAt: Date.now(),
+      sync: editedRowSync(owner, stored.sync),
+    });
+    return true;
   });
+  if (renamed) emitChanged(id);
 }
 
 /** Stores a regenerated thumbnail; leaves `updatedAt` alone so the gallery order doesn't change. */
@@ -261,8 +338,9 @@ export async function cloneArtwork(id: string): Promise<IArtwork | undefined> {
   const source = await getArtwork(id);
   if (!source) return undefined;
 
+  const owner = activeOwner;
   const now = Date.now();
-  const clone: IArtwork = {
+  const clone: IStoredArtwork = {
     ...source,
     id: newId(),
     title: shared.artwork.copyTitle(source.title),
@@ -277,8 +355,11 @@ export async function cloneArtwork(id: string): Promise<IArtwork | undefined> {
     activeLayerId: source.activeLayerId,
     pixelData: undefined,
     referenceImageDataUrl: source.referenceImageDataUrl,
+    ownerId: owner,
+    sync: newRowSync(owner),
   };
 
   await db.artworks.put(clone);
+  emitChanged(clone.id);
   return hydrateArtwork(clone);
 }
