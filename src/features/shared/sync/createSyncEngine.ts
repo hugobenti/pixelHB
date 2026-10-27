@@ -263,9 +263,10 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     const deferredIds = new Set<string>();
 
     if (adoptPending) {
-      const adopted = await store.adoptUnowned(owner);
+      await store.adoptUnowned(owner);
       adoptPending = false;
-      if (adopted > 0) emitRows(gen);
+      // Also with nothing to adopt: the owner switch changes what the gallery shows.
+      emitRows(gen);
     }
     if (!environment.isOnline()) {
       update(gen, { phase: "offline" });
@@ -348,7 +349,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       await presence.runExclusive(() => runPass(kind, owner, gen));
     } catch (error) {
       if (error instanceof PassAbort || gen !== generation) return;
-      deps.warn(`Sync pass failed: ${error instanceof Error ? error.message : "unknown error"}`, owner);
+      deps.warn(String(error), owner);
       update(gen, { phase: "error" });
       scheduleRetry(gen, retryDelayMs(attempt++, null));
     }

@@ -10,6 +10,7 @@
 "use client";
 import { AuthSessionProvider } from "@/features/shared/auth/AuthSessionProvider";
 import { ToastProvider } from "@/features/shared/components/Toast";
+import { DriveSync } from "@/features/shared/sync/DriveSync";
 import { useThemeSync } from "@/features/shared/theme/useThemePreference";
 import type { IAppProvidersProps } from "./AppProviders.type";
 
@@ -17,6 +18,7 @@ export function AppProviders({ children }: IAppProvidersProps) {
   useThemeSync();
   return (
     <AuthSessionProvider>
+      <DriveSync />
       <ToastProvider>{children}</ToastProvider>
     </AuthSessionProvider>
   );
