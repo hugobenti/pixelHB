@@ -74,7 +74,7 @@ Shortcuts are ignored while focus is in a text field.
 | State     | Zustand 5                                                       |
 | Storage   | Dexie 4 (IndexedDB)                                             |
 | Drag/drop | dnd-kit (`@dnd-kit/core` 6, `@dnd-kit/sortable` 10)             |
-| Tests     | Vitest 3                                                        |
+| Tests     | Vitest 5                                                        |
 | Tooling   | ESLint 9, Prettier 3 with `prettier-plugin-tailwindcss`         |
 
 The project uses no third-party UI kit. All components are built in the repo.
