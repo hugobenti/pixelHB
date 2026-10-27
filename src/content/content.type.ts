@@ -50,6 +50,18 @@ export interface IIconControl {
 
 export interface ISharedContent {
   loading: string;
+  /** Drive sync status, one set for the gallery note, the editor bar and the account panel. */
+  sync: {
+    thisBrowserOnly: string;
+    syncing: string;
+    saved: string;
+    offline: string;
+    signInAgain: string;
+    tooLarge: (count: number) => string;
+    openDriveFolder: string;
+    /** Screen-reader suffix of a link that opens a new tab. */
+    opensInNewTab: string;
+  };
   actions: {
     save: string;
     cancel: string;
@@ -133,7 +145,6 @@ export interface IGalleryContent {
   screen: {
     heading: string;
     countLabel: (n: number) => string;
-    storageNote: string;
     storageLink: string;
     importFile: string;
     /** Accessible name of the Import file button. */
@@ -158,6 +169,10 @@ export interface IGalleryContent {
     titleLabel: string;
     /** Accessible name of the artwork actions menu. */
     actionsLabel: (title: string) => string;
+    /** Meta-line markers that replace the edited time. */
+    downloading: string;
+    notSynced: string;
+    tooLarge: string;
   };
   create: {
     title: string;
@@ -191,6 +206,8 @@ export interface IGalleryContent {
     /** Names the artwork being deleted. */
     title: (title: string) => string;
     description: string;
+    /** Signed in: the Drive copy goes to the Drive trash. */
+    descriptionSignedIn: string;
     confirm: string;
   };
 }
