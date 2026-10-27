@@ -7,24 +7,16 @@
 
 import { useCallback, useMemo } from "react";
 import { editor } from "@/content/editor";
+import {
+  moveLayerByIds,
+  withRenamedLayer,
+  withToggledVisibility,
+} from "@/features/editor/logic/layerEdits";
 import { removeLayer } from "@/features/editor/logic/layerRemoval";
 import type { IArtworkLayer } from "@/features/shared/artwork/artwork.type";
 import { TRANSPARENT_PIXEL_INDEX } from "@/features/shared/artwork/artworkService";
 import { clonePixelBuffer } from "@/features/shared/utils/binaryHelpers";
 import type { IUseArtworkLayersParams } from "./useArtworkLayers.type";
-
-function moveLayerByIds(layers: IArtworkLayer[], activeId: string, overId: string) {
-  const from = layers.findIndex((layer) => layer.id === activeId);
-  const to = layers.findIndex((layer) => layer.id === overId);
-  if (from < 0 || to < 0 || from === to) {
-    return layers;
-  }
-
-  const next = [...layers];
-  const [moved] = next.splice(from, 1);
-  next.splice(to, 0, moved);
-  return next;
-}
 
 export function useArtworkLayers({
   artwork,
@@ -67,46 +59,30 @@ export function useArtworkLayers({
 
   const toggleLayerVisibility = useCallback(
     (layerId: string) => {
-      let didChange = false;
-      setArtwork((prev) => {
-        const nextLayers = prev.layers.map((layer) => {
-          if (layer.id !== layerId) {
-            return layer;
-          }
-          didChange = true;
-          return { ...layer, visible: !layer.visible };
-        });
-        if (!didChange) {
-          return prev;
-        }
-        return { ...prev, layers: nextLayers };
-      });
-      if (didChange) {
-        onLayersChanged();
+      if (!withToggledVisibility(layers, layerId)) {
+        return;
       }
+      setArtwork((prev) => {
+        const nextLayers = withToggledVisibility(prev.layers, layerId);
+        return nextLayers ? { ...prev, layers: nextLayers } : prev;
+      });
+      onLayersChanged();
     },
-    [setArtwork, onLayersChanged]
+    [layers, setArtwork, onLayersChanged]
   );
 
   const reorderLayers = useCallback(
     (activeId: string, overId: string | null) => {
-      if (!overId || activeId === overId) {
+      if (!overId || moveLayerByIds(layers, activeId, overId) === layers) {
         return;
       }
-      let didChange = false;
       setArtwork((prev) => {
         const nextLayers = moveLayerByIds(prev.layers, activeId, overId);
-        if (nextLayers === prev.layers) {
-          return prev;
-        }
-        didChange = true;
-        return { ...prev, layers: nextLayers };
+        return nextLayers === prev.layers ? prev : { ...prev, layers: nextLayers };
       });
-      if (didChange) {
-        onLayersChanged();
-      }
+      onLayersChanged();
     },
-    [setArtwork, onLayersChanged]
+    [layers, setArtwork, onLayersChanged]
   );
 
   const addLayer = useCallback(() => {
@@ -133,6 +109,9 @@ export function useArtworkLayers({
 
   const copyLayer = useCallback(
     (layerId: string) => {
+      if (!layers.some((layer) => layer.id === layerId)) {
+        return;
+      }
       setArtwork((prev) => {
         const idx = prev.layers.findIndex((layer) => layer.id === layerId);
         if (idx < 0) {
@@ -155,53 +134,39 @@ export function useArtworkLayers({
       });
       onLayersChanged();
     },
-    [setArtwork, onLayersChanged]
+    [layers, setArtwork, onLayersChanged]
   );
 
   /** Deletes a layer; the last remaining layer can't be deleted. */
   const deleteLayer = useCallback(
     (layerId: string) => {
-      let didChange = false;
+      if (!removeLayer(layers, artwork.activeLayerId, layerId)) {
+        return;
+      }
       setArtwork((prev) => {
         const result = removeLayer(prev.layers, prev.activeLayerId, layerId);
-        if (!result) {
-          return prev;
-        }
-        didChange = true;
-        return { ...prev, layers: result.layers, activeLayerId: result.activeLayerId };
+        return result
+          ? { ...prev, layers: result.layers, activeLayerId: result.activeLayerId }
+          : prev;
       });
-      if (didChange) {
-        onLayersChanged();
-      }
+      onLayersChanged();
     },
-    [setArtwork, onLayersChanged]
+    [layers, artwork.activeLayerId, setArtwork, onLayersChanged]
   );
 
   const renameLayer = useCallback(
     (layerId: string, nextName: string) => {
       const trimmed = nextName.trim();
-      if (!trimmed) {
+      if (!trimmed || !withRenamedLayer(layers, layerId, trimmed)) {
         return;
       }
-      let didChange = false;
       setArtwork((prev) => {
-        const nextLayers = prev.layers.map((layer) => {
-          if (layer.id !== layerId || layer.name === trimmed) {
-            return layer;
-          }
-          didChange = true;
-          return { ...layer, name: trimmed };
-        });
-        if (!didChange) {
-          return prev;
-        }
-        return { ...prev, layers: nextLayers };
+        const nextLayers = withRenamedLayer(prev.layers, layerId, trimmed);
+        return nextLayers ? { ...prev, layers: nextLayers } : prev;
       });
-      if (didChange) {
-        onLayersChanged();
-      }
+      onLayersChanged();
     },
-    [setArtwork, onLayersChanged]
+    [layers, setArtwork, onLayersChanged]
   );
 
   const withUpdatedActiveLayerPixels = useCallback(
