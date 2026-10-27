@@ -15,6 +15,7 @@ import { Modal } from "@/features/shared/components/Modal";
 import { ThemeToggle } from "@/features/shared/components/ThemeToggle";
 import { PUBLIC_ICONS } from "@/features/shared/constants/publicIcons";
 import { cx } from "@/features/shared/utils/cx";
+import { AccountControl } from "./AccountControl";
 import { siteHeader } from "./SiteHeader.style";
 import type { ISiteHeaderProps } from "./SiteShell.type";
 import { useSiteHeader } from "./useSiteHeader";
@@ -59,6 +60,7 @@ export function SiteHeader({ primaryAction }: ISiteHeaderProps) {
             onClick={themeButton.onClick}
           />
         </span>
+        <AccountControl placement="bar" />
         {primaryAction.kind === "link" ? (
           <Link href={primaryAction.href} className={siteHeader.primary}>
             {labels}
@@ -96,6 +98,7 @@ export function SiteHeader({ primaryAction }: ISiteHeaderProps) {
             </Link>
           ))}
         </nav>
+        <AccountControl placement="sheet" />
         <ThemeToggle variant="row" className={siteHeader.menuTheme} />
       </Modal>
     </header>

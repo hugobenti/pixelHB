@@ -25,6 +25,14 @@ export interface IShellContent {
   menu: { open: string; title: string };
   theme: { toDark: string; toLight: string };
   primary: { start: string; startCompact: string };
+  account: {
+    sectionTitle: string;
+    signIn: string;
+    openAccount: string;
+    signOut: string;
+    signInAgain: string;
+    reauthNote: string;
+  };
   footer: { tagline: string; credit: string; copyright: string; linksLabel: string };
 }
 
