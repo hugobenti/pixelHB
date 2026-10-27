@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Classes for the EditorActionsBar: toolbar row, back link (chevron + label) and title cluster, tool cluster and slot toggle.
+ * Classes for the EditorActionsBar: toolbar row, back link (chevron + label) and title cluster, sync status, tool cluster and slot toggle.
  */
 
 import { focusRing } from "@/features/shared/components/focus.style";
@@ -17,6 +17,12 @@ export const editorActionsBar = {
     focusRing,
   ),
   heading: "min-w-0 truncate text-base font-semibold text-fg",
+  /** Sync status after the title; below `sm` only the attention tone stays, so saving never wraps the toolbar. */
+  status: {
+    neutral: "hidden shrink-0 text-xs text-muted sm:block",
+    progress: "hidden shrink-0 text-xs text-muted sm:block",
+    attention: "shrink-0 text-xs font-medium text-fg",
+  },
   /** Extends the Button: wide enough for either slot name so the toolbar does not jump. */
   slotToggle: "min-h-10 min-w-[12ch] shrink-0 px-3",
 };

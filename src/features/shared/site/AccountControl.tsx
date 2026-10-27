@@ -1,7 +1,7 @@
 /**
  * Purpose:
  * Header account control: a "Sign in with Google" button when signed out, a monogram avatar with a
- * disclosure panel (name, email, sign out) when signed in. Renders nothing when Drive sync is off.
+ * disclosure panel (name, email, sync status, Drive folder link, sign out) when signed in. Renders nothing when Drive sync is off.
  *
  * Notes:
  * `bar` sits in the header row from `sm` up; `sheet` is an inline section of the phone menu, with no
@@ -9,6 +9,7 @@
  */
 "use client";
 
+import { shared } from "@/content/shared";
 import { shell } from "@/content/shell";
 import { Button } from "@/features/shared/components/Button";
 import { cx } from "@/features/shared/utils/cx";
@@ -19,6 +20,8 @@ import { useAccountControl } from "./useAccountControl";
 export function AccountControl({ placement }: IAccountControlProps) {
   const {
     account,
+    syncStatusText,
+    driveFolderUrl,
     initial,
     open,
     toggle,
@@ -53,6 +56,7 @@ export function AccountControl({ placement }: IAccountControlProps) {
         {account.user?.name ? <p className={accountControl.userName}>{account.user.name}</p> : null}
         <p className={accountControl.userEmail}>{account.user?.email}</p>
       </div>
+      {syncStatusText ? <p className={accountControl.note}>{syncStatusText}</p> : null}
       {account.needsReauth ? (
         <>
           <p className={accountControl.note}>{shell.account.reauthNote}</p>
@@ -61,6 +65,15 @@ export function AccountControl({ placement }: IAccountControlProps) {
           </Button>
         </>
       ) : null}
+      <a
+        href={driveFolderUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={accountControl.driveLink}
+      >
+        {shared.sync.openDriveFolder}
+        <span className={accountControl.srOnly}> {shared.sync.opensInNewTab}</span>
+      </a>
       <Button
         variant="outline"
         className={accountControl.action[placement]}

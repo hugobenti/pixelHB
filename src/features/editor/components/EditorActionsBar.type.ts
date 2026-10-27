@@ -2,6 +2,8 @@ import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
 
 export interface IEditorActionsBarProps {
   title: string;
+  /** The open artwork: scopes the sync status to it. */
+  artworkId: string;
   canUndo: boolean;
   canRedo: boolean;
   onUndo: () => void;
