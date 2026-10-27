@@ -1,7 +1,7 @@
-import type { IArtwork } from "@/features/shared/artwork/artwork.type";
+import type { IArtworkSummary } from "@/features/shared/artwork/artwork.type";
 
 export interface IArtworkCardProps {
-  artwork: IArtwork;
+  artwork: IArtworkSummary;
   /** Epoch ms the relative edit time is measured against. */
   now: number;
   onRename: (id: string, title: string) => Promise<void>;

@@ -26,3 +26,14 @@ export interface IArtworkLayer {
   visible: boolean;
   pixelData: Uint8Array;
 }
+
+/** Light gallery projection of an artwork: everything except pixel buffers and palette. */
+export interface IArtworkSummary {
+  id: string;
+  title: string;
+  width: number;
+  height: number;
+  createdAt: number;
+  updatedAt: number;
+  thumbnail: string;
+}

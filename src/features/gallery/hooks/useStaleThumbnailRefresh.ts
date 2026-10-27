@@ -9,25 +9,55 @@
  */
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
-import type { IArtwork } from "@/features/shared/artwork/artwork.type";
+import type { IArtworkSummary } from "@/features/shared/artwork/artwork.type";
+import * as artworkService from "@/features/shared/artwork/artworkService";
 import { artworkToPngThumbnail } from "@/features/shared/artwork/thumbnail";
 import { isThumbnailCurrent } from "@/features/shared/artwork/thumbnailFreshness";
 
 export function useStaleThumbnailRefresh(
-  artworks: readonly IArtwork[],
+  artworks: readonly IArtworkSummary[],
   updateThumbnail: (id: string, thumbnail: string) => Promise<void>,
 ): void {
+  // Ids already fetched this visit: updateThumbnail replaces the list and re-runs the effect.
+  const requested = useRef<Set<string>>(new Set());
+  // Set by a mount effect, not per-run: the refresh effect re-runs on every list change and must not
+  // abort tasks still in flight.
+  const mounted = useRef(false);
+
   useEffect(() => {
-    for (const artwork of artworks) {
-      if (isThumbnailCurrent(artwork.thumbnail, artwork.width, artwork.height)) {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    for (const summary of artworks) {
+      if (
+        isThumbnailCurrent(summary.thumbnail, summary.width, summary.height) ||
+        requested.current.has(summary.id)
+      ) {
         continue;
       }
-      const thumbnail = artworkToPngThumbnail(artwork);
-      if (thumbnail) {
-        void updateThumbnail(artwork.id, thumbnail);
-      }
+      requested.current.add(summary.id);
+      void (async () => {
+        try {
+          const full = await artworkService.getArtwork(summary.id);
+          if (!full || !mounted.current) {
+            requested.current.delete(summary.id);
+            return;
+          }
+          const thumbnail = artworkToPngThumbnail(full);
+          if (thumbnail) {
+            await updateThumbnail(summary.id, thumbnail);
+          }
+        } catch {
+          // The thumbnail is regenerated on the next load; release the id so a later pass can retry.
+          requested.current.delete(summary.id);
+        }
+      })();
     }
   }, [artworks, updateThumbnail]);
 }

@@ -15,7 +15,8 @@ import {
   removePaletteColor,
   revertPaletteRemoval,
 } from "@/features/editor/logic/paletteMutations";
-import { MAX_PALETTE_ENTRIES, TRANSPARENT_PIXEL_INDEX } from "@/features/shared/artwork/artworkService";
+import { MAX_PALETTE_ENTRIES } from "@/features/shared/artwork/artworkLimits";
+import { TRANSPARENT_PIXEL_INDEX } from "@/features/shared/artwork/artworkService";
 
 describe("clampPaletteIndex", () => {
   it("clamps to palette bounds", () => {

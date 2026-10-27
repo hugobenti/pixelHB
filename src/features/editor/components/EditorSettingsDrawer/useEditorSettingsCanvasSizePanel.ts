@@ -8,7 +8,7 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { shared } from "@/content/shared";
-import { MAX_CANVAS_DIMENSION } from "@/features/shared/artwork/artworkService";
+import { MAX_CANVAS_DIMENSION } from "@/features/shared/artwork/artworkLimits";
 import { parseCanvasSizeFields } from "@/features/shared/logic/canvasSizeFields";
 import type { ICanvasSizeFieldErrors } from "@/features/shared/logic/canvasSizeFields.type";
 import type { IEditorSettingsCanvasSizePanelProps } from "./EditorSettingsCanvasSizePanel.type";

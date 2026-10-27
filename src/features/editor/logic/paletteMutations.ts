@@ -6,7 +6,8 @@
 
 import { normalizeHexColor, parseHexColor } from "@/features/shared/utils/colorConverter";
 
-import { MAX_PALETTE_ENTRIES, TRANSPARENT_PIXEL_INDEX } from "@/features/shared/artwork/artworkService";
+import { MAX_PALETTE_ENTRIES } from "@/features/shared/artwork/artworkLimits";
+import { TRANSPARENT_PIXEL_INDEX } from "@/features/shared/artwork/artworkService";
 import type { IPaletteRemoval } from "@/features/editor/types/editor.type";
 import type {
   IColorSlots,
