@@ -20,5 +20,6 @@ export const SITE_MENU_LINKS: ISiteLink[] = [
 
 export const SITE_FOOTER_LINKS: ISiteLink[] = [
   ...SITE_MENU_LINKS,
+  { href: "/privacy", label: shell.nav.privacy },
   { href: site.repoUrl, label: shell.nav.github, external: true },
 ];

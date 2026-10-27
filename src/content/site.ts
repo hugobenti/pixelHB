@@ -10,4 +10,5 @@ export const site: ISiteContent = {
   email: "hugobenti@gmail.com",
   repoUrl: "https://github.com/hugobenti/pixelHB",
   issuesUrl: "https://github.com/hugobenti/pixelHB/issues/new",
+  googleSiteVerification: "2xUfjZydV9t-mlPVvkdTDXgGP4TYKjUDzKT_0wVlzKk",
 };
