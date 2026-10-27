@@ -88,7 +88,7 @@ const REFRESH_FAILED = "RefreshFailed";
 function signInToken<T extends Record<string, unknown>>(
   token: T,
   account: IGoogleSignInAccount,
-): T {
+): T & { error?: string } {
   const { access_token, refresh_token, expires_at, scope } = account;
   if (
     !scope?.split(" ").includes(DRIVE_FILE_SCOPE) ||
@@ -110,7 +110,7 @@ function signInToken<T extends Record<string, unknown>>(
 export async function rotateGoogleToken<T extends Record<string, unknown>>(
   params: { token: T; account?: IGoogleSignInAccount | null },
   deps: IGoogleRefreshDeps,
-): Promise<T> {
+): Promise<T & { error?: string }> {
   const { token, account } = params;
   if (account) {
     return signInToken(token, account);

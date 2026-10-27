@@ -43,7 +43,7 @@ export function toAccountState(
         email: text(user.email),
         image: user.image ?? null,
       },
-      needsReauth: session.error === "RefreshFailed",
+      needsReauth: session?.error === "RefreshFailed",
     };
   }
   return { status: "signedOut", user: null, needsReauth: false };
