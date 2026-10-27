@@ -5,8 +5,8 @@
  *
  * Notes:
  * Order: reauth, offline, syncing, too large, saved. Engine phase `error` reads as offline (Drive
- * could not be reached and the local copy is what is shown); phase `disabled` while signed in is the
- * engine starting. Idle with more pending changes than too-large ones means a push is still
+ * could not be reached and the local copy is what is shown); phase `disabled` while signed in means
+ * the engine is not running (e.g. no Web Locks), so work stays in this browser. Idle with more pending changes than too-large ones means a push is still
  * debounced, so it is not "saved" yet. `null` while the account is loading.
  */
 import { shared } from "@/content/shared";
@@ -40,12 +40,9 @@ export function syncStatusMessage(
   if (account.status === "loading") return null;
   if (account.status !== "signedIn") return message("thisBrowserOnly");
   if (account.needsReauth || status.phase === "reauth") return message("signInAgain");
+  if (status.phase === "disabled") return message("thisBrowserOnly");
   if (status.phase === "offline" || status.phase === "error") return message("offline");
-  if (
-    status.phase === "syncing" ||
-    status.phase === "disabled" ||
-    status.pendingCount > status.tooLargeIds.length
-  ) {
+  if (status.phase === "syncing" || status.pendingCount > status.tooLargeIds.length) {
     return message("syncing");
   }
   const tooLarge = scope

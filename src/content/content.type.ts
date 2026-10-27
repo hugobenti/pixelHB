@@ -171,6 +171,8 @@ export interface IGalleryContent {
     actionsLabel: (title: string) => string;
     /** Meta-line markers that replace the edited time. */
     downloading: string;
+    /** A Drive-only artwork while no sync pass runs. */
+    inDrive: string;
     notSynced: string;
     tooLarge: string;
   };

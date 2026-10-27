@@ -40,9 +40,16 @@ describe("syncStatusMessage", () => {
     expect(syncStatusMessage(signedIn, idle)).toEqual({ key: "saved", tone: "neutral", count: 0 });
   });
 
-  it("says syncing while the engine runs or is starting", () => {
+  it("says this browser only when signed in but the engine never started", () => {
+    expect(syncStatusMessage(signedIn, { ...idle, phase: "disabled" })).toEqual({
+      key: "thisBrowserOnly",
+      tone: "neutral",
+      count: 0,
+    });
+  });
+
+  it("says syncing while the engine runs", () => {
     expect(syncStatusMessage(signedIn, { ...idle, phase: "syncing" })?.key).toBe("syncing");
-    expect(syncStatusMessage(signedIn, { ...idle, phase: "disabled" })?.key).toBe("syncing");
     expect(syncStatusMessage(signedIn, { ...idle, phase: "syncing" })?.tone).toBe("progress");
   });
 

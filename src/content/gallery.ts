@@ -26,6 +26,7 @@ export const gallery: IGalleryContent = {
     titleLabel: "Artwork title",
     actionsLabel: (title) => `Actions for ${title}`,
     downloading: "Downloading from Drive…",
+    inDrive: "In your Drive",
     notSynced: "Not synced yet",
     tooLarge: "Too large to sync",
   },
@@ -61,7 +62,7 @@ export const gallery: IGalleryContent = {
     description:
       "The artwork and all its layers are removed from this browser. This can’t be undone.",
     descriptionSignedIn:
-      "The artwork and all its layers are removed from this browser and moved to the trash in your Google Drive.",
+      "The artwork and all its layers are removed from this browser. If it has a copy in your Google Drive, that copy is moved to the Drive trash.",
     confirm: "Delete artwork",
   },
 };

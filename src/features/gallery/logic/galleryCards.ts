@@ -21,6 +21,8 @@ const MARKERS: Record<TArtworkSyncState, TGalleryCardMarker | null> = {
 export function galleryCards(
   local: IArtworkSummary[],
   remoteOnly: IGalleryListItem[],
+  /** True while a sync pass runs: only then are Drive-only artworks actually being downloaded. */
+  downloading: boolean,
 ): IGalleryCard[] {
   const localIds = new Set(local.map((summary) => summary.id));
   const localCards = local.map((summary): IGalleryCard => ({
@@ -44,7 +46,7 @@ export function galleryCards(
       updatedAt: item.updatedAt,
       thumbnail: { src: item.previewUrl, unoptimized: true },
       openable: false,
-      marker: "downloading",
+      marker: downloading ? "downloading" : "inDrive",
     }));
   return [...localCards, ...remoteCards].sort((a, b) => b.updatedAt - a.updatedAt);
 }

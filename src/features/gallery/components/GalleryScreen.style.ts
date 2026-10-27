@@ -11,12 +11,14 @@ export const galleryScreen = {
   count: "font-mono text-sm text-muted",
   srOnly: "sr-only",
   importInput: "hidden",
-  note: "flex flex-wrap items-center gap-x-1.5 text-sm",
+  /** Only attention text sits in the live region; routine syncing and saved text is not announced. */
+  note: "flex flex-wrap items-center text-sm",
+  noteText: "mr-1.5 empty:mr-0",
   noteTone: {
     neutral: "text-muted",
     progress: "text-muted",
     attention: "font-medium text-fg",
   },
-  progressDot: "size-1.5 rounded-full bg-muted motion-safe:animate-pulse",
+  progressDot: "mr-1.5 size-1.5 rounded-full bg-muted motion-safe:animate-pulse",
   error: "rounded-lg bg-danger-surface px-4 py-3 text-sm text-danger-fg",
 };

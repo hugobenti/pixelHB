@@ -31,7 +31,7 @@ const remote = (id: string, updatedAt: number): IGalleryListItem => ({
 
 describe("galleryCards", () => {
   it("keeps a local artwork openable with its data-URL thumbnail", () => {
-    expect(galleryCards([local("a", 5)], [])).toEqual([
+    expect(galleryCards([local("a", 5)], [], true)).toEqual([
       {
         id: "a",
         title: "a",
@@ -46,7 +46,7 @@ describe("galleryCards", () => {
   });
 
   it("shows a Drive-only artwork as a downloading card whose preview bypasses the image optimizer", () => {
-    expect(galleryCards([], [remote("r", 9)])).toEqual([
+    expect(galleryCards([], [remote("r", 9)], true)).toEqual([
       {
         id: "r",
         title: "r",
@@ -60,16 +60,25 @@ describe("galleryCards", () => {
     ]);
   });
 
+  it("says a Drive-only artwork is in Drive, not downloading, while no sync pass runs", () => {
+    expect(galleryCards([], [remote("r", 9)], false)[0]).toMatchObject({
+      openable: false,
+      marker: "inDrive",
+    });
+  });
+
   it("drops a Drive-only entry once the artwork exists locally", () => {
-    const cards = galleryCards([local("a", 5)], [remote("a", 9)]);
+    const cards = galleryCards([local("a", 5)], [remote("a", 9)], true);
     expect(cards).toHaveLength(1);
     expect(cards[0]).toMatchObject({ id: "a", openable: true, updatedAt: 5 });
   });
 
   it("orders local and Drive-only cards together, most recently edited first", () => {
-    const ids = galleryCards([local("a", 5), local("c", 1)], [remote("b", 3), remote("d", 7)]).map(
-      (c) => c.id,
-    );
+    const ids = galleryCards(
+      [local("a", 5), local("c", 1)],
+      [remote("b", 3), remote("d", 7)],
+      true,
+    ).map((c) => c.id);
     expect(ids).toEqual(["d", "a", "b", "c"]);
   });
 
@@ -82,6 +91,7 @@ describe("galleryCards", () => {
         local("s", 1, "synced"),
       ],
       [],
+      true,
     ).map((c) => c.marker);
     expect(markers).toEqual(["notSynced", "tooLarge", null, null]);
   });

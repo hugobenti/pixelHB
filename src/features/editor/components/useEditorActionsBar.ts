@@ -10,16 +10,15 @@
 
 import { editor } from "@/content/editor";
 import { useAccount } from "@/features/shared/auth/useAccount";
-import { syncStatusMessage, syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
-import { useSyncStatus } from "@/features/shared/sync/useSyncStore";
+import { syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
+import { useSyncMessage } from "@/features/shared/sync/useSyncMessage";
 import type { IEditorActionsBarProps } from "./EditorActionsBar.type";
 
 export function useEditorActionsBar({ activeSlot, artworkId }: IEditorActionsBarProps) {
   const slotLabel = editor.toolbar.slot[activeSlot];
   const account = useAccount();
-  const status = useSyncStatus();
-  const message =
-    account.status === "signedIn" ? syncStatusMessage(account, status, { artworkId }) : null;
+  const syncMessage = useSyncMessage({ artworkId });
+  const message = account.status === "signedIn" ? syncMessage : null;
 
   return {
     slotLabel,

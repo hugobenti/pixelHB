@@ -77,14 +77,16 @@ export function GalleryScreen() {
               {gallery.screen.importFile}
             </Button>
           </div>
-          <p
-            role="status"
-            className={cx(galleryScreen.note, galleryScreen.noteTone[storageNote.tone])}
-          >
+          <p className={cx(galleryScreen.note, galleryScreen.noteTone[storageNote.tone])}>
             {storageNote.tone === "progress" ? (
               <span aria-hidden className={galleryScreen.progressDot} />
             ) : null}
-            {storageNote.text}
+            <span className={galleryScreen.noteText}>
+              {storageNote.tone === "attention" ? null : storageNote.text}
+            </span>
+            <span role="status" className={galleryScreen.noteText}>
+              {storageNote.tone === "attention" ? storageNote.text : null}
+            </span>
             <Link href="/help#saving" className={siteType.linkStandalone}>
               {gallery.screen.storageLink}
             </Link>
