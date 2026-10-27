@@ -1,4 +1,4 @@
-import type { IArtwork } from "@/features/shared/artwork/artwork.type";
+import type { IArtwork, IArtworkSummary } from "@/features/shared/artwork/artwork.type";
 import type { IImportedArtworkData } from "@/features/shared/artwork/artworkFileService.type";
 import type { ICreateArtworkInput } from "@/features/shared/artwork/artworkService.type";
 
@@ -7,7 +7,7 @@ export type TCreateArtworkResult =
   { artwork: IArtwork; error: null } | { artwork: null; error: string };
 
 export interface IGalleryState {
-  artworks: IArtwork[];
+  artworks: IArtworkSummary[];
   loading: boolean;
   /** True once the first load has settled, so the empty state never shows before it. */
   loaded: boolean;

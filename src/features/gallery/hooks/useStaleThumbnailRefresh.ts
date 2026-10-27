@@ -9,25 +9,43 @@
  */
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
-import type { IArtwork } from "@/features/shared/artwork/artwork.type";
+import type { IArtworkSummary } from "@/features/shared/artwork/artwork.type";
+import * as artworkService from "@/features/shared/artwork/artworkService";
 import { artworkToPngThumbnail } from "@/features/shared/artwork/thumbnail";
 import { isThumbnailCurrent } from "@/features/shared/artwork/thumbnailFreshness";
 
 export function useStaleThumbnailRefresh(
-  artworks: readonly IArtwork[],
+  artworks: readonly IArtworkSummary[],
   updateThumbnail: (id: string, thumbnail: string) => Promise<void>,
 ): void {
+  // Ids already fetched this visit: updateThumbnail replaces the list and re-runs the effect.
+  const requested = useRef<Set<string>>(new Set());
+
   useEffect(() => {
-    for (const artwork of artworks) {
-      if (isThumbnailCurrent(artwork.thumbnail, artwork.width, artwork.height)) {
+    let cancelled = false;
+    for (const summary of artworks) {
+      if (
+        isThumbnailCurrent(summary.thumbnail, summary.width, summary.height) ||
+        requested.current.has(summary.id)
+      ) {
         continue;
       }
-      const thumbnail = artworkToPngThumbnail(artwork);
-      if (thumbnail) {
-        void updateThumbnail(artwork.id, thumbnail);
-      }
+      requested.current.add(summary.id);
+      void (async () => {
+        const full = await artworkService.getArtwork(summary.id);
+        if (!full || cancelled) {
+          return;
+        }
+        const thumbnail = artworkToPngThumbnail(full);
+        if (thumbnail) {
+          await updateThumbnail(summary.id, thumbnail);
+        }
+      })();
     }
+    return () => {
+      cancelled = true;
+    };
   }, [artworks, updateThumbnail]);
 }

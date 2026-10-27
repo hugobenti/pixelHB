@@ -17,7 +17,7 @@ export const useGalleryStore = create<IGalleryState>((set, get) => ({
   loadArtworks: async () => {
     set({ loading: true, error: null });
     try {
-      const artworks = await artworkService.listArtworks();
+      const artworks = await artworkService.listArtworkSummaries();
       set({ artworks, loading: false, loaded: true });
     } catch {
       const message = gallery.errors.load;
