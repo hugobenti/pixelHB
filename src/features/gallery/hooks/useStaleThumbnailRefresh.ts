@@ -22,9 +22,18 @@ export function useStaleThumbnailRefresh(
 ): void {
   // Ids already fetched this visit: updateThumbnail replaces the list and re-runs the effect.
   const requested = useRef<Set<string>>(new Set());
+  // Set by a mount effect, not per-run: the refresh effect re-runs on every list change and must not
+  // abort tasks still in flight.
+  const mounted = useRef(false);
 
   useEffect(() => {
-    let cancelled = false;
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     for (const summary of artworks) {
       if (
         isThumbnailCurrent(summary.thumbnail, summary.width, summary.height) ||
@@ -34,18 +43,21 @@ export function useStaleThumbnailRefresh(
       }
       requested.current.add(summary.id);
       void (async () => {
-        const full = await artworkService.getArtwork(summary.id);
-        if (!full || cancelled) {
-          return;
-        }
-        const thumbnail = artworkToPngThumbnail(full);
-        if (thumbnail) {
-          await updateThumbnail(summary.id, thumbnail);
+        try {
+          const full = await artworkService.getArtwork(summary.id);
+          if (!full || !mounted.current) {
+            requested.current.delete(summary.id);
+            return;
+          }
+          const thumbnail = artworkToPngThumbnail(full);
+          if (thumbnail) {
+            await updateThumbnail(summary.id, thumbnail);
+          }
+        } catch {
+          // The thumbnail is regenerated on the next load; release the id so a later pass can retry.
+          requested.current.delete(summary.id);
         }
       })();
     }
-    return () => {
-      cancelled = true;
-    };
   }, [artworks, updateThumbnail]);
 }
