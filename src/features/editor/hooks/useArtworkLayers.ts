@@ -48,22 +48,21 @@ export function useArtworkLayers({
 
   const setActiveLayerId = useCallback(
     (layerId: string) => {
-      let didChange = false;
-      setArtwork((prev) => {
-        if (prev.activeLayerId === layerId) {
-          return prev;
-        }
-        if (!prev.layers.some((layer) => layer.id === layerId)) {
-          return prev;
-        }
-        didChange = true;
-        return { ...prev, activeLayerId: layerId };
-      });
-      if (didChange) {
-        onLayersChanged();
+      if (
+        artwork.activeLayerId === layerId ||
+        !artwork.layers.some((layer) => layer.id === layerId)
+      ) {
+        return;
       }
+      setArtwork((prev) =>
+        prev.activeLayerId === layerId ||
+        !prev.layers.some((layer) => layer.id === layerId)
+          ? prev
+          : { ...prev, activeLayerId: layerId }
+      );
+      onLayersChanged();
     },
-    [setArtwork, onLayersChanged]
+    [artwork.activeLayerId, artwork.layers, setArtwork, onLayersChanged]
   );
 
   const toggleLayerVisibility = useCallback(

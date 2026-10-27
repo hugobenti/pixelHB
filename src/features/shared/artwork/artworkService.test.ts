@@ -142,3 +142,31 @@ test("onArtworkChanged fires for service writes only, until unsubscribed", async
   await artworkService.createArtwork(input);
   expect(listener).toHaveBeenCalledTimes(4);
 });
+
+test("a throwing listener neither rejects the write nor blocks other listeners", async () => {
+  const bad = artworkService.onArtworkChanged(() => {
+    throw new Error("boom");
+  });
+  const good = vi.fn();
+  const off = artworkService.onArtworkChanged(good);
+  const art = await artworkService.createArtwork(input);
+  expect(await db.artworks.get(art.id)).toBeDefined();
+  expect(good).toHaveBeenCalledWith(art.id);
+  bad();
+  off();
+});
+
+test("save, rename and delete of a missing or foreign row emit no event", async () => {
+  const unowned = await artworkService.createArtwork(input);
+  artworkService.setActiveOwner("u1");
+  const listener = vi.fn();
+  const off = artworkService.onArtworkChanged(listener);
+  await artworkService.saveArtwork({ ...unowned, title: "X" });
+  await artworkService.renameArtwork(unowned.id, "X");
+  await artworkService.deleteArtwork(unowned.id);
+  await artworkService.saveArtwork({ ...unowned, id: "missing" });
+  await artworkService.renameArtwork("missing", "X");
+  await artworkService.deleteArtwork("missing");
+  expect(listener).not.toHaveBeenCalled();
+  off();
+});

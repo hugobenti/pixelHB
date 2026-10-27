@@ -36,7 +36,13 @@ export function onArtworkChanged(listener: (id: string) => void): () => void {
 }
 
 function emitChanged(id: string): void {
-  for (const listener of changeListeners) listener(id);
+  for (const listener of changeListeners) {
+    try {
+      listener(id);
+    } catch {
+      // A failing listener must not undo or fail a write that already landed.
+    }
+  }
 }
 
 function newRowSync(owner: string | null): IArtworkSyncState {

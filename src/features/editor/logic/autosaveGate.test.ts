@@ -32,4 +32,13 @@ describe("createAutosaveGate", () => {
     gate.observe({ paintRevision: 3, historyRevision: 1 });
     expect(gate.takePending()).toBe(true);
   });
+
+  test("markPending makes the next flush retry a failed save once", () => {
+    const gate = createAutosaveGate({ paintRevision: 0, historyRevision: 0 });
+    gate.observe({ paintRevision: 1, historyRevision: 0 });
+    expect(gate.takePending()).toBe(true);
+    gate.markPending();
+    expect(gate.takePending()).toBe(true);
+    expect(gate.takePending()).toBe(false);
+  });
 });

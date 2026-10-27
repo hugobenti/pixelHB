@@ -1,9 +1,11 @@
 /**
  * Purpose:
- * Debounced IndexedDB persistence for the open artwork, flushed when the page is hidden or closed
- * (`pagehide`, `visibilitychange`) and on editor unmount.
+ * Change-gated, debounced IndexedDB persistence for the open artwork, flushed when the page is
+ * hidden or closed (`pagehide`, `visibilitychange`) and on editor unmount.
  *
  * Notes:
+ * Only a real edit (paint or history revision moved since mount or the last save) is written, so
+ * opening and leaving an artwork never touches `updatedAt`; a failed save re-arms the gate.
  * Shares one implementation path for thumbnail encoding and artworkService.saveArtwork (DRY).
  */
 "use client";
@@ -34,10 +36,12 @@ export function useEditorAutosave({
       return;
     }
     const thumb = artworkToPngThumbnail(current);
-    void artworkService.saveArtwork({
-      ...current,
-      thumbnail: thumb || current.thumbnail,
-    });
+    artworkService
+      .saveArtwork({
+        ...current,
+        thumbnail: thumb || current.thumbnail,
+      })
+      .catch(() => gate.markPending());
   }, [artworkRef, gate]);
 
   useEffect(() => {
