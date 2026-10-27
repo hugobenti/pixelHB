@@ -4,32 +4,38 @@
  * out with a pending-wipe marker, removes that owner's local copies and then the marker.
  *
  * Notes:
- * A failed wipe leaves the marker for the next start. Signed in, a stale marker is just dropped.
+ * A failed wipe shows a toast and leaves the marker for the next start. A marker of the signed-in
+ * account is dropped; one of another account is wiped.
  * Runs once per page load, so a sign-out in this tab (which has its own wipe) is not raced. Runs only with Drive sync on (the status is `disabled` otherwise).
  */
 "use client";
 
 import { useEffect, useRef } from "react";
 
+import { shell } from "@/content/shell";
 import { wipeOwner } from "@/features/shared/artwork/artworkSyncStore";
 import { decidePendingWipe } from "@/features/shared/auth/logic/pendingWipe";
 import { clearPendingWipe, readPendingWipe } from "@/features/shared/auth/pendingWipeMarker";
 import { useAccount } from "@/features/shared/auth/useAccount";
+import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 
 export function usePendingWipe(): void {
-  const { status } = useAccount();
+  const { status, user } = useAccount();
+  const { showToast } = useToast();
+  const userId = user?.id ?? null;
   const swept = useRef(false);
 
   useEffect(() => {
     if (swept.current || status === "loading" || status === "disabled") return;
+    if (status === "signedIn" && userId === null) return;
     swept.current = true;
-    const action = decidePendingWipe(status, readPendingWipe());
+    const action = decidePendingWipe(status, userId, readPendingWipe());
     if (action.kind === "clear") {
       clearPendingWipe();
     } else if (action.kind === "wipe") {
       wipeOwner(action.ownerId).then(clearPendingWipe, () => {
-        console.error("Couldn't remove a signed-out account's local copies; will retry next start");
+        showToast({ message: shell.account.signOutDialog.wipeFailed, tone: "error" });
       });
     }
-  }, [status]);
+  }, [status, userId, showToast]);
 }
