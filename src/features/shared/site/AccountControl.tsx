@@ -26,6 +26,7 @@ export function AccountControl({ placement }: IAccountControlProps) {
     triggerId,
     panelId,
     onPanelKeyDown,
+    onBlur,
     requestSignIn,
     requestSignOut,
   } = useAccountControl();
@@ -89,6 +90,7 @@ export function AccountControl({ placement }: IAccountControlProps) {
       role="presentation"
       className={accountControl.placement.bar}
       onKeyDown={onPanelKeyDown}
+      onBlur={onBlur}
     >
       <button
         id={triggerId}

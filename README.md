@@ -93,7 +93,7 @@ Then open [http://localhost:3000](http://localhost:3000). The root URL takes you
 
 ### Google sign-in (optional, behind a flag)
 
-The app works fully without an account. Sign-in (Auth.js v5, Google, with the `drive.file` scope and offline access) is built but hidden until `NEXT_PUBLIC_DRIVE_SYNC=on`; with the flag off there is no sign-in UI and no `/api/auth` request. Copy `.env.example` to `.env.local` and fill in:
+The app works fully without an account. Sign-in (Auth.js v5, Google, with the `drive.file` scope and offline access) is built but hidden until `NEXT_PUBLIC_DRIVE_SYNC=on`; with the flag off there is no sign-in UI and no `/api/auth` request. Copy `.env.example` to `.env.local` and fill in (leave the two commented lines commented unless you need them: a blank `AUTH_TRUST_HOST=` or `AUTH_REDIRECT_PROXY_URL=` is read as an empty value and breaks Auth.js):
 
 | Variable                               | Purpose                                                                                                                                                                                                                |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -19,6 +19,8 @@ import type {
 export const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 export const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const REFRESH_SKEW_MS = 60_000;
+/** A hung token endpoint must not hang the request: a timeout resolves as `unavailable`. */
+const REFRESH_TIMEOUT_MS = 8000;
 
 /** True from 60 s before the access token expires (`expiresAtSec` is epoch seconds). */
 export function needsRefresh(expiresAtSec: number, nowMs: number): boolean {
@@ -48,6 +50,7 @@ export async function refreshGoogleAccessToken(
   try {
     const response = await deps.fetchFn(GOOGLE_TOKEN_URL, {
       method: "POST",
+      signal: AbortSignal.timeout(REFRESH_TIMEOUT_MS),
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         client_id: deps.clientId,

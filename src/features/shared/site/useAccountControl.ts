@@ -11,7 +11,7 @@
 
 import { signIn, signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
 import { useAccount } from "@/features/shared/auth/useAccount";
 
@@ -52,6 +52,15 @@ export function useAccountControl() {
     rootRef,
     triggerId,
     panelId,
+    /** Focus left the control (Tab away): close. A null target (click on non-focusable content) is left to the pointer listener. */
+    onBlur: (event: FocusEvent<HTMLElement>) => {
+      if (
+        event.relatedTarget instanceof Node &&
+        !event.currentTarget.contains(event.relatedTarget)
+      ) {
+        setOpenedOn(null);
+      }
+    },
     onPanelKeyDown: (event: KeyboardEvent<HTMLElement>) => {
       if (event.key !== "Escape" || !open) return;
       event.preventDefault();

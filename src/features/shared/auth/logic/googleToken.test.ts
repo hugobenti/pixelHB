@@ -55,6 +55,14 @@ describe("needsRefresh", () => {
 });
 
 describe("refreshGoogleAccessToken", () => {
+  it("passes a timeout signal so a hung token endpoint resolves as unavailable", async () => {
+    const fetchFn = fakeFetch(new DOMException("The operation timed out.", "TimeoutError"));
+    await expect(refreshGoogleAccessToken(state, depsWith(fetchFn))).resolves.toEqual({
+      kind: "unavailable",
+    });
+    expect(fetchFn.mock.calls[0][1]?.signal).toBeInstanceOf(AbortSignal);
+  });
+
   it("posts the refresh grant and keeps the old refresh token when Google sends none", async () => {
     const fetchFn = fakeFetch(
       json(200, { access_token: "a2", expires_in: 3599, token_type: "Bearer", scope: DRIVE }),
