@@ -1,0 +1,237 @@
+/**
+ * Purpose:
+ * Shared plumbing for the `/api/gallery` route handlers: flag and id gate, Drive access, request body
+ * reading with size caps, and the mapping of Drive failures to the gallery error codes.
+ *
+ * Notes:
+ * Every route starts in `withGalleryAccess`: flag off answers a bare 404, a malformed id answers 400
+ * before auth is touched, missing/expired Google access answers 401/503. The Drive access token is only
+ * handed to the store; it is never logged or returned. Request bodies and artwork payloads are never
+ * logged. A non-Drive exception rethrows (a 500 is a bug, not a Drive state).
+ */
+import { parseArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
+import { DRIVE_SYNC_ENABLED } from "@/features/shared/auth/driveSyncFlag";
+import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
+import { ARTWORK_ID_PATTERN, MAX_SYNC_BODY_BYTES } from "../galleryApi";
+import type { IGalleryErrorResponse } from "../galleryApi.type";
+import { createDriveArtworkStore } from "./driveArtworkStore";
+import type { IDriveArtworkStore } from "./driveArtworkStore.type";
+import { DriveError } from "./driveRest";
+import type {
+  ISaveBodyLimits,
+  TCappedBytes,
+  TDeleteRequestResult,
+  TRequestRejection,
+  TSaveRequestResult,
+} from "./galleryRouteHelpers.type";
+
+export const MAX_INFLATED_BODY_BYTES = 64_000_000;
+export const DEFAULT_RETRY_AFTER_SECONDS = "30";
+const MAX_DELETE_BODY_BYTES = 1024;
+const DEFAULT_LIMITS: ISaveBodyLimits = {
+  maxCompressedBytes: MAX_SYNC_BODY_BYTES,
+  maxInflatedBytes: MAX_INFLATED_BODY_BYTES,
+};
+const BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+const RATE_LIMIT_REASONS = new Set(["rateLimitExceeded", "userRateLimitExceeded"]);
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_FORBIDDEN = 403;
+const HTTP_TOO_MANY_REQUESTS = 429;
+const HTTP_SERVER_ERROR = 500;
+
+const BAD_REQUEST: TRequestRejection = { ok: false, status: 400, code: "bad_request" };
+const TOO_LARGE: TRequestRejection = { ok: false, status: 413, code: "too_large" };
+
+export function galleryErrorResponse(
+  status: number,
+  body: IGalleryErrorResponse,
+  headers?: HeadersInit,
+): Response {
+  return Response.json(body, { status, headers });
+}
+
+export function driveErrorToResponse(error: DriveError): Response {
+  if (error.status === HTTP_UNAUTHORIZED) {
+    return galleryErrorResponse(401, { code: "reauth" });
+  }
+  const unavailable =
+    error.status === 0 ||
+    error.status === HTTP_TOO_MANY_REQUESTS ||
+    error.status >= HTTP_SERVER_ERROR ||
+    (error.status === HTTP_FORBIDDEN && error.reason !== null && RATE_LIMIT_REASONS.has(error.reason));
+  if (unavailable) {
+    return galleryErrorResponse(
+      503,
+      { code: "drive_unavailable" },
+      { "Retry-After": error.retryAfter ?? DEFAULT_RETRY_AFTER_SECONDS },
+    );
+  }
+  return galleryErrorResponse(502, { code: "drive_error" });
+}
+
+function concat(chunks: Uint8Array[], total: number): Uint8Array {
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes;
+}
+
+/** Reads a stream chunk by chunk; cancels it and returns `null` as soon as `maxBytes` is exceeded. */
+async function readCapped(stream: ReadableStream<Uint8Array>, maxBytes: number): Promise<TCappedBytes> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) {
+      return concat(chunks, total);
+    }
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(value);
+  }
+}
+
+function declaredLength(request: Request): number {
+  const header = request.headers.get("Content-Length");
+  return header === null ? Number.NaN : Number(header);
+}
+
+async function readBodyBytes(request: Request, maxBytes: number): Promise<TCappedBytes> {
+  if (declaredLength(request) > maxBytes) {
+    return null;
+  }
+  return request.body ? readCapped(request.body, maxBytes) : new Uint8Array(0);
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function decodePng(base64: string): Uint8Array | null {
+  if (!BASE64_PATTERN.test(base64)) {
+    return null;
+  }
+  const bytes = new Uint8Array(Buffer.from(base64, "base64"));
+  return bytes.byteLength >= PNG_SIGNATURE.length && PNG_SIGNATURE.every((byte, i) => bytes[i] === byte)
+    ? bytes
+    : null;
+}
+
+function parseSaveBody(body: unknown, id: string): TSaveRequestResult {
+  if (!isPlainObject(body) || !isPlainObject(body.artwork) || typeof body.previewPngBase64 !== "string") {
+    return BAD_REQUEST;
+  }
+  const { artwork, previewPngBase64 } = body;
+  if (artwork.version !== 3) {
+    return BAD_REQUEST;
+  }
+  const parsed = parseArtworkFile(artwork);
+  if (!parsed || !parsed.meta || parsed.meta.id !== id) {
+    return BAD_REQUEST;
+  }
+  const previewPng = decodePng(previewPngBase64);
+  if (!previewPng) {
+    return BAD_REQUEST;
+  }
+  return {
+    ok: true,
+    upsert: {
+      id,
+      title: parsed.data.title,
+      width: parsed.data.width,
+      height: parsed.data.height,
+      createdAt: parsed.meta.createdAt,
+      updatedAt: parsed.meta.updatedAt,
+      artworkJson: JSON.stringify(artwork),
+      previewPng,
+    },
+  };
+}
+
+export async function readSaveRequest(
+  request: Request,
+  id: string,
+  limits: ISaveBodyLimits = DEFAULT_LIMITS,
+): Promise<TSaveRequestResult> {
+  try {
+    const compressed = await readBodyBytes(request, limits.maxCompressedBytes);
+    if (compressed === null) {
+      return TOO_LARGE;
+    }
+    let bytes: TCappedBytes = compressed;
+    if (request.headers.get("Content-Encoding")?.trim().toLowerCase() === "gzip") {
+      const inflating = new Blob([compressed as BlobPart]).stream().pipeThrough(new DecompressionStream("gzip"));
+      bytes = await readCapped(inflating, limits.maxInflatedBytes);
+      if (bytes === null) {
+        return TOO_LARGE;
+      }
+    }
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return parseSaveBody(JSON.parse(text), id);
+  } catch {
+    return BAD_REQUEST;
+  }
+}
+
+export async function readDeleteRequest(request: Request): Promise<TDeleteRequestResult> {
+  try {
+    const bytes = await readBodyBytes(request, MAX_DELETE_BODY_BYTES);
+    if (bytes === null) {
+      return TOO_LARGE;
+    }
+    const body: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+    if (!isPlainObject(body)) {
+      return BAD_REQUEST;
+    }
+    const { deletedAt } = body;
+    return typeof deletedAt === "number" && Number.isSafeInteger(deletedAt) && deletedAt >= 0
+      ? { ok: true, deletedAt }
+      : BAD_REQUEST;
+  } catch {
+    return BAD_REQUEST;
+  }
+}
+
+export async function withGalleryAccess(
+  request: Request,
+  id: string | null,
+  run: (store: IDriveArtworkStore) => Promise<Response>,
+): Promise<Response> {
+  if (!DRIVE_SYNC_ENABLED) {
+    return new Response(null, { status: 404 });
+  }
+  if (id !== null && !ARTWORK_ID_PATTERN.test(id)) {
+    return galleryErrorResponse(400, { code: "bad_request" });
+  }
+  const access = await getDriveAccess(request);
+  switch (access.kind) {
+    case "unauthenticated":
+      return galleryErrorResponse(401, { code: "unauthenticated" });
+    case "reauth":
+      return galleryErrorResponse(401, { code: "reauth" });
+    case "unavailable":
+      return galleryErrorResponse(
+        503,
+        { code: "drive_unavailable" },
+        { "Retry-After": DEFAULT_RETRY_AFTER_SECONDS },
+      );
+    case "ok":
+      break;
+  }
+  try {
+    return await run(createDriveArtworkStore({ accessToken: access.accessToken, fetchFn: fetch }));
+  } catch (error) {
+    if (error instanceof DriveError) {
+      return driveErrorToResponse(error);
+    }
+    throw error;
+  }
+}
