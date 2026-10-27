@@ -13,6 +13,14 @@ export const shell: IShellContent = {
   menu: { open: "Open menu", title: "Menu" },
   theme: { toDark: "Switch to dark theme", toLight: "Switch to light theme" },
   primary: { start: "Start drawing", startCompact: "Draw" },
+  account: {
+    sectionTitle: "Account",
+    signIn: "Sign in with Google",
+    openAccount: "Account",
+    signOut: "Sign out",
+    signInAgain: "Sign in again",
+    reauthNote: "Your Google sign-in expired. Sign in again to keep syncing.",
+  },
   footer: {
     tagline: "Pixel-art editor for the browser.",
     credit: "Made by Hugo Bentivegna",

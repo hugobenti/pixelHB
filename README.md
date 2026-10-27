@@ -91,6 +91,20 @@ npm run dev
 
 Then open [http://localhost:3000](http://localhost:3000). The root URL takes you to the gallery.
 
+### Google sign-in (optional, behind a flag)
+
+The app works fully without an account. Sign-in (Auth.js v5, Google, with the `drive.file` scope and offline access) is built but hidden until `NEXT_PUBLIC_DRIVE_SYNC=on`; with the flag off there is no sign-in UI and no `/api/auth` request. Copy `.env.example` to `.env.local` and fill in:
+
+| Variable                               | Purpose                                                                                                                                                                                                                |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_DRIVE_SYNC`               | `on` enables sign-in; anything else = today's app                                                                                                                                                                      |
+| `AUTH_SECRET`                          | `npx auth secret` or `openssl rand -base64 33`; same value in Production and Preview                                                                                                                                   |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client                                                                                                                                                                                                |
+| `AUTH_REDIRECT_PROXY_URL`              | `https://pixelhb.vercel.app/api/auth` in **both** Production and Preview, so previews sign in through production. Auth.js appends `/callback/google`, so Google only needs the production and localhost redirect URIs. |
+| `AUTH_TRUST_HOST`                      | `true`, only for a local `npm start`. Vercel and `next dev` already trust the host.                                                                                                                                    |
+
+If preview sign-in proves fragile, unset `NEXT_PUBLIC_DRIVE_SYNC` for Preview, so previews show the signed-out app. Tokens stay in the encrypted `HttpOnly` session cookie and never reach client JavaScript; the session the browser sees holds only the user's id, name, email and image.
+
 ## Scripts
 
 | Command              | What it does                                                         |
