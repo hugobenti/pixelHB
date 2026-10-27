@@ -14,6 +14,7 @@ import { editorPath } from "@/features/gallery/logic/artworkLinks";
 import { useGalleryStore } from "@/features/gallery/store/useGalleryStore";
 import { gallery } from "@/content/gallery";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
+import { getSyncEngine } from "@/features/shared/sync/syncEngine";
 import type { ICreateArtworkInput } from "@/features/shared/artwork/artworkService.type";
 
 export function useGalleryScreen() {
@@ -40,6 +41,9 @@ export function useGalleryScreen() {
 
   useEffect(() => {
     void loadArtworks();
+    const engine = getSyncEngine();
+    void engine.syncNow();
+    return engine.onLocalRowsChanged(() => void loadArtworks());
   }, [loadArtworks]);
 
   useStaleThumbnailRefresh(artworks, updateThumbnail);
