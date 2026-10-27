@@ -2,6 +2,7 @@
  * Purpose:
  * Core TypeScript contracts for PixelHB artwork documents, shared by persistence, the editor and the gallery.
  */
+import type { TArtworkSyncState } from "./artworkSync.type";
 
 export interface IArtwork {
   id: string;
@@ -36,4 +37,5 @@ export interface IArtworkSummary {
   createdAt: number;
   updatedAt: number;
   thumbnail: string;
+  syncState: TArtworkSyncState;
 }
