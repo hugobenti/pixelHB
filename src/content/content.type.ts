@@ -80,7 +80,8 @@ export interface ISharedContent {
     unconfirmed: (name: string | undefined) => string;
     driveFull: string;
     clockSkew: (count: number) => string;
-    removalsKept: (count: number) => string;
+    missingInDrive: (count: number) => string;
+    driveFolderTrashed: string;
     /** Appended to a title when a local edit is saved as its own artwork because Drive had a newer copy. */
     conflictCopySuffix: string;
     openDriveFolder: string;
@@ -200,6 +201,8 @@ export interface IGalleryContent {
     inDrive: string;
     notSynced: string;
     tooLarge: string;
+    /** A synced artwork Drive no longer holds; it stays on this device until deleted here. */
+    missingInDrive: string;
   };
   create: {
     title: string;

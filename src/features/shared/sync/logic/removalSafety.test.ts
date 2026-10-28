@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isDeletionConfirmed, shouldBrakeRemovals } from "./removalSafety";
+import { isDeletionConfirmed, removalBrake } from "./removalSafety";
 
 describe("isDeletionConfirmed", () => {
   it("confirms only a trashed copy at least as new as the version we last synced", () => {
@@ -25,31 +25,19 @@ describe("isDeletionConfirmed", () => {
   });
 });
 
-describe("shouldBrakeRemovals", () => {
-  const brake = (removalCount: number, syncedCount: number, remoteListEmpty = false) =>
-    shouldBrakeRemovals({ removalCount, syncedCount, remoteListEmpty });
+describe("removalBrake", () => {
+  const brake = (removalCount: number, rootFolderTrashed = false) => removalBrake({ removalCount, rootFolderTrashed });
 
   it("never brakes when nothing would be removed", () => {
-    expect(brake(0, 10)).toBe(false);
-    expect(brake(0, 10, true)).toBe(false);
+    expect(brake(0, true)).toBeNull();
   });
 
-  it("lets a few removals through while most of the gallery stays", () => {
-    expect(brake(1, 10)).toBe(false);
-    expect(brake(2, 10)).toBe(false);
-    expect(brake(1, 2)).toBe(false);
+  it("does not brake on count: deleting many, half, all but one or all artworks on another device is legitimate", () => {
+    for (const count of [1, 3, 5, 9, 40]) expect(brake(count)).toBeNull();
   });
 
-  it("brakes at three removals and at half of the synced rows, whichever is larger", () => {
-    expect(brake(3, 10)).toBe(false);
-    expect(brake(3, 6)).toBe(true);
-    expect(brake(5, 10)).toBe(true);
-    expect(brake(4, 10)).toBe(false);
-    expect(brake(3, 3)).toBe(true);
-  });
-
-  it("brakes whenever the remote list is empty and something would be removed", () => {
-    expect(brake(1, 1, true)).toBe(true);
-    expect(brake(1, 20, true)).toBe(true);
+  it("brakes whenever the PixelHB folder is in the trash", () => {
+    expect(brake(1, true)).toBe("folderTrashed");
+    expect(brake(40, true)).toBe("folderTrashed");
   });
 });

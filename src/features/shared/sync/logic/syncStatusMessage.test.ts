@@ -14,7 +14,8 @@ const idle: ISyncStatus = {
   remoteOnly: [],
   tooLargeIds: [],
   lastSyncedAt: 1,
-  suspendedRemovals: 0,
+  missingInDriveIds: [],
+  driveFolderTrashed: false,
   clockSkewIds: [],
   driveFull: false,
 };
@@ -161,17 +162,22 @@ describe("syncStatusMessage", () => {
       });
     });
 
-    it("tells how many artworks were kept on this device when Drive stopped listing them", () => {
-      expect(syncStatusMessage(signedIn, { ...idle, suspendedRemovals: 4 })).toEqual({
-        key: "removalsKept",
-        tone: "attention",
-        count: 4,
-      });
-      expect(syncStatusText({ key: "removalsKept", tone: "attention", count: 4 })).toBe(shared.sync.removalsKept(4));
+    it("tells how many artworks Drive no longer holds and that they are kept here", () => {
+      const missing: ISyncStatus = { ...idle, missingInDriveIds: ["a", "b", "c", "d"] };
+      expect(syncStatusMessage(signedIn, missing)).toEqual({ key: "missingInDrive", tone: "attention", count: 4 });
+      expect(syncStatusText({ key: "missingInDrive", tone: "attention", count: 4 })).toBe(shared.sync.missingInDrive(4));
+      expect(shared.sync.missingInDrive(4)).toContain("delete them here");
+      expect(shared.sync.missingInDrive(1)).toContain("delete it here");
     });
 
-    it("shows the kept note only when nothing more urgent applies, and never in an editor scope", () => {
-      const kept: ISyncStatus = { ...idle, suspendedRemovals: 3 };
+    it("says the PixelHB folder is in the Drive trash, ahead of the missing note", () => {
+      const trashed: ISyncStatus = { ...idle, driveFolderTrashed: true, missingInDriveIds: ["a"] };
+      expect(syncStatusMessage(signedIn, trashed)).toEqual({ key: "driveFolderTrashed", tone: "attention", count: 0 });
+      expect(syncStatusText({ key: "driveFolderTrashed", tone: "attention", count: 0 })).toBe(shared.sync.driveFolderTrashed);
+    });
+
+    it("shows these notes only when nothing more urgent applies, and never in an editor scope", () => {
+      const kept: ISyncStatus = { ...idle, missingInDriveIds: ["a"], driveFolderTrashed: true };
       expect(syncStatusMessage(signedIn, { ...kept, phase: "offline" })?.key).toBe("offline");
       expect(syncStatusMessage(signedIn, { ...kept, phase: "syncing" })?.key).toBe("syncing");
       expect(syncStatusMessage(signedIn, { ...kept, pendingCount: 1, tooLargeIds: ["x"] })?.key).toBe("tooLarge");

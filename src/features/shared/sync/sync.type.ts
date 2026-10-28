@@ -13,8 +13,13 @@ export interface ISyncStatus {
   remoteOnly: IGalleryListItem[];
   tooLargeIds: string[];
   lastSyncedAt: number | null;
-  /** Synced rows Drive stopped listing that the last full pass kept on this device instead of removing. */
-  suspendedRemovals: number;
+  /**
+   * Synced rows the last full pass kept on this device because Drive does not hold a live copy and
+   * has no trashed one proving a deletion (gone for good, or an empty answer). The user can delete them here.
+   */
+  missingInDriveIds: string[];
+  /** The PixelHB folder is in the Drive trash: nothing is removed until it is restored. */
+  driveFolderTrashed: boolean;
   /** Artworks the server refused because this device's clock is ahead of it. */
   clockSkewIds: string[];
   /** The last push was refused because the user's Google Drive has no space left. */
@@ -38,6 +43,16 @@ export interface ISyncPassContext {
   /** Ids whose push failed for a reason that is theirs alone; the pass goes on without them. */
   failedIds: Set<string>;
   hooks: ISyncPullHooks;
+  /** A push of this pass was accepted by Drive. */
+  uploaded: boolean;
+}
+
+/** What the removal step of a full pass found. */
+export interface IRemovalOutcome {
+  missingIds: string[];
+  folderTrashed: boolean;
+  /** Candidates are left that the status budget did not reach: another pass should follow soon. */
+  incomplete: boolean;
 }
 
 export interface ISyncPullHooks {

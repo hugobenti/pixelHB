@@ -13,10 +13,12 @@
  * - Offline, reauth and Drive errors abort the pass and never delete or overwrite anything. A push
  *   or a deletion that fails for one row alone is skipped, so one poisoned row cannot starve the others.
  * - A synced row is removed only on positive evidence: Drive's own trash holds a copy at least as new
- *   as the version we synced (`api.status`). Absence from the list, an unreadable Drive file, a
- *   failing status call and a pass that would remove a large share of the gallery all keep the
- *   rows; kept rows are counted in `suspendedRemovals`. A removed row moves to the local removed
- *   table for `REMOVED_RETENTION_MS`.
+ *   as the version we synced (`api.status`), however many rows that is. Absence from the list, an
+ *   unreadable Drive file and a failing status call keep the row; so does a trashed PixelHB folder
+ *   (children inherit `trashed`, `removalBrake`). Rows
+ *   whose status says Drive has nothing are published in `missingInDriveIds` so the user can delete
+ *   them. A pass asks at most `MAX_STATUS_CALLS_PER_PASS` statuses and remembers `absent` answers
+ *   for `ABSENT_RECHECK_MS`. A removed row moves to the local removed table for `REMOVED_RETENTION_MS`.
  * - A pull that would replace unsynced local work with a newer Drive copy first saves the local
  *   version as a new dirty "(conflict copy)" row, in the same store transaction.
  * - `stop()` aborts a pass still waiting for the cross-tab lock and waits only for work that is
@@ -27,16 +29,20 @@ import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileForma
 import type { IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 import { isThumbnailCurrent } from "@/features/shared/artwork/thumbnailFreshness";
 import { shared } from "@/content/shared";
+import { tombstoneStampToSend } from "@/features/shared/artwork/updatedAtStamp";
 import { DRIVE_FILE_NAME_MAX } from "@/features/shared/drive/galleryApi";
 import type { IGalleryListItem } from "@/features/shared/drive/galleryApi.type";
 import type { IGalleryApiClient, TApiResult } from "@/features/shared/drive/galleryApiClient.type";
 import { pngBase64FromDataUrl, remoteFileToArtwork } from "./logic/remoteArtwork";
 import { conflictCopyTitle, needsConflictCopy } from "./logic/conflictCopy";
-import { isDeletionConfirmed, shouldBrakeRemovals } from "./logic/removalSafety";
+import { nextDriveFull } from "./logic/driveFullState";
+import { isDeletionConfirmed, removalBrake } from "./logic/removalSafety";
+import { ABSENT_RECHECK_MS, planStatusChecks } from "./logic/statusBudget";
 import { decidePull, planPush, planSync, retryDelayMs } from "./logic/syncRules";
 import type { ILocalSyncFacts } from "./logic/syncRules.type";
 import type {
   ISyncEngine,
+  IRemovalOutcome,
   ISyncEngineDeps,
   ISyncPassContext,
   ISyncPullHooks,
@@ -52,6 +58,8 @@ export const PUSH_DEBOUNCE_MS = 10_000;
 export const REQUEST_TIMEOUT_MS = 30_000;
 /** How long a row the engine removed stays restorable in the local removed table. */
 export const REMOVED_RETENTION_MS = 30 * 24 * 3_600_000;
+/** Pause before the follow-up pass that continues a removal check the status budget cut short. */
+export const STATUS_CONTINUE_MS = 2_000;
 
 export const INITIAL_SYNC_STATUS: ISyncStatus = {
   phase: "disabled",
@@ -59,7 +67,8 @@ export const INITIAL_SYNC_STATUS: ISyncStatus = {
   remoteOnly: [],
   tooLargeIds: [],
   lastSyncedAt: null,
-  suspendedRemovals: 0,
+  missingInDriveIds: [],
+  driveFolderTrashed: false,
   clockSkewIds: [],
   driveFull: false,
 };
@@ -124,6 +133,9 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   const deferred = new Set<string>();
   const tooLarge = new Set<string>();
   const clockSkew = new Set<string>();
+  /** Artworks whose last status answer was `absent`: id → when to ask again. */
+  const absentUntil = new Map<string, number>();
+  let driveFull = false;
   const rowListeners = new Set<() => void>();
 
   function track(work: Promise<unknown>): void {
@@ -139,6 +151,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   function update(gen: number, patch: Partial<ISyncStatus>): void {
     guard(gen);
     if (patch.phase) phase = patch.phase;
+    if (patch.driveFull !== undefined) driveFull = patch.driveFull;
     deps.setStatus(patch);
   }
 
@@ -174,26 +187,28 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   /** Reports an API failure, schedules the retry the failure calls for, and unwinds the pass. */
   function fail(gen: number, result: TSyncApiFailure): never {
     guard(gen);
+    // A full Drive only stays reported while it is what stopped the pass.
+    const cleared = nextDriveFull(driveFull, "otherFailure", 0);
     switch (result.kind) {
       case "reauth":
       case "unauthenticated":
         cancelRetry();
-        update(gen, { phase: "reauth" });
+        update(gen, { phase: "reauth", driveFull: cleared });
         break;
       case "offline":
-        update(gen, { phase: "offline" });
+        update(gen, { phase: "offline", driveFull: cleared });
         scheduleRetry(gen, retryDelayMs(attempt++, null));
         break;
       case "retry":
-        update(gen, { phase: "error" });
+        update(gen, { phase: "error", driveFull: cleared });
         scheduleRetry(gen, retryDelayMs(attempt++, result.retryAfterMs));
         break;
       case "driveFull":
-        update(gen, { phase: "error", driveFull: true });
+        update(gen, { phase: "error", driveFull: nextDriveFull(driveFull, "driveFull", 0) });
         scheduleRetry(gen, retryDelayMs(attempt++, null));
         break;
       default:
-        update(gen, { phase: "error" });
+        update(gen, { phase: "error", driveFull: cleared });
         scheduleRetry(gen, retryDelayMs(attempt++, null));
     }
     throw new PassAbort();
@@ -331,6 +346,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     const result = await api.save({ artwork: serializeArtworkFile(row), previewPngBase64 });
     guard(gen);
     if (result.ok) {
+      ctx.uploaded = true;
       await store.markSynced(id, result.value.updatedAt);
       tooLarge.delete(id);
       clockSkew.delete(id);
@@ -386,20 +402,28 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   }
 
   /**
-   * Removes the synced rows Drive no longer lists, but only on positive evidence and never in bulk:
-   * a pass that would remove a large share of the gallery (or everything, from an empty list) applies
-   * nothing. Resolves with how many rows were kept although Drive does not hold them.
+   * Removes the synced rows Drive no longer lists, one by one and only on positive evidence (a
+   * trashed copy, see `isDeletionConfirmed`), unless `removalBrake` applies, in which case nothing is
+   * removed. Resolves with the ids that are kept although Drive holds no live copy.
    */
   async function applyRemovals(
     ctx: ISyncPassContext,
     candidates: readonly string[],
     localById: ReadonlyMap<string, IStoredArtwork>,
-    context: { syncedCount: number; remoteListEmpty: boolean },
-  ): Promise<number> {
+    rootFolderTrashed: boolean,
+  ): Promise<IRemovalOutcome> {
     const { gen } = ctx;
-    if (shouldBrakeRemovals({ removalCount: candidates.length, ...context })) return candidates.length;
-    let kept = 0;
-    for (const id of candidates) {
+    for (const id of [...absentUntil.keys()]) if (!candidates.includes(id)) absentUntil.delete(id);
+    const brake = removalBrake({ removalCount: candidates.length, rootFolderTrashed });
+    if (brake === "folderTrashed") return { missingIds: [], folderTrashed: true, incomplete: false };
+
+    const facts = candidates.flatMap((id) => {
+      const local = localById.get(id);
+      return local ? [{ id, updatedAt: local.updatedAt }] : [];
+    });
+    const plan = planStatusChecks(facts, absentUntil, deps.now());
+    const missing = new Set(plan.remembered);
+    for (const id of plan.check) {
       const local = localById.get(id);
       if (!local) continue;
       const status = await api.status(id);
@@ -410,14 +434,19 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
         if (status.kind === "failed") ctx.failedIds.add(id);
         continue;
       }
-      if (status.value.state === "present") continue;
-      if (!isDeletionConfirmed(status.value, local.sync.syncedUpdatedAt)) {
-        kept += 1;
+      if (status.value.state === "present") {
+        absentUntil.delete(id);
         continue;
       }
+      if (!isDeletionConfirmed(status.value, local.sync.syncedUpdatedAt)) {
+        if (status.value.state === "absent") absentUntil.set(id, deps.now() + ABSENT_RECHECK_MS);
+        missing.add(id);
+        continue;
+      }
+      absentUntil.delete(id);
       if ((await removeOne(ctx, id, local.updatedAt)) === "deferred") ctx.deferredIds.add(id);
     }
-    return kept;
+    return { missingIds: [...missing].sort(), folderTrashed: false, incomplete: plan.leftOver > 0 };
   }
 
   /** Returns false when it ended without publishing the final status itself. */
@@ -427,24 +456,26 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     await (adoption ?? adopt(owner, gen));
     guard(gen);
     if (!environment.isOnline()) {
-      update(gen, { phase: "offline" });
+      update(gen, { phase: "offline", driveFull: nextDriveFull(driveFull, "otherFailure", 0) });
       return false;
     }
     update(gen, { phase: "syncing" });
 
     let remote: Map<string, IGalleryListItem> | null = null;
     let unreadable: ReadonlySet<string> = new Set();
+    let rootFolderTrashed = false;
     if (kind === "full") {
       const listed = await api.list();
       guard(gen);
       if (!listed.ok) fail(gen, listed);
       remote = new Map(listed.value.items.map((item) => [item.id, item]));
       unreadable = new Set(listed.value.unreadableIds);
+      rootFolderTrashed = listed.value.rootFolderTrashed;
     }
 
     for (const deletion of await store.listDeletions(owner)) {
       guard(gen);
-      const result = await api.remove(deletion.id, deletion.deletedAt);
+      const result = await api.remove(deletion.id, tombstoneStampToSend(deletion.deletedAt, deps.now()));
       guard(gen);
       if (result.ok) {
         await store.dropDeletion(deletion.id);
@@ -466,7 +497,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       }
     }
 
-    let suspendedRemovals: number | null = null;
+    let removal: IRemovalOutcome | null = null;
     if (remote) {
       const locals = await store.listOwned(owner);
       const open = await presence.openIds();
@@ -479,10 +510,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       remoteOnly = remoteItems.filter((item) => !localById.has(item.id));
       update(gen, { remoteOnly });
 
-      suspendedRemovals = await applyRemovals(ctx, plan.removals, localById, {
-        syncedCount: locals.filter((row) => row.sync.state === "synced").length,
-        remoteListEmpty: remoteItems.length === 0 && unreadable.size === 0,
-      });
+      removal = await applyRemovals(ctx, plan.removals, localById, rootFolderTrashed);
       for (const id of plan.downloads) {
         if ((await pullOne(ctx, id)) === "deferred") ctx.deferredIds.add(id);
       }
@@ -501,8 +529,10 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       pendingCount,
       tooLargeIds: [...tooLarge],
       clockSkewIds: [...clockSkew],
-      driveFull: false,
-      ...(suspendedRemovals === null ? {} : { suspendedRemovals }),
+      driveFull: nextDriveFull(driveFull, ctx.uploaded ? "uploaded" : "noUpload", pendingCount),
+      ...(removal === null
+        ? {}
+        : { missingInDriveIds: removal.missingIds, driveFolderTrashed: removal.folderTrashed }),
     };
     if (ctx.failedIds.size > 0) {
       update(gen, { ...summary, phase: "error" });
@@ -512,7 +542,8 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     update(gen, { ...summary, phase: "idle", lastSyncedAt: deps.now() });
     if (kind === "full") {
       attempt = 0;
-      cancelRetry();
+      if (removal?.incomplete) scheduleRetry(gen, STATUS_CONTINUE_MS);
+      else cancelRetry();
     }
     return true;
   }
@@ -524,6 +555,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       signal,
       deferredIds: new Set(),
       failedIds: new Set(),
+      uploaded: false,
       hooks: { isStale: () => false, onFailure: (result) => fail(gen, result) },
     };
     let published = false;
@@ -546,7 +578,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     } catch (error) {
       if (error instanceof PassAbort || gen !== generation) return;
       deps.warn(String(error), owner);
-      update(gen, { phase: "error" });
+      update(gen, { phase: "error", driveFull: nextDriveFull(driveFull, "otherFailure", 0) });
       scheduleRetry(gen, retryDelayMs(attempt++, null));
     }
   }
@@ -587,6 +619,8 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     deferred.clear();
     tooLarge.clear();
     clockSkew.clear();
+    absentUntil.clear();
+    driveFull = false;
     cancelDebounce();
     cancelRetry();
     for (const unsubscribe of unsubscribers) unsubscribe();
@@ -670,6 +704,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
         signal: controller.signal,
         deferredIds: new Set(),
         failedIds: new Set(),
+        uploaded: false,
         hooks: { isStale, onFailure } satisfies ISyncPullHooks,
       },
       id,

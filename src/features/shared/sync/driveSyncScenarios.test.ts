@@ -56,6 +56,8 @@ function createFakeDrive() {
     emptyList: false,
     /** The list query hides the files this predicate selects. */
     hideFromList: null as null | ((file: IFakeFile) => boolean),
+    /** Every query answers empty, trashed or not (the app lost its `drive.file` access to the files). */
+    scopeLost: false,
     /** Uploads answer 403 storageQuotaExceeded. */
     full: false,
     /** Trashing these Drive file ids answers this HTTP status. */
@@ -92,7 +94,7 @@ function createFakeDrive() {
       const wantTrashed = q.includes("trashed=true");
       const isList = q.includes("key='pixelhb' and value='artwork'");
       const byId = /key='artworkId' and value='(.*)' }/.exec(q)?.[1];
-      let matches = [...files.values()].filter((file) => file.trashed === wantTrashed);
+      let matches = state.scopeLost ? [] : [...files.values()].filter((file) => file.trashed === wantTrashed);
       if (q.includes("value='root'"))
         matches = matches.filter((file) => file.appProperties.pixelhb === "root");
       else if (isList) {
@@ -185,7 +187,6 @@ function makeDevice(routes: IRoutes) {
   };
   let status: ISyncStatus = INITIAL_SYNC_STATUS;
   const timers: Array<{ at: number; run: () => void; live: boolean }> = [];
-  const now = 1_000_000;
   const engine = createSyncEngine({
     api: createGalleryApiClient(gallery as typeof fetch),
     store: syncStore,
@@ -197,14 +198,14 @@ function makeDevice(routes: IRoutes) {
     environment: { isOnline: () => true, onOnline: () => () => {}, onHidden: () => () => {} },
     timers: {
       after: (ms, run) => {
-        const timer = { at: now + ms, run, live: true };
+        const timer = { at: Date.now() + ms, run, live: true };
         timers.push(timer);
         return () => {
           timer.live = false;
         };
       },
     },
-    now: () => now,
+    now: () => Date.now(),
     newId: () => crypto.randomUUID(),
     setStatus: (patch) => {
       status = { ...status, ...patch };
@@ -283,26 +284,74 @@ async function postFromAnotherDevice(id: string, patch: { title: string; updated
 }
 
 describe("deletion needs positive evidence", () => {
-  it("a trashed PixelHB folder (every child trashed) removes nothing and tells the user", async () => {
+  it("a trashed PixelHB folder (every child trashed) removes nothing and says so", async () => {
     const device = await seedSynced(3);
     drive.trashEverything();
     await device.engine.syncNow();
     expect(await rows()).toHaveLength(3);
     expect(await db.removedArtworks.count()).toBe(0);
-    expect(device.status().suspendedRemovals).toBe(3);
-    expect(syncStatusMessage(signedIn, device.status())).toMatchObject({
-      key: "removalsKept",
-      count: 3,
-    });
+    expect(device.status()).toMatchObject({ driveFolderTrashed: true, missingInDriveIds: [] });
+    expect(syncStatusMessage(signedIn, device.status())?.key).toBe("driveFolderTrashed");
+    await device.engine.stop();
+  });
+
+  it("restoring the trashed folder brings the sync back, nothing was lost", async () => {
+    const device = await seedSynced(3);
+    drive.trashEverything();
+    await device.engine.syncNow();
+    for (const file of drive.state.files.values()) file.trashed = false;
+    await device.engine.syncNow();
+    expect(await syncedRows()).toHaveLength(3);
+    expect(device.status()).toMatchObject({ driveFolderTrashed: false, missingInDriveIds: [] });
+    await device.engine.stop();
+  });
+
+  it("five artworks each trashed in Drive on their own are all moved to the removed table", async () => {
+    const device = await seedSynced(5);
+    for (const file of drive.state.files.values()) {
+      if (file.appProperties.pixelhb === "artwork" || file.appProperties.pixelhb === "preview") file.trashed = true;
+    }
+    await device.engine.syncNow();
+    expect(await rows()).toHaveLength(0);
+    expect(await db.removedArtworks.count()).toBe(5);
+    expect(device.status()).toMatchObject({ driveFolderTrashed: false, missingInDriveIds: [] });
+    await device.engine.stop();
+  });
+
+  it("artworks deleted forever in Drive stay on this device, are marked, and can be deleted here", async () => {
+    const device = await seedSynced(3);
+    const ids = (await rows()).map((row) => row.id).sort();
+    drive.state.files.clear();
+    await device.engine.syncNow();
+    expect(await syncedRows()).toHaveLength(3);
+    expect(device.status().missingInDriveIds).toEqual(ids);
+    expect(syncStatusMessage(signedIn, device.status())).toMatchObject({ key: "missingInDrive", count: 3 });
+
+    artworkService.setActiveOwner(OWNER);
+    expect(await artworkService.deleteArtwork(ids[0])).toBe(true);
+    await device.engine.syncNow();
+    expect(await db.artworks.get(ids[0])).toBeUndefined();
+    expect(await db.deletions.count()).toBe(0);
+    expect(device.status().missingInDriveIds).toEqual(ids.slice(1));
     await device.engine.stop();
   });
 
   it("an empty Drive answer (scope lost, client id changed) removes nothing", async () => {
     const device = await seedSynced(3);
+    drive.state.scopeLost = true;
+    await device.engine.syncNow();
+    expect(await syncedRows()).toHaveLength(3);
+    expect(await db.removedArtworks.count()).toBe(0);
+    expect(drive.liveArtworkFiles()).toHaveLength(3);
+    await device.engine.stop();
+  });
+
+  it("a list that answers empty while the files are still there removes nothing", async () => {
+    const device = await seedSynced(3);
     drive.state.emptyList = true;
     await device.engine.syncNow();
     expect(await syncedRows()).toHaveLength(3);
-    expect(drive.liveArtworkFiles()).toHaveLength(3);
+    expect(device.status().missingInDriveIds).toEqual([]);
     await device.engine.stop();
   });
 
@@ -313,7 +362,7 @@ describe("deletion needs positive evidence", () => {
     await device.engine.syncNow();
     expect(await syncedRows()).toHaveLength(3);
     expect(victim.trashed).toBe(false);
-    expect(device.status().suspendedRemovals).toBe(0);
+    expect(device.status().missingInDriveIds).toEqual([]);
     await device.engine.stop();
   });
 
@@ -328,7 +377,7 @@ describe("deletion needs positive evidence", () => {
     await device.engine.syncNow();
     expect(await syncedRows()).toHaveLength(2);
     expect(await db.removedArtworks.count()).toBe(0);
-    expect(device.status().suspendedRemovals).toBe(0);
+    expect(device.status().missingInDriveIds).toEqual([]);
     await device.engine.stop();
   });
 
@@ -343,11 +392,10 @@ describe("deletion needs positive evidence", () => {
       { params: Promise.resolve({ id: first.id }) },
     );
     expect(drive.artworkFileOf(first.id)?.trashed).toBe(true);
-    // Three synced rows, one removal: below the brake.
     await device.engine.syncNow();
     expect((await rows()).map((row) => row.id).sort()).toEqual(rest.map((row) => row.id).sort());
     expect((await syncStore.listRemoved(OWNER)).map((row) => row.id)).toEqual([first.id]);
-    expect(device.status().suspendedRemovals).toBe(0);
+    expect(device.status().missingInDriveIds).toEqual([]);
 
     expect(await syncStore.restoreRemoved(first.id, OWNER)).toBe(true);
     await device.engine.syncNow();

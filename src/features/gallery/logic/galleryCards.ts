@@ -23,7 +23,10 @@ export function galleryCards(
   remoteOnly: IGalleryListItem[],
   /** True while a sync pass runs: only then are Drive-only artworks actually being downloaded. */
   downloading: boolean,
+  /** Synced artworks Drive no longer holds; they get a marker so they can be told apart and deleted. */
+  missingInDriveIds: readonly string[] = [],
 ): IGalleryCard[] {
+  const missing = new Set(missingInDriveIds);
   const localIds = new Set(local.map((summary) => summary.id));
   const localCards = local.map((summary): IGalleryCard => ({
     id: summary.id,
@@ -33,7 +36,10 @@ export function galleryCards(
     updatedAt: summary.updatedAt,
     thumbnail: artworkThumbnail(summary.thumbnail),
     openable: true,
-    marker: MARKERS[summary.syncState],
+    marker:
+      summary.syncState === "synced" && missing.has(summary.id)
+        ? "missingInDrive"
+        : MARKERS[summary.syncState],
   }));
   /** The preview route needs the session cookie, which the image optimizer's server fetch lacks. */
   const remoteCards = remoteOnly

@@ -19,8 +19,12 @@ export const shared: ISharedContent = {
       count === 1
         ? "Your device clock looks wrong; this artwork isn’t syncing."
         : `Your device clock looks wrong; ${count} artworks aren’t syncing.`,
-    removalsKept: (count) =>
-      `${count} ${count === 1 ? "artwork isn’t" : "artworks aren’t"} in your Drive anymore; kept on this device.`,
+    missingInDrive: (count) =>
+      count === 1
+        ? "1 artwork isn’t in your Drive anymore. It’s kept on this device; delete it here if you don’t need it."
+        : `${count} artworks aren’t in your Drive anymore. They’re kept on this device; delete them here if you don’t need them.`,
+    driveFolderTrashed:
+      "Your PixelHB folder is in the Drive trash. Your drawings are kept on this device; restore the folder in Drive to keep syncing.",
     conflictCopySuffix: " (conflict copy)",
     openDriveFolder: "Open PixelHB folder in Drive",
     opensInNewTab: "(opens in a new tab)",
