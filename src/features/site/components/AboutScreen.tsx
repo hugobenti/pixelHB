@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * About page: what PixelHB is, the principle that work stays local, the maker's story and the
+ * About page: what PixelHB is, the principle that the art belongs to the artist, the maker's story and the
  * source code link.
  */
 
@@ -35,6 +35,13 @@ export function AboutScreen() {
               </p>
               <p className={aboutScreen.signature}>{about.signature}</p>
             </>
+          )}
+          {section.id === "ownership" && (
+            <p className={aboutScreen.prose}>
+              <Link href="/privacy" className={aboutScreen.link}>
+                {about.privacyLink}
+              </Link>
+            </p>
           )}
           {section.id === "source" && (
             <p className={aboutScreen.prose}>

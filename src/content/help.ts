@@ -5,7 +5,7 @@ export const help: IHelpContent = {
   metaDescription: "How to create, save, export and draw with PixelHB, plus its keyboard shortcuts.",
   h1: "Help",
   tocLabel: "On this page",
-  intro: "Everything you need to start drawing, and where your work lives.",
+  intro: "Everything you need to start drawing, and where your art lives.",
   sections: [
     {
       id: "getting-started",
@@ -18,9 +18,15 @@ export const help: IHelpContent = {
       id: "saving",
       title: "Where your work is saved",
       paragraphs: [
-        "PixelHB saves every change automatically in this browser. There’s no account, and nothing is uploaded.",
-        "Your artworks stay in this browser on this device. Clearing your browsing data deletes them, and they don’t show up in a private window, another browser or another device.",
-        "To keep a copy or move an artwork, open it, go to Settings › Export and choose Export JSON. Open that file later with Import file in your gallery.",
+        "PixelHB saves every change automatically. Where it goes depends on whether you’re signed in. Either way, your art is yours: PixelHB keeps no copies.",
+        "Signed out: your artworks stay in this browser on this device. Clearing your browsing data deletes them, and they don’t show up in a private window, another browser or another device.",
+        "Signed in with Google: your artworks are also saved to a PixelHB folder in your Google Drive, so they appear on every device where you sign in. They pass through PixelHB’s server on the way and are never stored there.",
+        "Syncing happens in the background a few seconds after you stop drawing. Offline, you keep drawing; changes are sent when you’re back online. Very large artworks may be too big to sync. They stay in this browser, so export them to keep a copy.",
+        "If the same artwork is changed on two devices, the most recent change wins and the older one is replaced.",
+        "When you sign in on a computer for the first time, any artworks already saved in that browser without an account are added to your Drive. On a shared computer, check the gallery before signing in: someone else’s drawings would be uploaded too.",
+        "Signing out removes that account’s artworks from this browser; they stay in your Drive. If some changes haven’t reached Drive yet, PixelHB asks first: Download them, Sign out anyway, or Cancel.",
+        "To disconnect PixelHB from your Google account, sign out, then remove PixelHB from your Google account’s third-party connections. Your files stay in your Drive.",
+        "To keep a copy or move an artwork anywhere, open it, go to Settings › Export and choose Export JSON. Open that file later with Import file in your gallery.",
       ],
     },
     {
@@ -76,5 +82,6 @@ export const help: IHelpContent = {
     },
   ],
   contactPrompt: "Something not working, or missing?",
+  privacyLink: "How PixelHB handles your data",
   contactLink: "Tell me on the Feedback & contact page",
 };

@@ -436,6 +436,7 @@ export interface IAboutContent {
   sections: { id: string; title: string; paragraphs: string[] }[];
   feedbackLink: string;
   githubLink: string;
+  privacyLink: string;
   signature: string;
 }
 
@@ -498,6 +499,7 @@ export interface IHelpContent {
   shortcuts: IHelpShortcut[];
   contactPrompt: string;
   contactLink: string;
+  privacyLink: string;
 }
 
 /** Copy for the 404 and error pages. */

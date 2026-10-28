@@ -3,9 +3,9 @@ import type { IHomeContent } from "./content.type";
 export const home: IHomeContent = {
   metaTitle: { absolute: "PixelHB · Pixel art, right in your browser" },
   metaDescription:
-    "Free online pixel art editor. Draw sprites, icons and tiles with layers and palettes up to 256 colors, then export PNG. No account, no install: your art stays in your browser.",
+    "Free online pixel art editor. Draw sprites, icons and tiles with layers and palettes up to 256 colors, then export PNG. No account needed, and your art is always yours.",
   h1: "Pixel art, right in your browser.",
-  lead: "Draw sprites, icons and tiles with layers, a reference image and your own palette. No account, no install.",
+  lead: "Draw sprites, icons and tiles with layers, a reference image and your own palette. No account needed. Sign in to keep your art in your own Google Drive.",
   primary: "Start drawing",
   secondary: "Read the guide",
   promises: [
@@ -14,8 +14,8 @@ export const home: IHomeContent = {
       text: "No sign-up and no download. Pick a canvas size and start.",
     },
     {
-      title: "Stays on your device",
-      text: "Your artworks save automatically in this browser. Nothing is uploaded.",
+      title: "Your art is yours",
+      text: "It saves automatically in this browser, or in your own Google Drive when you sign in. PixelHB keeps no copies.",
     },
     {
       title: "Ready for your game",
@@ -41,9 +41,9 @@ export const home: IHomeContent = {
     { title: "Export", text: "A crisp PNG for your game or portfolio." },
   ],
   storageNote:
-    "Your artworks live in this browser only, so clearing your browsing data deletes them.",
+    "Signed out, your artworks live in this browser, and clearing your browsing data deletes them. Signed in, they’re kept in your Google Drive too.",
   storageLink: "Where your work is saved",
   closingTitle: "Ready to draw?",
-  closingText: "Your first canvas is one click away. No sign-up.",
+  closingText: "Your first canvas is one click away. No sign-up needed.",
   closingCta: "Start drawing",
 };

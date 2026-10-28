@@ -3,16 +3,19 @@ import { site } from "./site";
 
 export const about: IAboutContent = {
   metaTitle: "About",
-  metaDescription: "Who makes PixelHB and why.",
+  metaDescription: "Who makes PixelHB, and why your art always stays yours.",
   h1: "About PixelHB",
   intro:
-    "PixelHB is a pixel-art editor that runs in your browser. It’s made for drawing sprites, icons and tiles without accounts, downloads or waiting.",
+    "What you draw is yours. PixelHB is just the tool: a pixel-art editor that runs in your browser, made for drawing sprites, icons and tiles without installs or waiting.",
   sections: [
     {
-      id: "privacy",
-      title: "Your work stays with you",
+      id: "ownership",
+      title: "Your art belongs to you",
       paragraphs: [
-        "Everything happens on your device. Your artworks are saved in this browser, and nothing is sent to a server.",
+        "PixelHB keeps no copies of your work and makes no claim on it. What you make, you own: share it, sell it, put it in your game.",
+        "If you don’t sign in, your artworks stay in this browser.",
+        "Sign in with Google (optional) and they live in your own Google Drive, in a PixelHB folder you control. On the way there they pass through PixelHB’s server, which forwards them and never stores them. PixelHB can only see the files it created, nothing else in your Drive.",
+        "Exports are yours too: PNG and JSON files you can keep anywhere.",
       ],
     },
     {
@@ -32,5 +35,6 @@ export const about: IAboutContent = {
   ],
   feedbackLink: "Send feedback",
   githubLink: "View on GitHub",
+  privacyLink: "Read the privacy page",
   signature: site.author,
 };
