@@ -25,7 +25,7 @@ export const privacy: IPrivacyContent = {
         "Signing in is optional. When you do, PixelHB saves your artworks to a folder called PixelHB in your own Google Drive, so you can open them on any device.",
         "PixelHB asks Google for your name, email address and profile picture, to show who is signed in, and for permission to see and change only the files PixelHB itself creates in your Drive (Google calls this “drive.file”). It cannot see, open or list any other file in your Drive.",
         "When an artwork is saved or opened, it passes through PixelHB’s server on its way between your browser and Google Drive. The server does not store it, log its contents or keep a copy. It only forwards it.",
-        "Your Google sign-in is kept in a secure, encrypted cookie in your browser. PixelHB has no user database and no account records.",
+        "Your Google sign-in is kept in a secure, encrypted cookie in your browser. The cookie lasts up to 7 days after your last visit, and signing out also revokes PixelHB’s access token at Google. PixelHB has no user database and no account records.",
       ],
     },
     {

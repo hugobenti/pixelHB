@@ -16,13 +16,15 @@ export interface IGoogleRefreshDeps {
 
 export type TRefreshOutcome =
   | { kind: "refreshed"; state: IGoogleTokenState }
-  /** Google answered 400/401: the grant was revoked or is invalid. */
+  /** Google answered 400/401 with `invalid_grant` or `invalid_token`: the grant was revoked. */
   | { kind: "rejected" }
-  /** Network failure, 429/5xx or a malformed body: try again later. */
+  /** Network failure, 429/5xx, any other 400/401 (e.g. `invalid_client`) or a malformed body: try again later. */
   | { kind: "unavailable" };
 
 /** The part of Auth.js's `Account` the jwt callback reads (Auth.js `Account` is assignable). */
 export interface IGoogleSignInAccount {
+  /** The Google account id (`sub` of the id token): the stable owner id. */
+  providerAccountId?: string;
   access_token?: string;
   refresh_token?: string;
   expires_at?: number;
@@ -51,7 +53,7 @@ export interface IAuthSessionProviderProps {
 export type TDriveAccess =
   | { kind: "ok"; accessToken: string }
   | { kind: "unauthenticated" }
-  /** Google refused the refresh (400/401) or no refresh token is available. */
+  /** Google reported the grant revoked (`invalid_grant`) or no refresh token is available. */
   | { kind: "reauth" }
   /** Google's token endpoint is unreachable, rate limited or failing. */
   | { kind: "unavailable" };

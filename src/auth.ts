@@ -7,13 +7,21 @@
  * `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_REDIRECT_PROXY_URL` and
  * `AUTH_TRUST_HOST` are read by Auth.js itself. The session callback returns a token-free object,
  * and the jwt callback ignores `session` update payloads, so the client cannot write token fields.
+ * Sign-out revokes the Google grant (best effort, never blocks or fails the sign-out).
  */
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 
-import { DRIVE_FILE_SCOPE, rotateGoogleToken } from "@/features/shared/auth/logic/googleToken";
+import {
+  DRIVE_FILE_SCOPE,
+  revokeGoogleToken,
+  rotateGoogleToken,
+} from "@/features/shared/auth/logic/googleToken";
 import { toPublicSession } from "@/features/shared/auth/logic/publicSession";
 import { googleRefreshDeps } from "@/features/shared/auth/server/driveAccess";
+
+/** The sign-in cookie slides: it expires 7 days after the last visit (Auth.js default is 30). */
+const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -28,11 +36,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: SESSION_MAX_AGE_SECONDS },
   pages: { error: "/" },
   callbacks: {
     jwt: ({ token, account }) =>
       rotateGoogleToken({ token, account }, googleRefreshDeps(Date.now())),
     session: ({ session, token }) => toPublicSession(token, session.expires),
+  },
+  events: {
+    signOut: async (message) => {
+      if ("token" in message) await revokeGoogleToken(message.token, fetch);
+    },
   },
 });
