@@ -14,6 +14,14 @@ export const shared: ISharedContent = {
         : `${count} artworks are too large to sync. Export them to keep a copy.`,
     unconfirmed: (name) =>
       `Can’t confirm your account right now. Showing ${name ? `${name}’s` : "your"} drawings${name ? "" : " here"}; changes sync once we can.`,
+    driveFull: "Your Google Drive is full. Free some space to keep syncing.",
+    clockSkew: (count) =>
+      count === 1
+        ? "Your device clock looks wrong; this artwork isn’t syncing."
+        : `Your device clock looks wrong; ${count} artworks aren’t syncing.`,
+    removalsKept: (count) =>
+      `${count} ${count === 1 ? "artwork isn’t" : "artworks aren’t"} in your Drive anymore; kept on this device.`,
+    conflictCopySuffix: " (conflict copy)",
     openDriveFolder: "Open PixelHB folder in Drive",
     opensInNewTab: "(opens in a new tab)",
   },

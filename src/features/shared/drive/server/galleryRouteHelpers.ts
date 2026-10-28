@@ -12,7 +12,7 @@
 import { parseArtworkFile, serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import { DRIVE_SYNC_ENABLED } from "@/features/shared/auth/driveSyncFlag";
 import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
-import { ARTWORK_ID_PATTERN, MAX_SYNC_BODY_BYTES } from "../galleryApi";
+import { ARTWORK_ID_PATTERN, MAX_CLOCK_SKEW_MS, MAX_SYNC_BODY_BYTES } from "../galleryApi";
 import type { IGalleryErrorResponse } from "../galleryApi.type";
 import { createDriveArtworkStore } from "./driveArtworkStore";
 import type { IDriveArtworkStore } from "./driveArtworkStore.type";
@@ -35,6 +35,8 @@ const DEFAULT_LIMITS: ISaveBodyLimits = {
 const BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const RATE_LIMIT_REASONS = new Set(["rateLimitExceeded", "userRateLimitExceeded"]);
+const DRIVE_FULL_REASON = "storageQuotaExceeded";
+const HTTP_INSUFFICIENT_STORAGE = 507;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_TOO_MANY_REQUESTS = 429;
@@ -42,6 +44,7 @@ const HTTP_SERVER_ERROR = 500;
 
 const BAD_REQUEST: TRequestRejection = { ok: false, status: 400, code: "bad_request" };
 const TOO_LARGE: TRequestRejection = { ok: false, status: 413, code: "too_large" };
+const CLOCK_SKEW: TRequestRejection = { ok: false, status: 400, code: "clock_skew" };
 
 export function galleryErrorResponse(
   status: number,
@@ -54,6 +57,9 @@ export function galleryErrorResponse(
 export function driveErrorToResponse(error: DriveError): Response {
   if (error.status === HTTP_UNAUTHORIZED) {
     return galleryErrorResponse(401, { code: "reauth" });
+  }
+  if (error.status === HTTP_FORBIDDEN && error.reason === DRIVE_FULL_REASON) {
+    return galleryErrorResponse(HTTP_INSUFFICIENT_STORAGE, { code: "drive_full" });
   }
   const unavailable =
     error.status === 0 ||
@@ -127,7 +133,12 @@ function decodePng(base64: string): Uint8Array | null {
     : null;
 }
 
-function parseSaveBody(body: unknown, id: string): TSaveRequestResult {
+/** A stamp ahead of the server clock by more than the tolerance would freeze the artwork on every device. */
+function isTooFarAhead(stamp: number, nowMs: number): boolean {
+  return stamp > nowMs + MAX_CLOCK_SKEW_MS;
+}
+
+function parseSaveBody(body: unknown, id: string, nowMs: number): TSaveRequestResult {
   if (!isPlainObject(body) || !isPlainObject(body.artwork) || typeof body.previewPngBase64 !== "string") {
     return BAD_REQUEST;
   }
@@ -142,6 +153,9 @@ function parseSaveBody(body: unknown, id: string): TSaveRequestResult {
   const { meta, data } = parsed;
   if (!Number.isSafeInteger(meta.createdAt) || !Number.isSafeInteger(meta.updatedAt)) {
     return BAD_REQUEST;
+  }
+  if (isTooFarAhead(meta.updatedAt, nowMs)) {
+    return CLOCK_SKEW;
   }
   const previewPng = decodePng(previewPngBase64);
   if (!previewPng) {
@@ -167,6 +181,7 @@ export async function readSaveRequest(
   request: Request,
   id: string,
   limits: ISaveBodyLimits = DEFAULT_LIMITS,
+  nowMs: number = Date.now(),
 ): Promise<TSaveRequestResult> {
   try {
     const compressed = await readBodyBytes(request, limits.maxCompressedBytes);
@@ -182,13 +197,13 @@ export async function readSaveRequest(
       }
     }
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    return parseSaveBody(JSON.parse(text), id);
+    return parseSaveBody(JSON.parse(text), id, nowMs);
   } catch {
     return BAD_REQUEST;
   }
 }
 
-export async function readDeleteRequest(request: Request): Promise<TDeleteRequestResult> {
+export async function readDeleteRequest(request: Request, nowMs: number = Date.now()): Promise<TDeleteRequestResult> {
   try {
     const bytes = await readBodyBytes(request, MAX_DELETE_BODY_BYTES);
     if (bytes === null) {
@@ -199,9 +214,10 @@ export async function readDeleteRequest(request: Request): Promise<TDeleteReques
       return BAD_REQUEST;
     }
     const { deletedAt } = body;
-    return typeof deletedAt === "number" && Number.isSafeInteger(deletedAt) && deletedAt >= 0
-      ? { ok: true, deletedAt }
-      : BAD_REQUEST;
+    if (typeof deletedAt !== "number" || !Number.isSafeInteger(deletedAt) || deletedAt < 0) {
+      return BAD_REQUEST;
+    }
+    return isTooFarAhead(deletedAt, nowMs) ? CLOCK_SKEW : { ok: true, deletedAt };
   } catch {
     return BAD_REQUEST;
   }

@@ -4,8 +4,9 @@
  * editor bar, account panel), and looks its copy up.
  *
  * Notes:
- * Order: unconfirmed (provisional account), reauth, offline, syncing, too large, saved. Engine phase `error` reads as offline (Drive
- * could not be reached and the local copy is what is shown); phase `disabled` while signed in means
+ * Order: unconfirmed (provisional account), reauth, Drive full, clock skew, offline, syncing, too large, kept
+ * removals, saved. Engine phase `error` reads as offline (Drive could not be reached and the local copy is
+ * what is shown) unless a more specific cause is known (full Drive, wrong clock); phase `disabled` while signed in means
  * the engine is not running (e.g. no Web Locks), so work stays in this browser. Idle with more pending changes than too-large ones means a push is still
  * debounced, so it is not "saved" yet. `null` while the account is loading.
  */
@@ -27,6 +28,9 @@ const TONES: Record<TSyncMessageKey, TSyncTone> = {
   signInAgain: "attention",
   tooLarge: "attention",
   unconfirmed: "neutral",
+  driveFull: "attention",
+  clockSkew: "attention",
+  removalsKept: "attention",
 };
 
 function message(key: TSyncMessageKey, count = 0): ISyncStatusMessage {
@@ -45,6 +49,11 @@ export function syncStatusMessage(
   }
   if (account.needsReauth || status.phase === "reauth") return message("signInAgain");
   if (status.phase === "disabled") return message("thisBrowserOnly");
+  if (status.driveFull) return message("driveFull");
+  const skewed = scope
+    ? status.clockSkewIds.filter((id) => id === scope.artworkId)
+    : status.clockSkewIds;
+  if (skewed.length > 0) return message("clockSkew", skewed.length);
   if (status.phase === "offline" || status.phase === "error") return message("offline");
   if (status.phase === "syncing" || status.pendingCount > status.tooLargeIds.length) {
     return message("syncing");
@@ -52,11 +61,15 @@ export function syncStatusMessage(
   const tooLarge = scope
     ? status.tooLargeIds.filter((id) => id === scope.artworkId)
     : status.tooLargeIds;
-  return tooLarge.length > 0 ? message("tooLarge", tooLarge.length) : message("saved");
+  if (tooLarge.length > 0) return message("tooLarge", tooLarge.length);
+  if (!scope && status.suspendedRemovals > 0) return message("removalsKept", status.suspendedRemovals);
+  return message("saved");
 }
 
 export function syncStatusText(status: ISyncStatusMessage): string {
   if (status.key === "tooLarge") return shared.sync.tooLarge(status.count);
   if (status.key === "unconfirmed") return shared.sync.unconfirmed(status.name);
+  if (status.key === "clockSkew") return shared.sync.clockSkew(status.count);
+  if (status.key === "removalsKept") return shared.sync.removalsKept(status.count);
   return shared.sync[status.key];
 }

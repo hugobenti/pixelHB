@@ -23,6 +23,9 @@ export function useSyncStatus(): ISyncStatus {
       remoteOnly: state.remoteOnly,
       tooLargeIds: state.tooLargeIds,
       lastSyncedAt: state.lastSyncedAt,
+      suspendedRemovals: state.suspendedRemovals,
+      clockSkewIds: state.clockSkewIds,
+      driveFull: state.driveFull,
     })),
   );
 }

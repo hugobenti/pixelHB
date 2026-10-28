@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
+import { MAX_CLOCK_SKEW_MS } from "../galleryApi";
 import { DriveError } from "./driveRest";
 import { driveErrorToResponse, readDeleteRequest, readSaveRequest, withGalleryAccess } from "./galleryRouteHelpers";
 
@@ -27,6 +28,8 @@ async function saveRequest(value: unknown): Promise<Request> {
 }
 const BAD = { ok: false, status: 400, code: "bad_request" };
 const TOO_LARGE = { ok: false, status: 413, code: "too_large" };
+const SKEW = { ok: false, status: 400, code: "clock_skew" };
+const NOW = 1_000_000_000_000;
 
 describe("galleryRouteHelpers", () => {
   beforeEach(() => vi.mocked(getDriveAccess).mockReset());
@@ -37,7 +40,8 @@ describe("galleryRouteHelpers", () => {
     ["Drive 500", new DriveError(500, null, null), 503, { code: "drive_unavailable" }, "30"],
     ["Drive 403 userRateLimitExceeded", new DriveError(403, "userRateLimitExceeded", null), 503, { code: "drive_unavailable" }, "30"],
     ["network to Google", new DriveError(0, "network", null), 503, { code: "drive_unavailable" }, "30"],
-    ["Drive 403 storageQuotaExceeded", new DriveError(403, "storageQuotaExceeded", null), 502, { code: "drive_error" }, null],
+    ["Drive 403 storageQuotaExceeded", new DriveError(403, "storageQuotaExceeded", null), 507, { code: "drive_full" }, null],
+    ["Drive 403 another reason", new DriveError(403, "insufficientFilePermissions", null), 502, { code: "drive_error" }, null],
     ["Drive 400", new DriveError(400, "badRequest", null), 502, { code: "drive_error" }, null],
   ])("driveErrorToResponse maps %s", async (_label, error, status, body, retryAfter) => {
     const response = driveErrorToResponse(error);
@@ -123,7 +127,7 @@ describe("galleryRouteHelpers", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ files: [] }));
     try {
       const ok = await withGalleryAccess(new Request(URL_), ID, async (store) => {
-        expect(await store.list()).toEqual([]);
+        expect(await store.list()).toEqual({ items: [], unreadableIds: [] });
         return new Response(null, { status: 204 });
       });
       expect(ok.status).toBe(204);
@@ -173,5 +177,29 @@ describe("galleryRouteHelpers", () => {
   ])("readSaveRequest rejects an unsafe %s with 400", async (_label, override) => {
     const request = await saveRequest({ artwork: { ...artwork, ...override }, previewPngBase64: PNG_BASE64 });
     expect(await readSaveRequest(request, ID)).toEqual(BAD);
+  });
+
+  describe("clock safety", () => {
+    const stamped = async (updatedAt: number) =>
+      saveRequest({ artwork: { ...artwork, updatedAt }, previewPngBase64: PNG_BASE64 });
+
+    it("readSaveRequest accepts an updatedAt up to the tolerance ahead of the server clock", async () => {
+      const result = await readSaveRequest(await stamped(NOW + MAX_CLOCK_SKEW_MS), ID, undefined, NOW);
+      expect(result.ok).toBe(true);
+    });
+
+    it("readSaveRequest rejects an updatedAt beyond the tolerance with clock_skew", async () => {
+      expect(await readSaveRequest(await stamped(NOW + MAX_CLOCK_SKEW_MS + 1), ID, undefined, NOW)).toEqual(SKEW);
+    });
+
+    it("readSaveRequest still answers bad_request for an unsafe integer before the clock check", async () => {
+      expect(await readSaveRequest(await stamped(2 ** 60), ID, undefined, NOW)).toEqual(BAD);
+    });
+
+    it("readDeleteRequest rejects a deletedAt beyond the tolerance with clock_skew and accepts one at it", async () => {
+      const deleteRequest = (deletedAt: number) => new Request(URL_, { method: "DELETE", body: JSON.stringify({ deletedAt }) });
+      expect(await readDeleteRequest(deleteRequest(NOW + MAX_CLOCK_SKEW_MS + 1), NOW)).toEqual(SKEW);
+      expect(await readDeleteRequest(deleteRequest(NOW + MAX_CLOCK_SKEW_MS), NOW)).toEqual({ ok: true, deletedAt: NOW + MAX_CLOCK_SKEW_MS });
+    });
   });
 });

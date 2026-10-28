@@ -9,12 +9,13 @@
  * `fetch` means the network is unreachable; any other thrown error is a bug and propagates.
  */
 import type { IArtworkFileV3 } from "@/features/shared/artwork/artworkFileService.type";
-import { galleryArtworkUrl, MAX_SYNC_BODY_BYTES } from "./galleryApi";
+import { galleryArtworkUrl, galleryStatusUrl, MAX_SYNC_BODY_BYTES } from "./galleryApi";
 import type {
   IGalleryErrorResponse,
   IGalleryListResponse,
   IGallerySaveRequest,
   IGallerySaveResponse,
+  IGalleryStatusResponse,
 } from "./galleryApi.type";
 import type { IGalleryApiClient, TApiResult } from "./galleryApiClient.type";
 
@@ -43,6 +44,12 @@ async function toFailure<T>(response: Response): Promise<TApiResult<T>> {
       const body = await readErrorBody(response);
       return { ok: false, kind: body.code === "reauth" ? "reauth" : "unauthenticated" };
     }
+    case 400: {
+      const body = await readErrorBody(response);
+      return body.code === "clock_skew"
+        ? { ok: false, kind: "clockSkew" }
+        : { ok: false, kind: "failed", status: response.status };
+    }
     case 404:
       return { ok: false, kind: "notFound" };
     case 409: {
@@ -53,6 +60,8 @@ async function toFailure<T>(response: Response): Promise<TApiResult<T>> {
     }
     case 413:
       return { ok: false, kind: "tooLarge" };
+    case 507:
+      return { ok: false, kind: "driveFull" };
     case 429:
     case 503:
       return { ok: false, kind: "retry", retryAfterMs: retryAfterMs(response) };
@@ -102,13 +111,18 @@ export function createGalleryApiClient(fetchFn: typeof fetch): IGalleryApiClient
   return {
     list: () =>
       send(fetchFn, LIST_URL, { cache: "no-store" }, async (response) => {
-        const body = (await response.json()) as IGalleryListResponse;
-        return body.items;
+        const body = (await response.json()) as Partial<IGalleryListResponse>;
+        return { items: body.items ?? [], unreadableIds: body.unreadableIds ?? [] };
       }),
 
     get: (id) =>
       send(fetchFn, galleryArtworkUrl(id), { cache: "no-store" }, async (response) => {
         return (await response.json()) as IArtworkFileV3;
+      }),
+
+    status: (id) =>
+      send(fetchFn, galleryStatusUrl(id), { cache: "no-store" }, async (response) => {
+        return (await response.json()) as IGalleryStatusResponse;
       }),
 
     save: async (request: IGallerySaveRequest) => {

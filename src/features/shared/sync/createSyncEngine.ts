@@ -11,7 +11,14 @@
  *   through conditional store calls (same `updatedAt`, state and owner as when it was decided) and
  *   re-check presence right before, so an edit or an editor that appeared mid-download wins.
  * - Offline, reauth and Drive errors abort the pass and never delete or overwrite anything. A push
- *   that fails for one row alone is skipped, so one poisoned row cannot starve the others.
+ *   or a deletion that fails for one row alone is skipped, so one poisoned row cannot starve the others.
+ * - A synced row is removed only on positive evidence: Drive's own trash holds a copy at least as new
+ *   as the version we synced (`api.status`). Absence from the list, an unreadable Drive file, a
+ *   failing status call and a pass that would remove a large share of the gallery all keep the
+ *   rows; kept rows are counted in `suspendedRemovals`. A removed row moves to the local removed
+ *   table for `REMOVED_RETENTION_MS`.
+ * - A pull that would replace unsynced local work with a newer Drive copy first saves the local
+ *   version as a new dirty "(conflict copy)" row, in the same store transaction.
  * - `stop()` aborts a pass still waiting for the cross-tab lock and waits only for work that is
  *   running; every request has a timeout, so a stalled one cannot hold it forever.
  */
@@ -19,9 +26,13 @@ import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import type { IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 import { isThumbnailCurrent } from "@/features/shared/artwork/thumbnailFreshness";
+import { shared } from "@/content/shared";
+import { DRIVE_FILE_NAME_MAX } from "@/features/shared/drive/galleryApi";
 import type { IGalleryListItem } from "@/features/shared/drive/galleryApi.type";
 import type { IGalleryApiClient, TApiResult } from "@/features/shared/drive/galleryApiClient.type";
 import { pngBase64FromDataUrl, remoteFileToArtwork } from "./logic/remoteArtwork";
+import { conflictCopyTitle, needsConflictCopy } from "./logic/conflictCopy";
+import { isDeletionConfirmed, shouldBrakeRemovals } from "./logic/removalSafety";
 import { decidePull, planPush, planSync, retryDelayMs } from "./logic/syncRules";
 import type { ILocalSyncFacts } from "./logic/syncRules.type";
 import type {
@@ -39,6 +50,8 @@ import type {
 export const PUSH_DEBOUNCE_MS = 10_000;
 /** A request that has not answered by then counts as a failure to retry; it cannot hold a pass or `stop()`. */
 export const REQUEST_TIMEOUT_MS = 30_000;
+/** How long a row the engine removed stays restorable in the local removed table. */
+export const REMOVED_RETENTION_MS = 30 * 24 * 3_600_000;
 
 export const INITIAL_SYNC_STATUS: ISyncStatus = {
   phase: "disabled",
@@ -46,7 +59,13 @@ export const INITIAL_SYNC_STATUS: ISyncStatus = {
   remoteOnly: [],
   tooLargeIds: [],
   lastSyncedAt: null,
+  suspendedRemovals: 0,
+  clockSkewIds: [],
+  driveFull: false,
 };
+
+/** Failures that belong to one artwork alone: the pass skips it and goes on. */
+const ROW_FAILURE_KINDS: ReadonlySet<TSyncApiFailure["kind"]> = new Set(["failed", "notFound", "tooLarge", "clockSkew"]);
 
 /** Thrown to unwind a pass that was stopped or already reported its failure. */
 class PassAbort extends Error {}
@@ -83,6 +102,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     get: (id) => withTimeout(deps.api.get(id)),
     save: (request) => withTimeout(deps.api.save(request)),
     remove: (id, deletedAt) => withTimeout(deps.api.remove(id, deletedAt)),
+    status: (id) => withTimeout(deps.api.status(id)),
   };
 
   let ownerId: string | null = null;
@@ -103,6 +123,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   const running = new Set<Promise<void>>();
   const deferred = new Set<string>();
   const tooLarge = new Set<string>();
+  const clockSkew = new Set<string>();
   const rowListeners = new Set<() => void>();
 
   function track(work: Promise<unknown>): void {
@@ -167,6 +188,10 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
         update(gen, { phase: "error" });
         scheduleRetry(gen, retryDelayMs(attempt++, result.retryAfterMs));
         break;
+      case "driveFull":
+        update(gen, { phase: "error", driveFull: true });
+        scheduleRetry(gen, retryDelayMs(attempt++, null));
+        break;
       default:
         update(gen, { phase: "error" });
         scheduleRetry(gen, retryDelayMs(attempt++, null));
@@ -179,7 +204,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     if (gen !== generation) return;
     try {
       const pendingCount = await store.countUnsynced(owner);
-      update(gen, { pendingCount, tooLargeIds: [...tooLarge] });
+      update(gen, { pendingCount, tooLargeIds: [...tooLarge], clockSkewIds: [...clockSkew] });
     } catch {
       // A failed count leaves the previous one; the next pass publishes again.
     }
@@ -239,12 +264,34 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     if (action === "defer") return "deferred";
     if (action !== "download") return "skipped";
     const thumbnail = safeThumbnail(artwork);
-    const written = await store.putFromRemote(owner, { ...artwork, thumbnail }, local ? expectedOf(local) : undefined);
+    const copy = local && needsConflictCopy(toFacts(local), artwork.updatedAt) ? conflictCopyOf(local) : undefined;
+    const written = await store.putFromRemote(
+      owner,
+      { ...artwork, thumbnail },
+      local ? expectedOf(local) : undefined,
+      copy,
+    );
     if (!written) return "skipped";
     tooLarge.delete(id);
+    clockSkew.delete(id);
     dropRemoteOnly(gen, id);
     emitRows(gen);
+    // The copy is dirty work Drive does not have yet.
+    if (copy) void request("push");
     return "written";
+  }
+
+  /** The local version as its own artwork: same owner, new id, dirty so it uploads, stamped now. */
+  function conflictCopyOf(local: IStoredArtwork): IStoredArtwork {
+    const now = deps.now();
+    return {
+      ...local,
+      id: deps.newId(),
+      title: conflictCopyTitle(local.title, shared.sync.conflictCopySuffix, DRIVE_FILE_NAME_MAX),
+      createdAt: now,
+      updatedAt: now,
+      sync: { state: "dirty", syncedUpdatedAt: null },
+    };
   }
 
   async function removeOne(ctx: ISyncPassContext, id: string, plannedUpdatedAt: number): Promise<TSyncApplyOutcome> {
@@ -261,7 +308,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       return "skipped";
     }
     if (open) return "deferred";
-    if (!(await store.removeLocal(id, expectedOf(local)))) return "skipped";
+    if (!(await store.removeLocal(id, expectedOf(local), deps.now()))) return "skipped";
     tooLarge.delete(id);
     emitRows(gen);
     return "written";
@@ -271,7 +318,10 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     const { owner, gen } = ctx;
     const row = await store.getStored(id);
     guard(gen);
-    if (!row || row.ownerId !== owner || row.sync.state === "tooLarge") return;
+    if (!row || row.ownerId !== owner || row.sync.state === "tooLarge") {
+      if (!row) clockSkew.delete(id);
+      return;
+    }
     const previewPngBase64 = previewFor(row);
     if (previewPngBase64 === null) {
       deps.warn("No preview could be made for artwork", id);
@@ -283,12 +333,17 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     if (result.ok) {
       await store.markSynced(id, result.value.updatedAt);
       tooLarge.delete(id);
+      clockSkew.delete(id);
       emitRows(gen);
     } else if (result.kind === "conflict") {
       if ((await pullOne(ctx, id)) === "deferred") ctx.deferredIds.add(id);
     } else if (result.kind === "tooLarge") {
       if (await store.markTooLarge(id, row.updatedAt)) tooLarge.add(id);
       emitRows(gen);
+    } else if (result.kind === "clockSkew") {
+      deps.warn("Server refused the artwork timestamp: the device clock looks ahead", id);
+      clockSkew.add(id);
+      ctx.failedIds.add(id);
     } else if (result.kind === "failed") {
       deps.warn("Drive rejected artwork", id);
       ctx.failedIds.add(id);
@@ -330,6 +385,41 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     return work;
   }
 
+  /**
+   * Removes the synced rows Drive no longer lists, but only on positive evidence and never in bulk:
+   * a pass that would remove a large share of the gallery (or everything, from an empty list) applies
+   * nothing. Resolves with how many rows were kept although Drive does not hold them.
+   */
+  async function applyRemovals(
+    ctx: ISyncPassContext,
+    candidates: readonly string[],
+    localById: ReadonlyMap<string, IStoredArtwork>,
+    context: { syncedCount: number; remoteListEmpty: boolean },
+  ): Promise<number> {
+    const { gen } = ctx;
+    if (shouldBrakeRemovals({ removalCount: candidates.length, ...context })) return candidates.length;
+    let kept = 0;
+    for (const id of candidates) {
+      const local = localById.get(id);
+      if (!local) continue;
+      const status = await api.status(id);
+      guard(gen);
+      if (!status.ok) {
+        // A status that did not answer proves nothing: keep the row. Only a row-scoped failure goes on.
+        if (!ROW_FAILURE_KINDS.has(status.kind)) fail(gen, status);
+        if (status.kind === "failed") ctx.failedIds.add(id);
+        continue;
+      }
+      if (status.value.state === "present") continue;
+      if (!isDeletionConfirmed(status.value, local.sync.syncedUpdatedAt)) {
+        kept += 1;
+        continue;
+      }
+      if ((await removeOne(ctx, id, local.updatedAt)) === "deferred") ctx.deferredIds.add(id);
+    }
+    return kept;
+  }
+
   /** Returns false when it ended without publishing the final status itself. */
   async function passBody(kind: TSyncPassKind, ctx: ISyncPassContext): Promise<boolean> {
     const { owner, gen } = ctx;
@@ -343,11 +433,13 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     update(gen, { phase: "syncing" });
 
     let remote: Map<string, IGalleryListItem> | null = null;
+    let unreadable: ReadonlySet<string> = new Set();
     if (kind === "full") {
       const listed = await api.list();
       guard(gen);
       if (!listed.ok) fail(gen, listed);
-      remote = new Map(listed.value.map((item) => [item.id, item]));
+      remote = new Map(listed.value.items.map((item) => [item.id, item]));
+      unreadable = new Set(listed.value.unreadableIds);
     }
 
     for (const deletion of await store.listDeletions(owner)) {
@@ -356,16 +448,25 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       guard(gen);
       if (result.ok) {
         await store.dropDeletion(deletion.id);
+        clockSkew.delete(deletion.id);
         remote?.delete(deletion.id);
       } else if (result.kind === "conflict") {
         // Edited on another device after the delete: the edit wins, so pull it back.
         await store.dropDeletion(deletion.id);
         if (!remote && (await pullOne(ctx, deletion.id)) === "deferred") ctx.deferredIds.add(deletion.id);
+      } else if (ROW_FAILURE_KINDS.has(result.kind)) {
+        // One poisoned tombstone must not starve the pass. It stays and is retried with backoff;
+        // the Drive copy it targets must not be downloaded back meanwhile.
+        deps.warn("Drive rejected deletion", deletion.id);
+        if (result.kind === "clockSkew") clockSkew.add(deletion.id);
+        ctx.failedIds.add(deletion.id);
+        remote?.delete(deletion.id);
       } else {
         fail(gen, result);
       }
     }
 
+    let suspendedRemovals: number | null = null;
     if (remote) {
       const locals = await store.listOwned(owner);
       const open = await presence.openIds();
@@ -373,14 +474,15 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       tooLarge.clear();
       for (const row of locals) if (row.sync.state === "tooLarge") tooLarge.add(row.id);
       const remoteItems = [...remote.values()];
-      const plan = planSync(locals.map(toFacts), remoteItems, open);
+      const plan = planSync(locals.map(toFacts), remoteItems, open, unreadable);
       const localById = new Map(locals.map((row) => [row.id, row]));
       remoteOnly = remoteItems.filter((item) => !localById.has(item.id));
       update(gen, { remoteOnly });
 
-      for (const id of plan.removals) {
-        if ((await removeOne(ctx, id, localById.get(id)?.updatedAt ?? -1)) === "deferred") ctx.deferredIds.add(id);
-      }
+      suspendedRemovals = await applyRemovals(ctx, plan.removals, localById, {
+        syncedCount: locals.filter((row) => row.sync.state === "synced").length,
+        remoteListEmpty: remoteItems.length === 0 && unreadable.size === 0,
+      });
       for (const id of plan.downloads) {
         if ((await pullOne(ctx, id)) === "deferred") ctx.deferredIds.add(id);
       }
@@ -395,17 +497,19 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
 
     registerDeferred(ctx);
     const pendingCount = await store.countUnsynced(owner);
+    const summary: Partial<ISyncStatus> = {
+      pendingCount,
+      tooLargeIds: [...tooLarge],
+      clockSkewIds: [...clockSkew],
+      driveFull: false,
+      ...(suspendedRemovals === null ? {} : { suspendedRemovals }),
+    };
     if (ctx.failedIds.size > 0) {
-      update(gen, { pendingCount, tooLargeIds: [...tooLarge], phase: "error" });
+      update(gen, { ...summary, phase: "error" });
       scheduleRetry(gen, retryDelayMs(attempt++, null));
       return true;
     }
-    update(gen, {
-      pendingCount,
-      tooLargeIds: [...tooLarge],
-      phase: "idle",
-      lastSyncedAt: deps.now(),
-    });
+    update(gen, { ...summary, phase: "idle", lastSyncedAt: deps.now() });
     if (kind === "full") {
       attempt = 0;
       cancelRetry();
@@ -482,6 +586,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     loop = null;
     deferred.clear();
     tooLarge.clear();
+    clockSkew.clear();
     cancelDebounce();
     cancelRetry();
     for (const unsubscribe of unsubscribers) unsubscribe();
@@ -524,6 +629,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       }),
     ];
     void adopt(owner, gen).catch(noop);
+    track(store.purgeRemoved(deps.now() - REMOVED_RETENTION_MS));
     await request("full");
   }
 
@@ -551,7 +657,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     guard(gen);
     if (isStale()) return;
     if (!listed.ok) return onFailure(listed);
-    const remote = listed.value.find((item) => item.id === id);
+    const remote = listed.value.items.find((item) => item.id === id);
     const open = (await presence.openIds()).has(id);
     const local = await store.getStored(id);
     guard(gen);

@@ -36,6 +36,29 @@ describe("decidePull", () => {
   });
 });
 
+describe("unreadable Drive files", () => {
+  it("never read a missing list entry as a deletion when Drive has a file for it that we cannot read", () => {
+    expect(decidePull(L(100, "synced"), undefined, false, true)).toBe("none");
+    expect(decidePull(L(100, "synced"), undefined, true, true)).toBe("none");
+  });
+
+  it("leave every other decision alone", () => {
+    expect(decidePull(L(100, "dirty"), undefined, false, true)).toBe("upload");
+    expect(decidePull(L(100, "tooLarge"), undefined, false, true)).toBe("none");
+    expect(decidePull(L(100, "synced"), R(200), false, true)).toBe("download");
+  });
+
+  it("planSync keeps a synced row whose id Drive lists as unreadable out of the removals", () => {
+    const plan = planSync(
+      [L(50, "synced", "gone"), L(50, "synced", "future-format")],
+      [],
+      new Set(),
+      new Set(["future-format"]),
+    );
+    expect(plan.removals).toEqual(["gone"]);
+  });
+});
+
 describe("planSync", () => {
   it("splits every id into downloads (newest first), removals, uploads (oldest first) and deferred", () => {
     const plan = planSync(

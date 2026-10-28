@@ -12,8 +12,8 @@
  */
 import { site } from "@/content/site";
 import { MAX_CANVAS_DIMENSION } from "@/features/shared/artwork/artworkLimits";
-import { ARTWORK_ID_PATTERN, galleryPreviewUrl } from "../galleryApi";
-import type { IGalleryListItem } from "../galleryApi.type";
+import { ARTWORK_ID_PATTERN, DRIVE_FILE_NAME_MAX, galleryPreviewUrl } from "../galleryApi";
+import type { IGalleryListItem, IGalleryStatusResponse } from "../galleryApi.type";
 import type {
   IDriveArtworkFiles,
   IDriveArtworkStore,
@@ -26,7 +26,6 @@ import type { IDriveFile, IDriveFileMetadata, IDriveRestOptions } from "./driveR
 
 const JSON_SUFFIX = ".pixelhb.json";
 const PNG_SUFFIX = ".png";
-const FILE_NAME_MAX = 100;
 const FORMAT_VERSION = "3";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const JSON_MIME = "application/json";
@@ -42,13 +41,13 @@ function escapeQueryValue(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
-function filesOfArtworkQuery(id: string): string {
-  return `appProperties has { key='artworkId' and value='${escapeQueryValue(id)}' } and trashed=false`;
+function filesOfArtworkQuery(id: string, trashed = false): string {
+  return `appProperties has { key='artworkId' and value='${escapeQueryValue(id)}' } and trashed=${trashed}`;
 }
 
 export function driveFileBaseName(title: string, id: string): string {
   const cleaned = title.replace(CONTROL_CHARACTERS, " ").replace(WHITESPACE_RUNS, " ").trim();
-  const base = Array.from(cleaned).slice(0, FILE_NAME_MAX).join("").trim();
+  const base = Array.from(cleaned).slice(0, DRIVE_FILE_NAME_MAX).join("").trim();
   return base.length > 0 ? base : id;
 }
 
@@ -103,6 +102,14 @@ function toListItem(file: IDriveFile): IGalleryListItem | null {
     updatedAt,
     previewUrl: galleryPreviewUrl(id, updatedAt),
   };
+}
+
+/** The id of a marked file that `toListItem` refused, when it is one the app could ever have created. */
+function unreadableIdOf(file: IDriveFile): string | null {
+  const id = file.appProperties?.artworkId;
+  return file.appProperties?.pixelhb === "artwork" && typeof id === "string" && ARTWORK_ID_PATTERN.test(id)
+    ? id
+    : null;
 }
 
 export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtworkStore {
@@ -166,10 +173,13 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
     async list() {
       const files = await rest.listAll({ q: LIST_QUERY });
       const newest = new Map<string, IGalleryListItem>();
+      const unreadable = new Set<string>();
       for (const file of files) {
         const item = toListItem(file);
         if (!item) {
           console.warn(`Skipping Drive file ${file.id}: unreadable PixelHB properties`);
+          const id = unreadableIdOf(file);
+          if (id !== null) unreadable.add(id);
           continue;
         }
         const current = newest.get(item.id);
@@ -177,7 +187,29 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
           newest.set(item.id, item);
         }
       }
-      return [...newest.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+      return {
+        items: [...newest.values()].sort((a, b) => b.updatedAt - a.updatedAt),
+        unreadableIds: [...unreadable].filter((id) => !newest.has(id)),
+      };
+    },
+
+    async findTrashed(id) {
+      const files = await rest.listAll({ q: filesOfArtworkQuery(id, true) });
+      const stamps = files
+        .filter((file) => file.appProperties?.pixelhb === "artwork")
+        .map(updatedAtOf)
+        .filter((updatedAt) => updatedAt !== MISSING_UPDATED_AT);
+      return stamps.length > 0 ? { updatedAt: Math.max(...stamps) } : null;
+    },
+
+    async status(id): Promise<IGalleryStatusResponse> {
+      const { json } = await findArtworkFiles(id);
+      if (json[0]) {
+        const updatedAt = updatedAtOf(json[0]);
+        return updatedAt === MISSING_UPDATED_AT ? { state: "present" } : { state: "present", updatedAt };
+      }
+      const trashed = await this.findTrashed(id);
+      return trashed ? { state: "trashed", updatedAt: trashed.updatedAt } : { state: "absent" };
     },
 
     async get(id) {

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { shared } from "@/content/shared";
 import type { IAccountState } from "@/features/shared/auth/auth.type";
 import type { ISyncStatus } from "@/features/shared/sync/sync.type";
 import { syncStatusMessage, syncStatusText } from "./syncStatusMessage";
@@ -13,6 +14,9 @@ const idle: ISyncStatus = {
   remoteOnly: [],
   tooLargeIds: [],
   lastSyncedAt: 1,
+  suspendedRemovals: 0,
+  clockSkewIds: [],
+  driveFull: false,
 };
 
 describe("syncStatusMessage", () => {
@@ -122,5 +126,56 @@ describe("syncStatusMessage", () => {
     expect(syncStatusText({ key: "unconfirmed", tone: "neutral", count: 0 })).toContain(
       "Showing your drawings here; changes sync once we can.",
     );
+  });
+
+  describe("drive full, clock skew and kept removals", () => {
+    it("says the Drive is full, ahead of offline, while the flag is set", () => {
+      expect(syncStatusMessage(signedIn, { ...idle, phase: "error", driveFull: true })).toEqual({
+        key: "driveFull",
+        tone: "attention",
+        count: 0,
+      });
+      expect(syncStatusMessage(signedIn, { ...idle, phase: "syncing", driveFull: true })?.key).toBe("driveFull");
+      expect(syncStatusText({ key: "driveFull", tone: "attention", count: 0 })).toBe(shared.sync.driveFull);
+    });
+
+    it("still asks to sign in again before the Drive-full note, and says nothing of it when the engine is off", () => {
+      expect(syncStatusMessage(signedIn, { ...idle, phase: "reauth", driveFull: true })?.key).toBe("signInAgain");
+      expect(syncStatusMessage(signedIn, { ...idle, phase: "disabled", driveFull: true })?.key).toBe("thisBrowserOnly");
+      expect(syncStatusMessage(signedOut, { ...idle, driveFull: true })?.key).toBe("thisBrowserOnly");
+    });
+
+    it("says the clock looks wrong, ahead of offline, counting the artworks that cannot sync", () => {
+      const skewed: ISyncStatus = { ...idle, phase: "error", pendingCount: 2, clockSkewIds: ["a", "b"] };
+      expect(syncStatusMessage(signedIn, skewed)).toEqual({ key: "clockSkew", tone: "attention", count: 2 });
+      expect(syncStatusText({ key: "clockSkew", tone: "attention", count: 2 })).toBe(shared.sync.clockSkew(2));
+    });
+
+    it("scoped to one artwork, only that artwork's clock problem counts", () => {
+      const skewed: ISyncStatus = { ...idle, phase: "error", pendingCount: 1, clockSkewIds: ["other"] };
+      expect(syncStatusMessage(signedIn, skewed, { artworkId: "mine" })?.key).toBe("offline");
+      expect(syncStatusMessage(signedIn, skewed, { artworkId: "other" })).toEqual({
+        key: "clockSkew",
+        tone: "attention",
+        count: 1,
+      });
+    });
+
+    it("tells how many artworks were kept on this device when Drive stopped listing them", () => {
+      expect(syncStatusMessage(signedIn, { ...idle, suspendedRemovals: 4 })).toEqual({
+        key: "removalsKept",
+        tone: "attention",
+        count: 4,
+      });
+      expect(syncStatusText({ key: "removalsKept", tone: "attention", count: 4 })).toBe(shared.sync.removalsKept(4));
+    });
+
+    it("shows the kept note only when nothing more urgent applies, and never in an editor scope", () => {
+      const kept: ISyncStatus = { ...idle, suspendedRemovals: 3 };
+      expect(syncStatusMessage(signedIn, { ...kept, phase: "offline" })?.key).toBe("offline");
+      expect(syncStatusMessage(signedIn, { ...kept, phase: "syncing" })?.key).toBe("syncing");
+      expect(syncStatusMessage(signedIn, { ...kept, pendingCount: 1, tooLargeIds: ["x"] })?.key).toBe("tooLarge");
+      expect(syncStatusMessage(signedIn, kept, { artworkId: "mine" })?.key).toBe("saved");
+    });
   });
 });

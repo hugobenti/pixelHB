@@ -13,6 +13,20 @@ export interface IGalleryListItem {
 
 export interface IGalleryListResponse {
   items: IGalleryListItem[];
+  /**
+   * Ids of Drive files that carry the PixelHB marker but could not be read (another format version,
+   * invalid properties). They exist, so the engine must never read their absence from `items` as a deletion.
+   */
+  unreadableIds: string[];
+}
+
+/** Where one artwork is in Drive: live, in the trash (only with a readable `updatedAt`), or nowhere. */
+export type TGalleryArtworkState = "present" | "trashed" | "absent";
+
+export interface IGalleryStatusResponse {
+  state: TGalleryArtworkState;
+  /** `updatedAt` of the live copy (`present`, when readable) or of the newest trashed copy (`trashed`). */
+  updatedAt?: number;
 }
 
 export interface IGallerySaveRequest {
@@ -34,8 +48,10 @@ export type TGalleryErrorCode =
   | "reauth"
   | "conflict"
   | "bad_request"
+  | "clock_skew"
   | "too_large"
   | "drive_error"
+  | "drive_full"
   | "drive_unavailable";
 
 export interface IGalleryErrorResponse {
