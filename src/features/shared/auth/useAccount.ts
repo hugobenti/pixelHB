@@ -1,26 +1,24 @@
 /**
  * Purpose:
- * The signed-in account as the UI sees it: `disabled` when Drive sync is off, otherwise the Auth.js
- * session mapped to `IAccountState`.
+ * The signed-in account as the UI sees it: `disabled` when Drive sync is off, otherwise the account
+ * state `AuthSessionProvider` keeps (see `useAccountSession`).
  *
  * Notes:
- * The variant is chosen once at module level, so `useSession` is never called without a
- * `SessionProvider` (`next-auth/react` throws in development without one).
+ * The variant is chosen once at module level, so the context is only read where
+ * `AuthSessionProvider` mounted a value (with the flag off nothing is fetched at all).
  */
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useMemo } from "react";
+import { useContext } from "react";
 
+import { AccountContext } from "./accountContext";
 import type { IAccountState } from "./auth.type";
 import { DRIVE_SYNC_ENABLED } from "./driveSyncFlag";
-import { toAccountState } from "./logic/publicSession";
 
 const DISABLED_ACCOUNT: IAccountState = { status: "disabled", user: null, needsReauth: false };
 
 function useAccountEnabled(): IAccountState {
-  const { data, status } = useSession();
-  return useMemo(() => toAccountState(data, status), [data, status]);
+  return useContext(AccountContext);
 }
 
 function useAccountDisabled(): IAccountState {

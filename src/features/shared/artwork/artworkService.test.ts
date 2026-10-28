@@ -104,7 +104,9 @@ describe("with an active owner", () => {
     await artworkService.deleteArtwork(synced.id);
     await artworkService.deleteArtwork(fresh.id);
     expect(await db.artworks.count()).toBe(0);
-    expect(await db.deletions.toArray()).toEqual([{ id: synced.id, ownerId: "u1", deletedAt: 7000 }]);
+    expect(await db.deletions.toArray()).toEqual([
+      { id: synced.id, ownerId: "u1", deletedAt: 7000 },
+    ]);
   });
 
   test("writes never touch another owner's row and never resurrect a removed one", async () => {
@@ -114,10 +116,10 @@ describe("with an active owner", () => {
     const removed = await artworkService.createArtwork(input);
     await db.artworks.delete(removed.id);
     at(2000);
-    await artworkService.saveArtwork({ ...unowned, title: "Hijack" });
-    await artworkService.renameArtwork(unowned.id, "Hijack");
-    await artworkService.deleteArtwork(unowned.id);
-    await artworkService.saveArtwork(removed);
+    expect(await artworkService.saveArtwork({ ...unowned, title: "Hijack" })).toBe(false);
+    expect(await artworkService.renameArtwork(unowned.id, "Hijack")).toBe(false);
+    expect(await artworkService.deleteArtwork(unowned.id)).toBe(false);
+    expect(await artworkService.saveArtwork(removed)).toBe(false);
     expect(await db.artworks.get(unowned.id)).toMatchObject({
       ownerId: null,
       title: "Cat",
@@ -125,6 +127,23 @@ describe("with an active owner", () => {
     });
     expect(await db.artworks.get(removed.id)).toBeUndefined();
   });
+});
+
+test("save, rename and delete report true when the row was written", async () => {
+  artworkService.setActiveOwner("u1");
+  const art = await artworkService.createArtwork(input);
+  expect(await artworkService.saveArtwork(art)).toBe(true);
+  expect(await artworkService.renameArtwork(art.id, "Dog")).toBe(true);
+  expect(await artworkService.deleteArtwork(art.id)).toBe(true);
+  expect(await artworkService.deleteArtwork(art.id)).toBe(false);
+});
+
+test("an owner that changed to null mid-edit makes save report false and leaves the row", async () => {
+  artworkService.setActiveOwner("u1");
+  const art = await artworkService.createArtwork(input);
+  artworkService.setActiveOwner(null);
+  expect(await artworkService.saveArtwork({ ...art, title: "Late" })).toBe(false);
+  expect(await db.artworks.get(art.id)).toMatchObject({ ownerId: "u1", title: "Cat" });
 });
 
 test("onArtworkChanged fires for service writes only, until unsubscribed", async () => {

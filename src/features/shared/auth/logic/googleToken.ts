@@ -114,7 +114,7 @@ function signInToken<T extends Record<string, unknown>>(
     // Without the Google id there is no stable owner id; Auth.js's per-sign-in random `sub` would
     // orphan local data on the next sign-in. Issue no sub and no tokens: the public session then
     // has an empty user id, which the UI reads as signed out, and Drive routes answer `reauth`.
-    const { sub: _randomSub, ...withoutSub } = token;
+    const withoutSub = Object.fromEntries(Object.entries(token).filter(([key]) => key !== "sub"));
     return withoutSub as T & { error?: string };
   }
   // Auth.js sets `sub` to a random UUID per sign-in; the Google account id is the stable owner id.

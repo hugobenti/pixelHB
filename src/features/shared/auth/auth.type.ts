@@ -72,3 +72,11 @@ export interface IAccountState {
   user: IAccountUser | null;
   needsReauth: boolean;
 }
+
+/** What one `/api/auth/session` request told us. Only `signedOut` is an answer from the server. */
+export type TSessionFetchResult =
+  | { kind: "signedIn"; session: ISessionLike }
+  /** HTTP 200 whose body is `null`, `{}` or has no user id. */
+  | { kind: "signedOut" }
+  /** Network error, timeout, non-2xx status or a body that is not a session: no information. */
+  | { kind: "failed" };
