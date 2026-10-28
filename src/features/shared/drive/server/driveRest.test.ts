@@ -67,7 +67,7 @@ describe("driveRest", () => {
     ]);
     const files = await createDriveRest({ accessToken: "tok", fetchFn }).listAll({ q: "trashed=false" });
     expect(files.map((f) => f.id)).toEqual(["a", "b"]);
-    expect(calls[0].url.searchParams.get("fields")).toBe("nextPageToken,files(id,name,appProperties)");
+    expect(calls[0].url.searchParams.get("fields")).toBe("nextPageToken,files(id,name,appProperties,explicitlyTrashed)");
     expect(calls[0].url.searchParams.get("pageSize")).toBe("1000");
     expect(calls[0].url.searchParams.get("spaces")).toBe("drive");
     expect(calls[0].url.searchParams.has("pageToken")).toBe(false);

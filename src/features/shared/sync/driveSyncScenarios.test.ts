@@ -29,6 +29,8 @@ interface IFakeFile {
   content: Uint8Array;
   mimeType: string;
   trashed: boolean;
+  /** Trashed itself (not only through a trashed parent folder), as Drive v3 reports it. */
+  explicitlyTrashed: boolean;
 }
 
 type TRouteHandler = (
@@ -69,6 +71,7 @@ function createFakeDrive() {
     id: file.id,
     name: file.name,
     appProperties: file.appProperties,
+    explicitlyTrashed: file.explicitlyTrashed,
   });
   const latin1 = (buffer: ArrayBuffer) => Buffer.from(buffer).toString("latin1");
 
@@ -114,6 +117,7 @@ function createFakeDrive() {
         content: new Uint8Array(),
         mimeType: meta.mimeType,
         trashed: false,
+        explicitlyTrashed: false,
       };
       files.set(file.id, file);
       return json(view(file));
@@ -130,6 +134,7 @@ function createFakeDrive() {
           content,
           mimeType: metadata.mimeType,
           trashed: false,
+          explicitlyTrashed: false,
         };
         files.set(file.id, file);
         return json(view(file));
@@ -148,7 +153,10 @@ function createFakeDrive() {
       if (method === "PATCH") {
         const failure = state.failTrash.get(id);
         if (failure) return json({ error: { errors: [{ reason: "invalid" }] } }, failure);
-        file.trashed = JSON.parse(String(init.body)).trashed === true ? true : file.trashed;
+        if (JSON.parse(String(init.body)).trashed === true) {
+          file.trashed = true;
+          file.explicitlyTrashed = true;
+        }
         return json({ id });
       }
       return new Response(file.content as BodyInit, { status: 200 });
@@ -159,8 +167,13 @@ function createFakeDrive() {
   return {
     state,
     fetchFn,
-    /** What the Drive UI does to a folder: every child becomes trashed with it. */
+    /** What the Drive UI does to a folder: every child becomes trashed with it, none of them explicitly. */
     trashEverything: () => files.forEach((file) => (file.trashed = true)),
+    /** What the Drive UI does to one file: trashed itself. */
+    trashFile: (file: IFakeFile) => {
+      file.trashed = true;
+      file.explicitlyTrashed = true;
+    },
     liveArtworkFiles: () =>
       [...files.values()].filter(
         (file) => file.appProperties.pixelhb === "artwork" && !file.trashed,
@@ -295,6 +308,35 @@ describe("deletion needs positive evidence", () => {
     await device.engine.stop();
   });
 
+  it("a new live PixelHB folder (recreated by one upload) does not turn the old children into deletions", async () => {
+    const device = await seedSynced(3);
+    const oldIds = (await rows()).map((row) => row.id).sort();
+    drive.trashEverything();
+    artworkService.setActiveOwner(OWNER);
+    await artworkService.createArtwork(input("Made after the folder was trashed"));
+    await device.engine.syncNow();
+    expect(
+      [...drive.state.files.values()].some(
+        (file) => file.appProperties.pixelhb === "root" && !file.trashed,
+      ),
+    ).toBe(true);
+    await device.engine.syncNow();
+    const kept = (await syncedRows()).map((row) => row.id);
+    for (const id of oldIds) expect(kept).toContain(id);
+    expect(await db.removedArtworks.count()).toBe(0);
+    await device.engine.stop();
+  });
+
+  it("an artwork trashed on its own while others sit in a live folder is removed", async () => {
+    const device = await seedSynced(3);
+    const [victim, ...rest] = await rows();
+    drive.trashFile(drive.artworkFileOf(victim.id)!);
+    await device.engine.syncNow();
+    expect((await rows()).map((row) => row.id).sort()).toEqual(rest.map((row) => row.id).sort());
+    expect((await syncStore.listRemoved(OWNER)).map((row) => row.id)).toEqual([victim.id]);
+    await device.engine.stop();
+  });
+
   it("restoring the trashed folder brings the sync back, nothing was lost", async () => {
     const device = await seedSynced(3);
     drive.trashEverything();
@@ -309,7 +351,7 @@ describe("deletion needs positive evidence", () => {
   it("five artworks each trashed in Drive on their own are all moved to the removed table", async () => {
     const device = await seedSynced(5);
     for (const file of drive.state.files.values()) {
-      if (file.appProperties.pixelhb === "artwork" || file.appProperties.pixelhb === "preview") file.trashed = true;
+      if (file.appProperties.pixelhb === "artwork" || file.appProperties.pixelhb === "preview") drive.trashFile(file);
     }
     await device.engine.syncNow();
     expect(await rows()).toHaveLength(0);
@@ -418,6 +460,8 @@ describe("deletion needs positive evidence", () => {
     expect(await ask(id)).toEqual({ state: "present", updatedAt: expect.any(Number) });
     expect(await ask("never-existed")).toEqual({ state: "absent" });
     drive.trashEverything();
+    expect(await ask(id)).toEqual({ state: "absent" }); // trashed only through its folder
+    drive.trashFile(drive.artworkFileOf(id)!);
     expect(await ask(id)).toEqual({ state: "trashed", updatedAt: expect.any(Number) });
   });
 });

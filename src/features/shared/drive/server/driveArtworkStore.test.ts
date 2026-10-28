@@ -276,19 +276,34 @@ describe("driveArtworkStore", () => {
   describe("status and findTrashed", () => {
     const TRASHED_OF_ID = `appProperties has { key='artworkId' and value='${ID}' } and trashed=true`;
 
-    it("findTrashed queries trashed files of the artwork id and returns the newest readable updatedAt", async () => {
+    const explicit = (file: ReturnType<typeof jsonFile>) => ({ ...file, explicitlyTrashed: true });
+
+    it("findTrashed queries trashed files of the artwork id and returns the newest readable updatedAt of explicitly trashed JSONs", async () => {
       const { fetchFn, calls } = recorder([
-        json({ files: [jsonFile("t1", 1500), pngFile("tp"), jsonFile("t2", 2500), jsonFile("t3", 1, { updatedAt: "soon" })] }),
+        json({
+          files: [
+            explicit(jsonFile("t1", 1500)),
+            { ...pngFile("tp"), explicitlyTrashed: true },
+            explicit(jsonFile("t2", 2500)),
+            explicit(jsonFile("t3", 1, { updatedAt: "soon" })),
+          ],
+        }),
       ]);
       expect(await store(fetchFn).findTrashed(ID)).toEqual({ updatedAt: 2500 });
       expect(calls).toHaveLength(1);
       expect(calls[0].url.searchParams.get("q")).toBe(TRASHED_OF_ID);
     });
 
-    it("findTrashed is null without a trashed artwork JSON (only a preview, or nothing, or unreadable stamps)", async () => {
+    it("findTrashed is null without an explicitly trashed artwork JSON (nothing, only a preview, unreadable stamps)", async () => {
       expect(await store(recorder([json({ files: [] })]).fetchFn).findTrashed(ID)).toBeNull();
-      expect(await store(recorder([json({ files: [pngFile("tp")] })]).fetchFn).findTrashed(ID)).toBeNull();
-      expect(await store(recorder([json({ files: [jsonFile("t", 1, { updatedAt: "x" })] })]).fetchFn).findTrashed(ID)).toBeNull();
+      expect(await store(recorder([json({ files: [{ ...pngFile("tp"), explicitlyTrashed: true }] })]).fetchFn).findTrashed(ID)).toBeNull();
+      expect(await store(recorder([json({ files: [explicit(jsonFile("t", 1, { updatedAt: "x" }))] })]).fetchFn).findTrashed(ID)).toBeNull();
+    });
+
+    it("findTrashed does not count a child trashed only through its folder: explicitlyTrashed false or missing is not evidence", async () => {
+      const viaFolder = { ...jsonFile("t", 3000), explicitlyTrashed: false };
+      expect(await store(recorder([json({ files: [viaFolder] })]).fetchFn).findTrashed(ID)).toBeNull();
+      expect(await store(recorder([json({ files: [jsonFile("t", 3000)] })]).fetchFn).findTrashed(ID)).toBeNull();
     });
 
     it("status is present when a live JSON exists, without looking at the trash", async () => {
@@ -303,7 +318,7 @@ describe("driveArtworkStore", () => {
     });
 
     it("status is trashed with the trashed copy's updatedAt when only the trash has it", async () => {
-      const { fetchFn, calls } = recorder([json({ files: [] }), json({ files: [jsonFile("t", 3000)] })]);
+      const { fetchFn, calls } = recorder([json({ files: [] }), json({ files: [explicit(jsonFile("t", 3000))] })]);
       expect(await store(fetchFn).status(ID)).toEqual({ state: "trashed", updatedAt: 3000 });
       expect(calls[1].url.searchParams.get("q")).toBe(TRASHED_OF_ID);
     });
@@ -312,6 +327,12 @@ describe("driveArtworkStore", () => {
       const { status, findTrashed } = store(recorder([json({ files: [] }), json({ files: [] }), json({ files: [] })]).fetchFn);
       expect(await status(ID)).toEqual({ state: "absent" });
       expect(await findTrashed(ID)).toBeNull();
+    });
+
+    it("status is absent, not trashed, for an artwork whose files are trashed only through their folder", async () => {
+      const viaFolder = { ...jsonFile("t", 3000), explicitlyTrashed: false };
+      const { fetchFn } = recorder([json({ files: [] }), json({ files: [viaFolder] })]);
+      expect(await store(fetchFn).status(ID)).toEqual({ state: "absent" });
     });
 
     it("status is absent when neither the live nor the trashed set has the artwork", async () => {

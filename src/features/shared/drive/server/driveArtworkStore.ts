@@ -160,10 +160,16 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
     };
   }
 
+  /**
+   * Evidence of a deletion: an artwork JSON that was trashed itself (`explicitlyTrashed === true`).
+   * `trashed=true` alone also matches every child of a trashed folder, which is not the user
+   * deleting that artwork. A missing or false field is not evidence (safe by default: the row stays).
+   * Our own `trash()` PATCHes `trashed: true` on the file, which Drive reports as explicitly trashed.
+   */
   async function findTrashed(id: string): Promise<{ updatedAt: number } | null> {
     const files = await rest.listAll({ q: filesOfArtworkQuery(id, true) });
     const stamps = files
-      .filter((file) => file.appProperties?.pixelhb === "artwork")
+      .filter((file) => file.appProperties?.pixelhb === "artwork" && file.explicitlyTrashed === true)
       .map(updatedAtOf)
       .filter((updatedAt) => updatedAt !== MISSING_UPDATED_AT);
     return stamps.length > 0 ? { updatedAt: Math.max(...stamps) } : null;
