@@ -22,6 +22,9 @@ export const shell: IShellContent = {
     signInAgain: "Sign in again",
     reauthNote: "Your Google sign-in expired. Sign in again to keep syncing.",
     signingOut: "Signing out…",
+    reconnecting: "Reconnecting…",
+    reconnectingNote:
+      "Can’t reach PixelHB’s sign-in right now. Your artworks on this device stay available.",
     signOutDialog: {
       title: "Some changes aren’t in your Drive yet",
       description: (artworks, deletions) => {

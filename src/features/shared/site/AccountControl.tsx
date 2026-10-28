@@ -33,7 +33,8 @@ export function AccountControl({ placement }: IAccountControlProps) {
     onBlur,
     requestSignIn,
     requestSignOut,
-    signOutBusy,
+    signOutDisabled,
+    signOutLabel,
     signOutDialog,
   } = useAccountControl();
 
@@ -57,8 +58,13 @@ export function AccountControl({ placement }: IAccountControlProps) {
     <div className={accountControl.details}>
       <div className={accountControl.identity}>
         {account.user?.name ? <p className={accountControl.userName}>{account.user.name}</p> : null}
-        <p className={accountControl.userEmail}>{account.user?.email}</p>
+        {account.user?.email ? (
+          <p className={accountControl.userEmail}>{account.user.email}</p>
+        ) : null}
       </div>
+      {account.provisional ? (
+        <p className={accountControl.note}>{shell.account.reconnectingNote}</p>
+      ) : null}
       {syncStatusText ? <p className={accountControl.note}>{syncStatusText}</p> : null}
       {account.needsReauth ? (
         <>
@@ -80,10 +86,10 @@ export function AccountControl({ placement }: IAccountControlProps) {
       <Button
         variant="outline"
         className={accountControl.action[placement]}
-        disabled={signOutBusy}
+        disabled={signOutDisabled}
         onClick={requestSignOut}
       >
-        {signOutBusy ? shell.account.signingOut : shell.account.signOut}
+        {signOutLabel}
       </Button>
     </div>
   );

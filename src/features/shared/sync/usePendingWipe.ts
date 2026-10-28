@@ -4,6 +4,8 @@
  * out with a pending-wipe marker, removes that owner's local copies and then the marker.
  *
  * Notes:
+ * Nothing runs on a provisional account (the first session request failed and the state is a
+ * guess): both the marker wipe and the sweep wait for the server's answer.
  * A failed wipe shows a toast and leaves the marker for the next start. A marker of the signed-in
  * account is dropped; one of another account is wiped.
  * When an account is signed in, the synced copies of other accounts left on disk (their session
@@ -17,20 +19,22 @@ import { useEffect, useRef } from "react";
 
 import { shell } from "@/content/shell";
 import { wipeOwner, wipeSyncedRowsOfOtherOwners } from "@/features/shared/artwork/artworkSyncStore";
-import { decidePendingWipe } from "@/features/shared/auth/logic/pendingWipe";
+import { decidePendingWipe, isAccountSettled } from "@/features/shared/auth/logic/pendingWipe";
 import { clearPendingWipe, readPendingWipe } from "@/features/shared/auth/pendingWipeMarker";
 import { useAccount } from "@/features/shared/auth/useAccount";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 
 export function usePendingWipe(): void {
-  const { status, user } = useAccount();
+  const account = useAccount();
+  const { status, user } = account;
+  const settled = isAccountSettled(account);
   const { showToast } = useToast();
   const userId = user?.id ?? null;
   const swept = useRef(false);
   const sweptOwner = useRef<string | null>(null);
 
   useEffect(() => {
-    if (swept.current || status === "loading" || status === "disabled") return;
+    if (swept.current || !settled) return;
     if (status === "signedIn" && userId === null) return;
     swept.current = true;
     const action = decidePendingWipe(status, userId, readPendingWipe());
@@ -41,13 +45,15 @@ export function usePendingWipe(): void {
         showToast({ message: shell.account.signOutDialog.wipeFailed, tone: "error" });
       });
     }
-  }, [status, userId, showToast]);
+  }, [settled, status, userId, showToast]);
 
   useEffect(() => {
-    if (status !== "signedIn" || userId === null || sweptOwner.current === userId) return;
+    if (!settled || status !== "signedIn" || userId === null || sweptOwner.current === userId) {
+      return;
+    }
     sweptOwner.current = userId;
     wipeSyncedRowsOfOtherOwners(userId).catch(() => {
       // Best effort: the rows are still safe in Drive and the next page load sweeps again.
     });
-  }, [status, userId]);
+  }, [settled, status, userId]);
 }

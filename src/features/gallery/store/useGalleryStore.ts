@@ -51,8 +51,10 @@ export const useGalleryStore = create<IGalleryState>((set, get) => ({
   renameArtwork: async (id, title) => {
     set({ error: null });
     try {
-      await artworkService.renameArtwork(id, title);
+      const renamed = await artworkService.renameArtwork(id, title);
       await get().loadArtworks();
+      // Nothing was written (the row is gone or belongs to another account): say so.
+      if (!renamed) set({ error: gallery.errors.rename });
     } catch {
       const message = gallery.errors.rename;
       set({ error: message });
@@ -75,8 +77,9 @@ export const useGalleryStore = create<IGalleryState>((set, get) => ({
   deleteArtwork: async (id) => {
     set({ error: null });
     try {
-      await artworkService.deleteArtwork(id);
+      const deleted = await artworkService.deleteArtwork(id);
       await get().loadArtworks();
+      if (!deleted) set({ error: gallery.errors.delete });
     } catch {
       const message = gallery.errors.delete;
       set({ error: message });

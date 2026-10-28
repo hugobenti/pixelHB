@@ -36,6 +36,8 @@ export interface IShellContent {
     signInAgain: string;
     reauthNote: string;
     signingOut: string;
+    reconnecting: string;
+    reconnectingNote: string;
     signOutDialog: {
       title: string;
       description: (artworks: number, deletions: number) => string;

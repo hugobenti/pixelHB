@@ -49,32 +49,23 @@ describe("toPublicSession", () => {
 
 describe("toAccountState", () => {
   const session = toPublicSession(token, EXPIRES);
-  it("maps next-auth status to the account status", () => {
-    expect(toAccountState(null, "loading")).toEqual({
-      status: "loading",
-      user: null,
-      needsReauth: false,
-    });
-    expect(toAccountState(null, "unauthenticated")).toEqual({
-      status: "signedOut",
-      user: null,
-      needsReauth: false,
-    });
-    expect(toAccountState(session, "authenticated")).toEqual({
+  it("maps a session with a user to signed in and no session to signed out", () => {
+    expect(toAccountState(null)).toEqual({ status: "signedOut", user: null, needsReauth: false });
+    expect(toAccountState(session)).toEqual({
       status: "signedIn",
       user: session.user,
       needsReauth: false,
     });
   });
   it("keeps the user signed in but asks for reauth on RefreshFailed", () => {
-    expect(toAccountState({ ...session, error: "RefreshFailed" }, "authenticated")).toEqual({
+    expect(toAccountState({ ...session, error: "RefreshFailed" })).toEqual({
       status: "signedIn",
       user: session.user,
       needsReauth: true,
     });
   });
-  it("treats an authenticated session without a user id as signed out", () => {
-    expect(toAccountState({ user: { name: "Ada" } }, "authenticated")).toEqual({
+  it("treats a session without a user id as signed out", () => {
+    expect(toAccountState({ user: { name: "Ada" } })).toEqual({
       status: "signedOut",
       user: null,
       needsReauth: false,

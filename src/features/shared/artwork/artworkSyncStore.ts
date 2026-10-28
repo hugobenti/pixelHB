@@ -162,10 +162,13 @@ export async function wipeOwner(ownerId: string): Promise<void> {
  */
 export async function wipeSyncedRowsOfOtherOwners(currentOwnerId: string): Promise<number> {
   return db.transaction("rw", db.artworks, db.deletions, async () => {
+    // Index-only pre-check: with no other owner on disk (the usual case) no row is read at all.
+    const otherIds = await db.artworks.where("ownerId").notEqual(currentOwnerId).primaryKeys();
+    if (otherIds.length === 0) return 0;
     const briefs: IOwnedRowBrief[] = [];
-    await db.artworks.each((row) => {
-      briefs.push({ id: row.id, ownerId: row.ownerId, state: row.sync.state });
-    });
+    for (const row of await db.artworks.bulkGet(otherIds)) {
+      if (row) briefs.push({ id: row.id, ownerId: row.ownerId, state: row.sync.state });
+    }
     const tombstonedIds = new Set(await db.deletions.toCollection().primaryKeys());
     const ids = planOtherOwnerWipe(currentOwnerId, briefs, tombstonedIds);
     await db.artworks.bulkDelete(ids);

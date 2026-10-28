@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { IAccountState, TSessionFetchResult } from "../auth.type";
+import type { IAccountHint, IAccountState, TSessionFetchResult } from "../auth.type";
 import {
   LOADING_ACCOUNT,
   classifySessionBody,
@@ -64,12 +64,16 @@ describe("fetchAccountSession", () => {
       session,
     });
   });
-  it("maps network errors, timeouts, non-2xx and non-JSON bodies to failed", async () => {
+  it("reads HTTP 404 (the auth route is off) as signed out", async () => {
+    await expect(
+      fetchAccountSession(fetchOf(new Response("Not found", { status: 404 }))),
+    ).resolves.toEqual({ kind: "signedOut" });
+  });
+  it("maps network errors, timeouts, other non-2xx and non-JSON bodies to failed", async () => {
     for (const result of [
       new TypeError("Failed to fetch"),
       new DOMException("timed out", "TimeoutError"),
       new Response("null", { status: 500 }),
-      new Response("null", { status: 404 }),
       new Response("null", { status: 401 }),
       new Response("<html>Bad gateway</html>", { status: 200 }),
       new Response("", { status: 200 }),
@@ -80,38 +84,120 @@ describe("fetchAccountSession", () => {
 });
 
 describe("nextAccountState", () => {
-  const table: [string, IAccountState, TSessionFetchResult, IAccountState][] = [
-    ["first load, signed in", LOADING_ACCOUNT, { kind: "signedIn", session }, signedIn],
-    ["first load, explicit signed out", LOADING_ACCOUNT, { kind: "signedOut" }, signedOut],
-    ["first load offline stays loading", LOADING_ACCOUNT, { kind: "failed" }, LOADING_ACCOUNT],
-    ["signed in, then a failure keeps the user", signedIn, { kind: "failed" }, signedIn],
-    ["signed in, then explicit null really signs out", signedIn, { kind: "signedOut" }, signedOut],
-    ["signed in, same session again", signedIn, { kind: "signedIn", session }, signedIn],
+  const hint: IAccountHint = { id: "google-sub-1", name: "Ada", image: null };
+  const provisionalIn: IAccountState = {
+    status: "signedIn",
+    user: { id: "google-sub-1", name: "Ada", email: "", image: null },
+    needsReauth: false,
+    provisional: true,
+  };
+  const provisionalOut: IAccountState = { ...signedOut, provisional: true };
+  const failed: TSessionFetchResult = { kind: "failed" };
+  const answerIn: TSessionFetchResult = { kind: "signedIn", session };
+  const answerOut: TSessionFetchResult = { kind: "signedOut" };
+
+  const table: [string, IAccountState, TSessionFetchResult, IAccountHint | null, IAccountState][] =
     [
-      "signed in, session now says RefreshFailed",
-      signedIn,
-      { kind: "signedIn", session: { ...session, error: "RefreshFailed" } },
-      needsReauth,
-    ],
-    ["needs reauth, re-consent clears it", needsReauth, { kind: "signedIn", session }, signedIn],
-    ["needs reauth, then a failure keeps it", needsReauth, { kind: "failed" }, needsReauth],
-    ["signed out, then a failure stays signed out", signedOut, { kind: "failed" }, signedOut],
-    ["signed out, then signed in elsewhere", signedOut, { kind: "signedIn", session }, signedIn],
-    ["signed out, still signed out", signedOut, { kind: "signedOut" }, signedOut],
-  ];
-  it.each(table)("%s", (_name, previous, result, expected) => {
-    expect(nextAccountState(previous, result)).toEqual(expected);
+      ["first load, signed in", LOADING_ACCOUNT, answerIn, null, signedIn],
+      ["first load, explicit signed out (also 404)", LOADING_ACCOUNT, answerOut, hint, signedOut],
+      [
+        "first load fails, no hint: provisional signed out",
+        LOADING_ACCOUNT,
+        failed,
+        null,
+        provisionalOut,
+      ],
+      [
+        "first load fails, hint: provisional signed in as the hinted owner",
+        LOADING_ACCOUNT,
+        failed,
+        hint,
+        provisionalIn,
+      ],
+      ["signed in, then a failure keeps the user", signedIn, failed, hint, signedIn],
+      ["signed in, then explicit null really signs out", signedIn, answerOut, hint, signedOut],
+      ["signed in, same session again", signedIn, answerIn, hint, signedIn],
+      [
+        "signed in, session now says RefreshFailed",
+        signedIn,
+        { kind: "signedIn", session: { ...session, error: "RefreshFailed" } },
+        hint,
+        needsReauth,
+      ],
+      ["needs reauth, re-consent clears it", needsReauth, answerIn, hint, signedIn],
+      ["needs reauth, then a failure keeps it", needsReauth, failed, hint, needsReauth],
+      ["signed out, then a failure stays signed out", signedOut, failed, hint, signedOut],
+      ["signed out, then signed in elsewhere", signedOut, answerIn, null, signedIn],
+      ["signed out, still signed out", signedOut, answerOut, null, signedOut],
+      [
+        "provisional signed in, failure again keeps the guess",
+        provisionalIn,
+        failed,
+        hint,
+        provisionalIn,
+      ],
+      [
+        "provisional signed in, server confirms: real signed in",
+        provisionalIn,
+        answerIn,
+        hint,
+        signedIn,
+      ],
+      [
+        "provisional signed in, server says null: signed out",
+        provisionalIn,
+        answerOut,
+        hint,
+        signedOut,
+      ],
+      [
+        "provisional signed in, server says another user",
+        provisionalIn,
+        { kind: "signedIn", session: { ...session, user: { ...user, id: "google-sub-2" } } },
+        hint,
+        { ...signedIn, user: { ...user, id: "google-sub-2" } },
+      ],
+      [
+        "provisional signed out, failure again keeps the guess",
+        provisionalOut,
+        failed,
+        null,
+        provisionalOut,
+      ],
+      [
+        "provisional signed out, server confirms null: definitive",
+        provisionalOut,
+        answerOut,
+        null,
+        signedOut,
+      ],
+      ["provisional signed out, server says signed in", provisionalOut, answerIn, null, signedIn],
+    ];
+  it.each(table)("%s", (_name, previous, result, hintArg, expected) => {
+    const next = nextAccountState(previous, result, hintArg);
+    expect(next).toEqual(expected);
+    expect(Boolean(next.provisional)).toBe(Boolean(expected.provisional));
+  });
+
+  it("never invents an email or a token for the provisional user", () => {
+    expect(nextAccountState(LOADING_ACCOUNT, failed, hint).user).toEqual({
+      id: "google-sub-1",
+      name: "Ada",
+      email: "",
+      image: null,
+    });
   });
 
   it("returns the previous object when nothing changed, so React does not re-render", () => {
-    expect(nextAccountState(signedIn, { kind: "signedIn", session })).toBe(signedIn);
-    expect(nextAccountState(signedOut, { kind: "signedOut" })).toBe(signedOut);
-    expect(nextAccountState(signedIn, { kind: "failed" })).toBe(signedIn);
+    expect(nextAccountState(signedIn, answerIn, null)).toBe(signedIn);
+    expect(nextAccountState(signedOut, answerOut, null)).toBe(signedOut);
+    expect(nextAccountState(signedIn, failed, null)).toBe(signedIn);
+    expect(nextAccountState(provisionalIn, failed, hint)).toBe(provisionalIn);
   });
 
   it("switches to the new user when the owner changes without a signed-out answer in between", () => {
     const other = { ...session, user: { ...user, id: "google-sub-2" } };
-    expect(nextAccountState(signedIn, { kind: "signedIn", session: other }).user?.id).toBe(
+    expect(nextAccountState(signedIn, { kind: "signedIn", session: other }, null).user?.id).toBe(
       "google-sub-2",
     );
   });

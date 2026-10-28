@@ -52,6 +52,7 @@ export function useGalleryScreen() {
   /** Signed in with nothing local while the first Drive list is still coming: not empty yet. */
   const awaitingDrive =
     account.status === "signedIn" &&
+    !account.provisional &&
     firstListPending &&
     cards.length === 0 &&
     (phase === "syncing" || (phase === "disabled" && isDriveSyncSupported()));

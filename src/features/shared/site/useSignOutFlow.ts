@@ -23,6 +23,7 @@ import { listDeletions, listOwned, wipeOwner } from "@/features/shared/artwork/a
 import type { IAccountState } from "@/features/shared/auth/auth.type";
 import { verifySignOutResult } from "@/features/shared/auth/logic/signOutResult";
 import { runSignOut } from "@/features/shared/auth/logic/signOutRun";
+import { clearAccountHint } from "@/features/shared/auth/accountHintStore";
 import { clearPendingWipe, writePendingWipe } from "@/features/shared/auth/pendingWipeMarker";
 import type { IConfirmDialogProps } from "@/features/shared/components/ConfirmDialog.type";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
@@ -55,7 +56,9 @@ export function useSignOutFlow(account: IAccountState): {
   const { showToast } = useToast();
   const [phase, setPhase] = useState<TSignOutPhase>("idle");
   const [work, setWork] = useState<IUnsyncedWork | null>(null);
-  const ownerId = account.status === "signedIn" ? (account.user?.id ?? null) : null;
+  /** A provisional account is a guess, never a reason to sign out or wipe anything. */
+  const ownerId =
+    account.status === "signedIn" && !account.provisional ? (account.user?.id ?? null) : null;
 
   const finish = async (owner: string) => {
     setPhase("signingOut");
@@ -67,6 +70,7 @@ export function useSignOutFlow(account: IAccountState): {
       stopEngine: () => getSyncEngine().stop(),
       wipeOwner,
       clearMarker: clearPendingWipe,
+      clearAccountHint,
       setActiveOwner: artworkService.setActiveOwner,
     });
     if (outcome === "signOutFailed") {

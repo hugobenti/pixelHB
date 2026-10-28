@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { decidePendingWipe } from "./pendingWipe";
+import { decidePendingWipe, isAccountSettled } from "./pendingWipe";
 
 describe("decidePendingWipe", () => {
   it("wipes the marked owner once signed out", () => {
@@ -28,5 +28,17 @@ describe("decidePendingWipe", () => {
     for (const s of ["signedOut", "signedIn", "loading", "disabled"] as const) {
       expect(decidePendingWipe(s, "u1", null)).toEqual({ kind: "none" });
     }
+  });
+});
+
+describe("isAccountSettled", () => {
+  it("is true only for a signed-in or signed-out state the server confirmed", () => {
+    expect(isAccountSettled({ status: "signedIn" })).toBe(true);
+    expect(isAccountSettled({ status: "signedOut" })).toBe(true);
+    expect(isAccountSettled({ status: "signedIn", provisional: false })).toBe(true);
+    expect(isAccountSettled({ status: "signedIn", provisional: true })).toBe(false);
+    expect(isAccountSettled({ status: "signedOut", provisional: true })).toBe(false);
+    expect(isAccountSettled({ status: "loading" })).toBe(false);
+    expect(isAccountSettled({ status: "disabled" })).toBe(false);
   });
 });

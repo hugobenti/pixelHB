@@ -237,3 +237,22 @@ test("wipeSyncedRowsOfOtherOwners removes other owners' synced rows only, and ke
   expect(await db.deletions.count()).toBe(2);
   expect(await syncStore.wipeSyncedRowsOfOtherOwners("u1")).toBe(0);
 });
+
+test("wipeSyncedRowsOfOtherOwners reads no row when no other owner is on disk", async () => {
+  await db.artworks.put({
+    ...remote("mine", 100),
+    ownerId: "u1",
+    sync: { state: "synced", syncedUpdatedAt: 100 },
+  });
+  await db.artworks.put({
+    ...remote("unowned", 100),
+    ownerId: null,
+    sync: { state: "local", syncedUpdatedAt: null },
+  });
+  const bulkGet = vi.spyOn(db.artworks, "bulkGet");
+  const each = vi.spyOn(db.artworks, "each");
+  expect(await syncStore.wipeSyncedRowsOfOtherOwners("u1")).toBe(0);
+  expect(bulkGet).not.toHaveBeenCalled();
+  expect(each).not.toHaveBeenCalled();
+  expect(await db.artworks.count()).toBe(2);
+});

@@ -108,14 +108,13 @@ const REFRESH_FAILED = "RefreshFailed";
 function signInToken<T extends Record<string, unknown>>(
   token: T,
   account: IGoogleSignInAccount,
-): T & { error?: string } {
+): (T & { error?: string }) | null {
   const { access_token, refresh_token, expires_at, scope, providerAccountId } = account;
   if (!providerAccountId) {
-    // Without the Google id there is no stable owner id; Auth.js's per-sign-in random `sub` would
-    // orphan local data on the next sign-in. Issue no sub and no tokens: the public session then
-    // has an empty user id, which the UI reads as signed out, and Drive routes answer `reauth`.
-    const withoutSub = Object.fromEntries(Object.entries(token).filter(([key]) => key !== "sub"));
-    return withoutSub as T & { error?: string };
+    // Without the Google id there is no stable owner id, and Auth.js's per-sign-in random `sub`
+    // would orphan local data on the next sign-in. `null` is Auth.js's explicit failed sign-in: it
+    // clears the session cookies instead of issuing a session.
+    return null;
   }
   // Auth.js sets `sub` to a random UUID per sign-in; the Google account id is the stable owner id.
   const stable = { ...token, sub: providerAccountId };
@@ -135,11 +134,14 @@ function signInToken<T extends Record<string, unknown>>(
   };
 }
 
-/** The Auth.js jwt callback body: stores tokens at sign-in, then keeps the access token fresh. */
+/**
+ * The Auth.js jwt callback body: stores tokens at sign-in (`null`, a failed sign-in, when the
+ * account has no Google id), then keeps the access token fresh.
+ */
 export async function rotateGoogleToken<T extends Record<string, unknown>>(
   params: { token: T; account?: IGoogleSignInAccount | null },
   deps: IGoogleRefreshDeps,
-): Promise<T & { error?: string }> {
+): Promise<(T & { error?: string }) | null> {
   const { token, account } = params;
   if (account) {
     return signInToken(token, account);

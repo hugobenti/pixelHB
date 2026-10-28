@@ -5,11 +5,14 @@
  *
  * Notes:
  * `next-auth/react` maps every failed request to `null`, the same value as "no session", which
- * signed the UI out whenever the network or the server hiccuped. Here only an explicit HTTP 200
- * answer without a user means signed out; a failure keeps what the app already knew (or keeps it
- * loading), so a transient error never ends a session, stops the sync engine or drops an autosave.
+ * signed the UI out whenever the network or the server hiccuped. Here only an explicit answer
+ * (HTTP 200 without a user, or 404 because the auth route is off) means signed out. A failure
+ * after a known state keeps it, so a transient error never ends a session, stops the sync engine
+ * or drops an autosave. A failure with no known state yet is a guess, flagged `provisional`: the
+ * last known owner (the account hint) when there is one, otherwise signed out, so a visitor is
+ * never stuck in `loading` and the app stays usable offline.
  */
-import type { IAccountState, ISessionLike, TSessionFetchResult } from "../auth.type";
+import type { IAccountHint, IAccountState, ISessionLike, TSessionFetchResult } from "../auth.type";
 import { toAccountState } from "./publicSession";
 
 export const SESSION_URL = "/api/auth/session";
@@ -18,6 +21,24 @@ const RETRY_BASE_MS = 2000;
 const RETRY_MAX_MS = 60_000;
 
 export const LOADING_ACCOUNT: IAccountState = { status: "loading", user: null, needsReauth: false };
+
+const PROVISIONAL_SIGNED_OUT: IAccountState = {
+  status: "signedOut",
+  user: null,
+  needsReauth: false,
+  provisional: true,
+};
+
+/** The state while the server cannot be asked: the hinted owner (no email), or signed out. */
+function provisionalState(hint: IAccountHint | null): IAccountState {
+  if (hint === null) return PROVISIONAL_SIGNED_OUT;
+  return {
+    status: "signedIn",
+    user: { id: hint.id, name: hint.name, email: "", image: hint.image },
+    needsReauth: false,
+    provisional: true,
+  };
+}
 
 /** Delay before retry number `failureCount` (1 = first retry): 2 s, 4 s, 8 s … capped at 60 s. */
 export function retryDelayMs(failureCount: number): number {
@@ -45,6 +66,7 @@ export async function fetchAccountSession(fetchFn: typeof fetch): Promise<TSessi
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: { Accept: "application/json" },
     });
+    if (response.status === 404) return { kind: "signedOut" };
     if (!response.ok) return { kind: "failed" };
     return classifySessionBody(await response.json());
   } catch {
@@ -56,6 +78,7 @@ function same(a: IAccountState, b: IAccountState): boolean {
   return (
     a.status === b.status &&
     a.needsReauth === b.needsReauth &&
+    Boolean(a.provisional) === Boolean(b.provisional) &&
     a.user?.id === b.user?.id &&
     a.user?.name === b.user?.name &&
     a.user?.email === b.user?.email &&
@@ -63,15 +86,18 @@ function same(a: IAccountState, b: IAccountState): boolean {
   );
 }
 
-/** The account state after a request; returns `previous` itself when nothing changed. */
+/**
+ * The account state after a request; returns `previous` itself when nothing changed. `hint` is the
+ * last known signed-in owner, used only to guess when the very first request fails.
+ */
 export function nextAccountState(
   previous: IAccountState,
   result: TSessionFetchResult,
+  hint: IAccountHint | null,
 ): IAccountState {
-  if (result.kind === "failed") return previous;
-  const next =
-    result.kind === "signedIn"
-      ? toAccountState(result.session, "authenticated")
-      : toAccountState(null, "unauthenticated");
+  if (result.kind === "failed") {
+    return previous.status === "loading" ? provisionalState(hint) : previous;
+  }
+  const next = result.kind === "signedIn" ? toAccountState(result.session) : toAccountState(null);
   return same(previous, next) ? previous : next;
 }

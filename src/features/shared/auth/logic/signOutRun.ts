@@ -18,6 +18,7 @@ export async function runSignOut(ownerId: string, deps: ISignOutDeps): Promise<T
     return "signOutFailed";
   }
 
+  deps.clearAccountHint();
   deps.writeMarker(ownerId);
   deps.setActiveOwner(null);
   try {

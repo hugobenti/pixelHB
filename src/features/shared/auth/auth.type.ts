@@ -38,13 +38,11 @@ export interface IPublicSession {
   error?: "RefreshFailed";
 }
 
-/** The shape `useSession().data` is read through. */
+/** The shape of the `/api/auth/session` body that the account state is read from. */
 export interface ISessionLike {
   user?: { id?: string; name?: string | null; email?: string | null; image?: string | null };
   error?: string;
 }
-
-export type TSessionHookStatus = "loading" | "authenticated" | "unauthenticated";
 
 export interface IAuthSessionProviderProps {
   children: ReactNode;
@@ -71,12 +69,25 @@ export interface IAccountState {
   status: TAccountStatus;
   user: IAccountUser | null;
   needsReauth: boolean;
+  /**
+   * A guess made because the first session request failed (offline, 5xx, timeout): `signedIn` as
+   * the last known owner, or `signedOut` without one. Never act destructively on it: no wipe, no
+   * sign-out, no engine. The next answer from the server replaces it.
+   */
+  provisional?: boolean;
 }
 
-/** What one `/api/auth/session` request told us. Only `signedOut` is an answer from the server. */
+/** The non-secret part of the last signed-in account, kept in localStorage to survive a failed first request. */
+export interface IAccountHint {
+  id: string;
+  name: string;
+  image: string | null;
+}
+
+/** What one `/api/auth/session` request told us. `signedIn` and `signedOut` are answers from the server. */
 export type TSessionFetchResult =
   | { kind: "signedIn"; session: ISessionLike }
-  /** HTTP 200 whose body is `null`, `{}` or has no user id. */
+  /** HTTP 200 whose body is `null`, `{}` or has no user id, or HTTP 404 (the auth route is off). */
   | { kind: "signedOut" }
   /** Network error, timeout, non-2xx status or a body that is not a session: no information. */
   | { kind: "failed" };

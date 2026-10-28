@@ -163,14 +163,14 @@ describe("rotateGoogleToken (jwt callback)", () => {
   it("sets sub to the Google account id, replacing the random id Auth.js generated", async () => {
     const deps = depsWith(fakeFetch(new Error("unused")));
     const next = await rotateGoogleToken({ token: { ...base, sub: randomSub() }, account }, deps);
-    expect(next.sub).toBe("google-sub-1");
+    expect(next?.sub).toBe("google-sub-1");
   });
 
   it("gives two sign-ins of the same Google account the same sub, whatever Auth.js generated", async () => {
     const deps = depsWith(fakeFetch(new Error("unused")));
     const first = await rotateGoogleToken({ token: { ...base, sub: randomSub() }, account }, deps);
     const second = await rotateGoogleToken({ token: { ...base, sub: randomSub() }, account }, deps);
-    expect(first.sub).toBe(second.sub);
+    expect(first?.sub).toBe(second?.sub);
     const other = await rotateGoogleToken(
       {
         token: { ...base, sub: randomSub() },
@@ -178,7 +178,7 @@ describe("rotateGoogleToken (jwt callback)", () => {
       },
       deps,
     );
-    expect(other.sub).toBe("google-sub-2");
+    expect(other?.sub).toBe("google-sub-2");
   });
 
   it("keeps the stable sub when Drive was not granted", async () => {
@@ -192,16 +192,15 @@ describe("rotateGoogleToken (jwt callback)", () => {
     expect(next).toMatchObject({ sub: "google-sub-1", error: "RefreshFailed" });
   });
 
-  it("issues no usable session id or tokens when the account has no providerAccountId", async () => {
+  it("fails the sign-in (null: Auth.js clears the cookies) when the account has no providerAccountId", async () => {
     const deps = depsWith(fakeFetch(new Error("unused")));
     for (const providerAccountId of [undefined, ""]) {
-      const next = await rotateGoogleToken(
-        { token: { ...base, sub: randomSub() }, account: { ...account, providerAccountId } },
-        deps,
-      );
-      expect(next).not.toHaveProperty("sub");
-      expect(next).not.toHaveProperty("accessToken");
-      expect(next).not.toHaveProperty("refreshToken");
+      await expect(
+        rotateGoogleToken(
+          { token: { ...base, sub: randomSub() }, account: { ...account, providerAccountId } },
+          deps,
+        ),
+      ).resolves.toBeNull();
     }
   });
 
@@ -214,7 +213,7 @@ describe("rotateGoogleToken (jwt callback)", () => {
         { token: { ...base, sub: randomSub() }, account: partial },
         depsWith(fakeFetch(new Error("unused"))),
       );
-      expect(next.error).toBe("RefreshFailed");
+      expect(next?.error).toBe("RefreshFailed");
     }
   });
 
@@ -243,7 +242,7 @@ describe("rotateGoogleToken (jwt callback)", () => {
     );
     expect(flagged).toEqual({ ...base, ...state, error: "RefreshFailed" });
     const fetchFn = fakeFetch(json(200, { access_token: "a2", expires_in: 3599 }));
-    await expect(rotateGoogleToken({ token: flagged }, depsWith(fetchFn))).resolves.toBe(flagged);
+    await expect(rotateGoogleToken({ token: flagged! }, depsWith(fetchFn))).resolves.toBe(flagged);
     expect(fetchFn).not.toHaveBeenCalled();
   });
 
@@ -259,7 +258,7 @@ describe("rotateGoogleToken (jwt callback)", () => {
       { token: { sub: "google-sub-1" } },
       depsWith(fakeFetch(new Error("unused"))),
     );
-    expect(next.error).toBe("RefreshFailed");
+    expect(next?.error).toBe("RefreshFailed");
   });
 });
 
