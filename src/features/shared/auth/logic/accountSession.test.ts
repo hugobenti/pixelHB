@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { IAccountHint, IAccountState, TSessionFetchResult } from "../auth.type";
 import {
+  FIRST_FETCH_TIMEOUT_MS,
   LOADING_ACCOUNT,
   classifySessionBody,
   fetchAccountSession,
@@ -64,6 +65,13 @@ describe("fetchAccountSession", () => {
       session,
     });
   });
+  it("uses the given timeout, 15 s by default", async () => {
+    const spy = vi.spyOn(AbortSignal, "timeout");
+    await fetchAccountSession(fetchOf(ok(null)));
+    await fetchAccountSession(fetchOf(ok(null)), FIRST_FETCH_TIMEOUT_MS);
+    expect(spy.mock.calls.map(([ms]) => ms)).toEqual([15_000, 6000]);
+    spy.mockRestore();
+  });
   it("reads HTTP 404 (the auth route is off) as signed out", async () => {
     await expect(
       fetchAccountSession(fetchOf(new Response("Not found", { status: 404 }))),
@@ -84,7 +92,7 @@ describe("fetchAccountSession", () => {
 });
 
 describe("nextAccountState", () => {
-  const hint: IAccountHint = { id: "google-sub-1", name: "Ada", image: null };
+  const hint: IAccountHint = { id: "google-sub-1", name: "Ada", image: null, savedAt: 1 };
   const provisionalIn: IAccountState = {
     status: "signedIn",
     user: { id: "google-sub-1", name: "Ada", email: "", image: null },

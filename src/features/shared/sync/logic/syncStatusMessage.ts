@@ -4,7 +4,7 @@
  * editor bar, account panel), and looks its copy up.
  *
  * Notes:
- * Order: reauth, offline, syncing, too large, saved. Engine phase `error` reads as offline (Drive
+ * Order: unconfirmed (provisional account), reauth, offline, syncing, too large, saved. Engine phase `error` reads as offline (Drive
  * could not be reached and the local copy is what is shown); phase `disabled` while signed in means
  * the engine is not running (e.g. no Web Locks), so work stays in this browser. Idle with more pending changes than too-large ones means a push is still
  * debounced, so it is not "saved" yet. `null` while the account is loading.
@@ -26,6 +26,7 @@ const TONES: Record<TSyncMessageKey, TSyncTone> = {
   offline: "attention",
   signInAgain: "attention",
   tooLarge: "attention",
+  unconfirmed: "neutral",
 };
 
 function message(key: TSyncMessageKey, count = 0): ISyncStatusMessage {
@@ -39,6 +40,9 @@ export function syncStatusMessage(
 ): ISyncStatusMessage | null {
   if (account.status === "loading") return null;
   if (account.status !== "signedIn") return message("thisBrowserOnly");
+  if (account.provisional) {
+    return { ...message("unconfirmed"), name: account.user?.name };
+  }
   if (account.needsReauth || status.phase === "reauth") return message("signInAgain");
   if (status.phase === "disabled") return message("thisBrowserOnly");
   if (status.phase === "offline" || status.phase === "error") return message("offline");
@@ -52,5 +56,7 @@ export function syncStatusMessage(
 }
 
 export function syncStatusText(status: ISyncStatusMessage): string {
-  return status.key === "tooLarge" ? shared.sync.tooLarge(status.count) : shared.sync[status.key];
+  if (status.key === "tooLarge") return shared.sync.tooLarge(status.count);
+  if (status.key === "unconfirmed") return shared.sync.unconfirmed(status.name);
+  return shared.sync[status.key];
 }

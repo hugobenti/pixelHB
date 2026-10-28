@@ -8,27 +8,38 @@
  * (see `provisional` on `IAccountState`).
  */
 import type { IAccountHint, IAccountUser } from "../auth.type";
+import { SESSION_MAX_AGE_SECONDS } from "../sessionLifetime";
 
-export function toAccountHint(user: IAccountUser): IAccountHint {
-  return { id: user.id, name: user.name, image: user.image };
+const MAX_AGE_MS = SESSION_MAX_AGE_SECONDS * 1000;
+/** A hint saved "in the future" means the clock moved; it is not trusted. */
+const CLOCK_SKEW_MS = 60_000;
+
+export function toAccountHint(user: IAccountUser, nowMs: number): IAccountHint {
+  return { id: user.id, name: user.name, image: user.image, savedAt: nowMs };
 }
 
 export function serializeAccountHint(hint: IAccountHint): string {
-  return JSON.stringify({ id: hint.id, name: hint.name, image: hint.image });
+  return JSON.stringify({ id: hint.id, name: hint.name, image: hint.image, savedAt: hint.savedAt });
 }
 
-/** `null` for anything that is not a stored hint with a non-empty id. */
-export function parseAccountHint(raw: string | null): IAccountHint | null {
+/**
+ * `null` for anything that is not a stored hint with a non-empty id and a `savedAt` within the
+ * session lifetime (7 days): an older hint describes a cookie that no longer exists.
+ */
+export function parseAccountHint(raw: string | null, nowMs: number): IAccountHint | null {
   if (raw === null) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { id, name, image } = parsed as Record<string, unknown>;
+    const { id, name, image, savedAt } = parsed as Record<string, unknown>;
     if (typeof id !== "string" || id === "") return null;
+    if (typeof savedAt !== "number" || !Number.isFinite(savedAt)) return null;
+    if (nowMs - savedAt > MAX_AGE_MS || savedAt - nowMs > CLOCK_SKEW_MS) return null;
     return {
       id,
       name: typeof name === "string" ? name : "",
       image: typeof image === "string" ? image : null,
+      savedAt,
     };
   } catch {
     return null;

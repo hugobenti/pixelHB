@@ -82,6 +82,8 @@ export interface IAccountHint {
   id: string;
   name: string;
   image: string | null;
+  /** Epoch ms of the last signed-in answer; the hint expires with the session cookie. */
+  savedAt: number;
 }
 
 /** What one `/api/auth/session` request told us. `signedIn` and `signedOut` are answers from the server. */

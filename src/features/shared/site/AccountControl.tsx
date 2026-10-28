@@ -62,9 +62,6 @@ export function AccountControl({ placement }: IAccountControlProps) {
           <p className={accountControl.userEmail}>{account.user.email}</p>
         ) : null}
       </div>
-      {account.provisional ? (
-        <p className={accountControl.note}>{shell.account.reconnectingNote}</p>
-      ) : null}
       {syncStatusText ? <p className={accountControl.note}>{syncStatusText}</p> : null}
       {account.needsReauth ? (
         <>

@@ -36,6 +36,7 @@ function setup(options: {
       hint = null;
     },
     isOnline: () => env.online,
+    nowMs: () => 5000,
     setTimer: (callback, ms) => {
       const timer = {
         ms,
@@ -64,14 +65,17 @@ describe("createAccountSessionController", () => {
     const t = setup({ responses: [ok(session), ok(session)] });
     await t.controller.refresh();
     expect(t.states.map((s) => s.status)).toEqual(["signedIn"]);
-    expect(t.getHint()).toEqual({ id: "g1", name: "Ada", image: null });
+    expect(t.getHint()).toEqual({ id: "g1", name: "Ada", image: null, savedAt: 5000 });
     await t.controller.poll();
     expect(t.fetchFn).toHaveBeenCalledTimes(2);
     expect(t.states).toHaveLength(1);
   });
 
   it("clears the hint and stops polling after an explicit null", async () => {
-    const t = setup({ responses: [ok(null)], hint: { id: "g1", name: "Ada", image: null } });
+    const t = setup({
+      responses: [ok(null)],
+      hint: { id: "g1", name: "Ada", image: null, savedAt: 1000 },
+    });
     await t.controller.refresh();
     expect(t.states.map((s) => s.status)).toEqual(["signedOut"]);
     expect(t.states[0].provisional).toBeUndefined();
@@ -99,7 +103,7 @@ describe("createAccountSessionController", () => {
   it("first request fails with a hint: provisional signed in as the hinted owner; polling continues", async () => {
     const t = setup({
       responses: [networkError(), ok(null)],
-      hint: { id: "g9", name: "", image: null },
+      hint: { id: "g9", name: "", image: null, savedAt: 1000 },
     });
     await t.controller.refresh();
     expect(t.states[0]).toMatchObject({
@@ -182,5 +186,17 @@ describe("createAccountSessionController", () => {
     const t = setup({ responses: [ok(session)], online: false });
     await t.controller.poll();
     expect(t.fetchFn).not.toHaveBeenCalled();
+  });
+});
+
+describe("fetch timeout", () => {
+  it("uses the short timeout until the first answer, the long one afterwards", async () => {
+    const spy = vi.spyOn(AbortSignal, "timeout");
+    const t = setup({ responses: [networkError(), ok(session), ok(session)] });
+    await t.controller.refresh();
+    await t.controller.refresh();
+    await t.controller.refresh();
+    expect(spy.mock.calls.map(([ms]) => ms)).toEqual([6000, 15_000, 15_000]);
+    spy.mockRestore();
   });
 });

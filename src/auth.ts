@@ -17,11 +17,9 @@ import {
   revokeGoogleToken,
   rotateGoogleToken,
 } from "@/features/shared/auth/logic/googleToken";
+import { SESSION_MAX_AGE_SECONDS } from "@/features/shared/auth/sessionLifetime";
 import { toPublicSession } from "@/features/shared/auth/logic/publicSession";
 import { googleRefreshDeps } from "@/features/shared/auth/server/driveAccess";
-
-/** The sign-in cookie slides: it expires 7 days after the last visit (Auth.js default is 30). */
-const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [

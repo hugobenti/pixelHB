@@ -7,6 +7,7 @@ export interface IAccountSessionControllerDeps {
   writeHint: (hint: IAccountHint) => void;
   clearHint: () => void;
   isOnline: () => boolean;
+  nowMs: () => number;
   setTimer: (callback: () => void, ms: number) => unknown;
   clearTimer: (handle: unknown) => void;
   /** Called with every new account state (never with an unchanged one). */

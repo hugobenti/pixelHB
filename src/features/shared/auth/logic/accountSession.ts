@@ -16,7 +16,9 @@ import type { IAccountHint, IAccountState, ISessionLike, TSessionFetchResult } f
 import { toAccountState } from "./publicSession";
 
 export const SESSION_URL = "/api/auth/session";
-const FETCH_TIMEOUT_MS = 15_000;
+export const FETCH_TIMEOUT_MS = 15_000;
+/** The first request has no state to fall back on: a hanging endpoint must reach the provisional state soon. */
+export const FIRST_FETCH_TIMEOUT_MS = 6000;
 const RETRY_BASE_MS = 2000;
 const RETRY_MAX_MS = 60_000;
 
@@ -59,11 +61,14 @@ export function classifySessionBody(body: unknown): TSessionFetchResult {
 }
 
 /** One session request; never throws. */
-export async function fetchAccountSession(fetchFn: typeof fetch): Promise<TSessionFetchResult> {
+export async function fetchAccountSession(
+  fetchFn: typeof fetch,
+  timeoutMs: number = FETCH_TIMEOUT_MS,
+): Promise<TSessionFetchResult> {
   try {
     const response = await fetchFn(SESSION_URL, {
       cache: "no-store",
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
       headers: { Accept: "application/json" },
     });
     if (response.status === 404) return { kind: "signedOut" };

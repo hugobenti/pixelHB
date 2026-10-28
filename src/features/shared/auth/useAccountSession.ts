@@ -31,6 +31,7 @@ export function useAccountSession(): IAccountState {
       writeHint: writeAccountHint,
       clearHint: clearAccountHint,
       isOnline: () => navigator.onLine,
+      nowMs: () => Date.now(),
       setTimer: (callback, ms) => setTimeout(callback, ms),
       clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
       onState: setAccount,

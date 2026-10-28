@@ -11,9 +11,13 @@ import { parseAccountHint, serializeAccountHint } from "./logic/accountHint";
 
 const KEY = "pixelhb.accountHint";
 
+/** The stored hint, or `null`; an expired or unreadable one is removed. */
 export function readAccountHint(): IAccountHint | null {
   try {
-    return parseAccountHint(localStorage.getItem(KEY));
+    const raw = localStorage.getItem(KEY);
+    const hint = parseAccountHint(raw, Date.now());
+    if (raw !== null && hint === null) localStorage.removeItem(KEY);
+    return hint;
   } catch {
     return null;
   }

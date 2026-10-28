@@ -12,6 +12,8 @@ export const shared: ISharedContent = {
       count === 1
         ? "Too large to sync. Export it to keep a copy."
         : `${count} artworks are too large to sync. Export them to keep a copy.`,
+    unconfirmed: (name) =>
+      `Offline: showing ${name ? `${name}’s` : "your"} drawings. Changes sync when we can confirm your account.`,
     openDriveFolder: "Open PixelHB folder in Drive",
     opensInNewTab: "(opens in a new tab)",
   },

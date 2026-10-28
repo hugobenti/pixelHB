@@ -63,12 +63,17 @@ export function useGalleryScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const openCreate = () => setModalOpen(true);
 
+  /**
+   * The list is scoped to the active owner, which `useDriveSync` switches in a layout effect when
+   * the account settles or a provisional owner is assumed: reload whenever the identity changes.
+   */
+  const accountKey = `${account.status}:${account.user?.id ?? ""}:${account.provisional ? "p" : ""}`;
   useEffect(() => {
     void loadArtworks();
     const engine = getSyncEngine();
     void engine.syncNow();
     return engine.onLocalRowsChanged(() => void loadArtworks());
-  }, [loadArtworks]);
+  }, [loadArtworks, accountKey]);
 
   useStaleThumbnailRefresh(artworks, updateThumbnail);
 

@@ -11,6 +11,8 @@
  */
 import type { IAccountState } from "../auth.type";
 import {
+  FETCH_TIMEOUT_MS,
+  FIRST_FETCH_TIMEOUT_MS,
   LOADING_ACCOUNT,
   fetchAccountSession,
   nextAccountState,
@@ -41,10 +43,14 @@ export function createAccountSessionController(
     do {
       again = false;
       cancelRetry();
-      const result = await fetchAccountSession(deps.fetchFn);
+      const result = await fetchAccountSession(
+        deps.fetchFn,
+        current.status === "loading" ? FIRST_FETCH_TIMEOUT_MS : FETCH_TIMEOUT_MS,
+      );
       if (disposed) return;
       const next = nextAccountState(current, result, deps.readHint());
-      if (result.kind === "signedIn" && next.user) deps.writeHint(toAccountHint(next.user));
+      if (result.kind === "signedIn" && next.user)
+        deps.writeHint(toAccountHint(next.user, deps.nowMs()));
       if (result.kind === "signedOut") deps.clearHint();
       if (next !== current) {
         current = next;
