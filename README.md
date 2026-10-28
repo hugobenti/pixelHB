@@ -11,7 +11,7 @@ PixelHB is a local-first pixel-art editor that runs in the browser. You don't ne
 
 ### Gallery (`/gallery`)
 
-- Lists every artwork stored in this browser, with a thumbnail of each one (drawn without the pixel grid).
+- Lists every artwork stored in this browser, with a thumbnail of each one (drawn without the pixel grid). When signed in, drawings that exist only in Drive appear as previews until they are downloaded.
 - Create a new artwork by setting its title, background color and size. There are square presets (16, 32, 64, 128) or you can enter any width and height up to 1000 px.
 - Rename, clone and delete artworks. Delete asks for confirmation first.
 - Import an artwork from a JSON file.
@@ -167,12 +167,12 @@ The user-facing explanation is the [`/privacy`](src/content/privacy.ts) page.
 
 ## Launching Drive sync
 
-Sync ships dark behind `NEXT_PUBLIC_DRIVE_SYNC`. The flag is inlined at build time, so changing it needs a redeploy. Turning it on is a manual step in Vercel, after the copy PR is merged and Google has verified the app:
+Sync ships dark behind `NEXT_PUBLIC_DRIVE_SYNC`. The flag is inlined at build time, so changing it needs a redeploy. Turning it on is a manual step in Vercel, done **before** the copy PR is merged (or followed by a redeploy), so the copy never promises a sign-in button that does not exist:
 
-1. In the Google Auth Platform, publish the app ("In production") and get the brand verification approved. The redirect URIs are already configured.
-2. In Vercel → Project → Settings → Environment Variables, confirm `AUTH_SECRET`, `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` exist for Production. `AUTH_URL` is not needed.
-3. Add `NEXT_PUBLIC_DRIVE_SYNC=on` for Production.
-4. Redeploy the latest Production deployment (or merge to `main`) so the flag is picked up.
+1. In the Google Auth Platform, publish the app ("In production") and get the brand verification approved. Authorized redirect URIs: `https://pixelhb.vercel.app/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/google`.
+2. In Vercel → Project → Settings → Environment Variables, confirm `AUTH_SECRET`, `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` exist for Production and Preview, and that `AUTH_REDIRECT_PROXY_URL=https://pixelhb.vercel.app/api/auth` is set for both Production and Preview (see the table above). `AUTH_URL` is not needed.
+3. Set `NEXT_PUBLIC_DRIVE_SYNC=on` for Production.
+4. Merge the copy PR (the merge deploy picks up the flag), or redeploy the latest Production deployment if it was merged earlier.
 5. Check production: sign in, draw, see the file in `PixelHB/` in Drive, sign in on a second browser, sign out.
 
 Rollback: set `NEXT_PUBLIC_DRIVE_SYNC` to `off` and redeploy. Data in Drive and IndexedDB is untouched.

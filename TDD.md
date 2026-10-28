@@ -101,7 +101,7 @@ Export JSON and the files stored in Drive share one format: `version: 3`, `id`, 
 Drive sync is behind `NEXT_PUBLIC_DRIVE_SYNC`. `/api/gallery` route handlers are stateless proxies to the Drive `drive.file` scope; nothing is stored server-side.
 
 - IndexedDB is always the local working copy; the editor never waits on the network.
-- Dirty artworks are pushed to the `PixelHB` Drive folder, oldest first, a few seconds after the last edit.
+- Dirty artworks are pushed to the `PixelHB` Drive folder, oldest first, about ten seconds after the last edit.
 - Pulling lists the Drive folder first, then downloads only artworks that are new or newer.
 - The latest `updatedAt` wins; on a tie, Drive wins.
 - Deleting a synced artwork leaves a tombstone in `deletions` until Drive confirms it; signing out removes that account's rows from the browser (after offering to download unsynced ones). Artworks too large for Drive are marked `tooLarge` and stay local.
