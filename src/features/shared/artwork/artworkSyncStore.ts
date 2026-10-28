@@ -8,8 +8,14 @@
  * owners only and `adoptUnowned` filters instead.
  */
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import type { IArtworkDeletion, ISyncExpectedRow, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
+import type {
+  IArtworkDeletion,
+  ISyncExpectedRow,
+  IStoredArtwork,
+} from "@/features/shared/artwork/artworkSync.type";
 import { hydrateArtwork } from "@/features/shared/artwork/artworkService";
+import { planOtherOwnerWipe } from "@/features/shared/artwork/otherOwnerWipe";
+import type { IOwnedRowBrief } from "@/features/shared/artwork/otherOwnerWipe.type";
 import { db } from "@/features/shared/db/dexie.config";
 import { clonePixelBuffer } from "@/features/shared/utils/binaryHelpers";
 
@@ -60,7 +66,10 @@ export async function markTooLarge(id: string, pushedUpdatedAt: number): Promise
 }
 
 /** True when the row in IndexedDB still is the one `expected` describes (`undefined`: still absent). */
-function stillMatches(row: IStoredArtwork | undefined, expected: ISyncExpectedRow | undefined): boolean {
+function stillMatches(
+  row: IStoredArtwork | undefined,
+  expected: ISyncExpectedRow | undefined,
+): boolean {
   if (!row) return expected === undefined;
   return (
     expected !== undefined &&
@@ -143,5 +152,23 @@ export async function wipeOwner(ownerId: string): Promise<void> {
   await db.transaction("rw", db.artworks, db.deletions, async () => {
     await db.artworks.where("ownerId").equals(ownerId).delete();
     await db.deletions.where("ownerId").equals(ownerId).delete();
+  });
+}
+
+/**
+ * Removes the `synced` rows of every owner except `currentOwnerId` (see `planOtherOwnerWipe`),
+ * planning and deleting in one transaction so a row edited meanwhile is never deleted. Tombstones
+ * and every other row stay. Resolves with the number of rows removed.
+ */
+export async function wipeSyncedRowsOfOtherOwners(currentOwnerId: string): Promise<number> {
+  return db.transaction("rw", db.artworks, db.deletions, async () => {
+    const briefs: IOwnedRowBrief[] = [];
+    await db.artworks.each((row) => {
+      briefs.push({ id: row.id, ownerId: row.ownerId, state: row.sync.state });
+    });
+    const tombstonedIds = new Set(await db.deletions.toCollection().primaryKeys());
+    const ids = planOtherOwnerWipe(currentOwnerId, briefs, tombstonedIds);
+    await db.artworks.bulkDelete(ids);
+    return ids.length;
   });
 }
