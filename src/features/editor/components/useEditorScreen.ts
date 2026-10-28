@@ -5,9 +5,11 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { editor } from "@/content/editor";
+import { shouldReloadEditorArtwork } from "@/features/editor/logic/editorReload";
+import type { IEditorLoaded } from "@/features/editor/logic/editorReload.type";
 import { loadEditorArtwork } from "@/features/editor/logic/editorLoad";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import * as artworkService from "@/features/shared/artwork/artworkService";
@@ -18,14 +20,23 @@ import { EDITOR_REFRESH_TIMEOUT_MS, getSyncEngine } from "@/features/shared/sync
 export function useEditorScreen(artworkId: string) {
   const [artwork, setArtwork] = useState<IArtwork | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const { status } = useAccount();
+  const { status, user } = useAccount();
   const accountReady = status !== "loading";
   const signedIn = status === "signedIn";
+  const ownerId = user?.id ?? null;
+  /** What is on screen, so a provisional account confirmed by the server does not reload it. */
+  const loadedRef = useRef<IEditorLoaded | null>(null);
 
   useEffect(() => {
     // A direct editor link must not read Dexie before the active owner is known.
     if (!accountReady) {
       return;
+    }
+    if (!shouldReloadEditorArtwork(loadedRef.current, { artworkId, signedIn, ownerId })) {
+      // Same drawing, account now confirmed signed in: keep the editor, only take presence.
+      const keep = markArtworkOpen(artworkId);
+      loadedRef.current = { artworkId, signedIn, ownerId };
+      return keep;
     }
     let cancelled = false;
     let release: (() => void) | undefined;
@@ -45,8 +56,10 @@ export function useEditorScreen(artworkId: string) {
       if (result.status === "ready") {
         setLoadError(null);
         setArtwork(result.artwork);
+        loadedRef.current = { artworkId, signedIn, ownerId };
         return;
       }
+      loadedRef.current = null;
       setArtwork(null);
       setLoadError(
         result.status === "notFound" ? editor.screen.notFound : editor.screen.loadFailed,
@@ -56,7 +69,7 @@ export function useEditorScreen(artworkId: string) {
       cancelled = true;
       release?.();
     };
-  }, [artworkId, accountReady, signedIn]);
+  }, [artworkId, accountReady, signedIn, ownerId]);
 
   return { artwork, loadError };
 }

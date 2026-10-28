@@ -36,6 +36,7 @@ export interface IShellContent {
     signInAgain: string;
     reauthNote: string;
     signingOut: string;
+    reconnecting: string;
     signOutDialog: {
       title: string;
       description: (artworks: number, deletions: number) => string;
@@ -76,6 +77,7 @@ export interface ISharedContent {
     offline: string;
     signInAgain: string;
     tooLarge: (count: number) => string;
+    unconfirmed: (name: string | undefined) => string;
     openDriveFolder: string;
     /** Screen-reader suffix of a link that opens a new tab. */
     opensInNewTab: string;

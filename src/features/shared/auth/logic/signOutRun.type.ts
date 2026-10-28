@@ -8,6 +8,8 @@ export interface ISignOutDeps {
   stopEngine: () => Promise<void>;
   wipeOwner: (ownerId: string) => Promise<void>;
   clearMarker: () => void;
+  /** Forgets the last signed-in account, so the next failed session request does not guess it. */
+  clearAccountHint: () => void;
   setActiveOwner: (ownerId: string | null) => void;
 }
 

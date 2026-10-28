@@ -86,7 +86,9 @@ test("tooLarge holds until the next real edit makes the row dirty again", async 
 
 test("removeLocal deletes the row without a tombstone", async () => {
   await syncStore.putFromRemote("u1", remote("r1", 4000), undefined);
-  expect(await syncStore.removeLocal("r1", { ownerId: "u1", updatedAt: 4000, state: "synced" })).toBe(true);
+  expect(
+    await syncStore.removeLocal("r1", { ownerId: "u1", updatedAt: 4000, state: "synced" }),
+  ).toBe(true);
   expect(await db.artworks.get("r1")).toBeUndefined();
   expect(await db.deletions.count()).toBe(0);
 });
@@ -116,7 +118,9 @@ test("countUnsynced, listDeletions, dropDeletion and wipeOwner are per owner", a
   await db.deletions.put({ id: "x", ownerId: "u2", deletedAt: 1 });
 
   expect(await syncStore.countUnsynced("u1")).toBe(3);
-  expect(await syncStore.listDeletions("u1")).toEqual([{ id: gone.id, ownerId: "u1", deletedAt: 3000 }]);
+  expect(await syncStore.listDeletions("u1")).toEqual([
+    { id: gone.id, ownerId: "u1", deletedAt: 3000 },
+  ]);
   await syncStore.dropDeletion(gone.id);
   expect(await syncStore.listDeletions("u1")).toEqual([]);
 
@@ -126,7 +130,11 @@ test("countUnsynced, listDeletions, dropDeletion and wipeOwner are per owner", a
   expect(await syncStore.listOwned("u1")).toHaveLength(2);
 });
 
-const synced = (ownerId: string, updatedAt: number) => ({ ownerId, updatedAt, state: "synced" as const });
+const synced = (ownerId: string, updatedAt: number) => ({
+  ownerId,
+  updatedAt,
+  state: "synced" as const,
+});
 
 test("putFromRemote writes over a row that still matches and over an absent row", async () => {
   expect(await syncStore.putFromRemote("u1", remote("a", 100), undefined)).toBe(true);
@@ -141,11 +149,27 @@ test("putFromRemote does not overwrite a row edited, re-owned or created since i
   await syncStore.markSynced(art.id, 1000);
   at(2000);
   await artworkService.saveArtwork(art); // edited after the decision was made on the synced row
-  expect(await syncStore.putFromRemote("u1", { ...remote(art.id, 5000), title: "Drive" }, synced("u1", 1000))).toBe(false);
-  expect(await db.artworks.get(art.id)).toMatchObject({ title: "Cat", updatedAt: 2000, sync: { state: "dirty" } });
+  expect(
+    await syncStore.putFromRemote(
+      "u1",
+      { ...remote(art.id, 5000), title: "Drive" },
+      synced("u1", 1000),
+    ),
+  ).toBe(false);
+  expect(await db.artworks.get(art.id)).toMatchObject({
+    title: "Cat",
+    updatedAt: 2000,
+    sync: { state: "dirty" },
+  });
 
   expect(await syncStore.putFromRemote("u1", remote(art.id, 5000), undefined)).toBe(false); // row appeared
-  expect(await syncStore.putFromRemote("u9", remote(art.id, 5000), { ownerId: "u9", updatedAt: 2000, state: "dirty" })).toBe(false); // other owner
+  expect(
+    await syncStore.putFromRemote("u9", remote(art.id, 5000), {
+      ownerId: "u9",
+      updatedAt: 2000,
+      state: "dirty",
+    }),
+  ).toBe(false); // other owner
   expect(await syncStore.putFromRemote("u1", remote("gone", 5000), synced("u1", 1))).toBe(false); // row vanished
   expect(await db.artworks.get("gone")).toBeUndefined();
 });
@@ -173,4 +197,62 @@ test("markTooLarge only marks the version that was pushed", async () => {
   expect(await syncStore.markTooLarge(art.id, 2000)).toBe(true);
   expect((await db.artworks.get(art.id))?.sync.state).toBe("tooLarge");
   expect(await syncStore.markTooLarge("missing", 1)).toBe(false);
+});
+
+test("wipeSyncedRowsOfOtherOwners removes other owners' synced rows only, and keeps their tombstones", async () => {
+  const put = (
+    id: string,
+    ownerId: string | null,
+    state: "synced" | "dirty" | "tooLarge" | "local",
+  ) =>
+    db.artworks.put({
+      ...remote(id, 100),
+      ownerId,
+      sync: { state, syncedUpdatedAt: state === "local" ? null : 100 },
+    });
+  await put("mine", "u1", "synced");
+  await put("mine-dirty", "u1", "dirty");
+  await put("theirs", "u2", "synced");
+  await put("theirs-other", "u3", "synced");
+  await put("theirs-dirty", "u2", "dirty");
+  await put("theirs-big", "u2", "tooLarge");
+  await put("unowned", null, "local");
+  await put("tombstoned", "u2", "synced");
+  await db.deletions.bulkPut([
+    { id: "tombstoned", ownerId: "u2", deletedAt: 5 },
+    { id: "gone", ownerId: "u2", deletedAt: 6 },
+  ]);
+
+  expect(await syncStore.wipeSyncedRowsOfOtherOwners("u1")).toBe(2);
+
+  const left = (await db.artworks.toArray()).map((row) => row.id).sort();
+  expect(left).toEqual([
+    "mine",
+    "mine-dirty",
+    "theirs-big",
+    "theirs-dirty",
+    "tombstoned",
+    "unowned",
+  ]);
+  expect(await db.deletions.count()).toBe(2);
+  expect(await syncStore.wipeSyncedRowsOfOtherOwners("u1")).toBe(0);
+});
+
+test("wipeSyncedRowsOfOtherOwners reads no row when no other owner is on disk", async () => {
+  await db.artworks.put({
+    ...remote("mine", 100),
+    ownerId: "u1",
+    sync: { state: "synced", syncedUpdatedAt: 100 },
+  });
+  await db.artworks.put({
+    ...remote("unowned", 100),
+    ownerId: null,
+    sync: { state: "local", syncedUpdatedAt: null },
+  });
+  const bulkGet = vi.spyOn(db.artworks, "bulkGet");
+  const each = vi.spyOn(db.artworks, "each");
+  expect(await syncStore.wipeSyncedRowsOfOtherOwners("u1")).toBe(0);
+  expect(bulkGet).not.toHaveBeenCalled();
+  expect(each).not.toHaveBeenCalled();
+  expect(await db.artworks.count()).toBe(2);
 });

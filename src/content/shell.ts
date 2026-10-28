@@ -22,6 +22,7 @@ export const shell: IShellContent = {
     signInAgain: "Sign in again",
     reauthNote: "Your Google sign-in expired. Sign in again to keep syncing.",
     signingOut: "Signing out…",
+    reconnecting: "Reconnecting…",
     signOutDialog: {
       title: "Some changes aren’t in your Drive yet",
       description: (artworks, deletions) => {

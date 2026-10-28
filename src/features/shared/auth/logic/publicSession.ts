@@ -1,12 +1,12 @@
 /**
  * Purpose:
- * Shapes what the browser sees of the Auth.js session and maps `useSession()` to the account state.
+ * Shapes what the browser sees of the Auth.js session and maps the session body to the account state.
  *
  * Notes:
  * `toPublicSession` builds a fresh object from named fields and never spreads the token, so the
  * Google access and refresh tokens cannot reach `/api/auth/session` by accident.
  */
-import type { IAccountState, IPublicSession, ISessionLike, TSessionHookStatus } from "../auth.type";
+import type { IAccountState, IPublicSession, ISessionLike } from "../auth.type";
 
 const text = (value: unknown): string => (typeof value === "string" ? value : "");
 
@@ -26,15 +26,10 @@ export function toPublicSession(token: Record<string, unknown>, expires: string)
   return session;
 }
 
-export function toAccountState(
-  session: ISessionLike | null,
-  status: TSessionHookStatus,
-): IAccountState {
-  if (status === "loading") {
-    return { status: "loading", user: null, needsReauth: false };
-  }
+/** Signed in when the session has a user id, otherwise signed out. */
+export function toAccountState(session: ISessionLike | null): IAccountState {
   const user = session?.user;
-  if (status === "authenticated" && user?.id) {
+  if (user?.id) {
     return {
       status: "signedIn",
       user: {

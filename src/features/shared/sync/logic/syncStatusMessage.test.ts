@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { IAccountState } from "@/features/shared/auth/auth.type";
 import type { ISyncStatus } from "@/features/shared/sync/sync.type";
-import { syncStatusMessage } from "./syncStatusMessage";
+import { syncStatusMessage, syncStatusText } from "./syncStatusMessage";
 
 const user = { id: "u1", name: "Ada", email: "ada@example.com", image: null };
 const signedIn: IAccountState = { status: "signedIn", user, needsReauth: false };
@@ -106,5 +106,21 @@ describe("syncStatusMessage", () => {
       tone: "attention",
       count: 1,
     });
+  });
+
+  it("says the drawings are unconfirmed while the account is provisional, naming the owner", () => {
+    const provisional: IAccountState = { ...signedIn, provisional: true };
+    expect(syncStatusMessage(provisional, { ...idle, phase: "offline" })).toEqual({
+      key: "unconfirmed",
+      tone: "neutral",
+      count: 0,
+      name: "Ada",
+    });
+    expect(syncStatusText({ key: "unconfirmed", tone: "neutral", count: 0, name: "Ada" })).toBe(
+      "Can’t confirm your account right now. Showing Ada’s drawings; changes sync once we can.",
+    );
+    expect(syncStatusText({ key: "unconfirmed", tone: "neutral", count: 0 })).toContain(
+      "Showing your drawings here; changes sync once we can.",
+    );
   });
 });

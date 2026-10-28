@@ -52,6 +52,7 @@ export function useGalleryScreen() {
   /** Signed in with nothing local while the first Drive list is still coming: not empty yet. */
   const awaitingDrive =
     account.status === "signedIn" &&
+    !account.provisional &&
     firstListPending &&
     cards.length === 0 &&
     (phase === "syncing" || (phase === "disabled" && isDriveSyncSupported()));
@@ -62,8 +63,16 @@ export function useGalleryScreen() {
   const [modalOpen, setModalOpen] = useState(false);
   const openCreate = () => setModalOpen(true);
 
+  /**
+   * The list is scoped to the active owner, which `useDriveSync` switches in a layout effect when
+   * the account settles or a provisional owner is assumed: reload whenever the identity changes.
+   */
+  const accountKey = `${account.status}:${account.user?.id ?? ""}:${account.provisional ? "p" : ""}`;
   useEffect(() => {
     void loadArtworks();
+  }, [loadArtworks, accountKey]);
+
+  useEffect(() => {
     const engine = getSyncEngine();
     void engine.syncNow();
     return engine.onLocalRowsChanged(() => void loadArtworks());

@@ -5,7 +5,7 @@
  *
  * Notes:
  * Only a real edit (paint or history revision moved since mount or the last save) is written, so
- * opening and leaving an artwork never touches `updatedAt`; a failed save re-arms the gate.
+ * opening and leaving an artwork never touches `updatedAt`; a failed save, or one that wrote nothing because the active owner changed, re-arms the gate.
  * Shares one implementation path for thumbnail encoding and artworkService.saveArtwork (DRY).
  */
 "use client";
@@ -40,6 +40,9 @@ export function useEditorAutosave({
       .saveArtwork({
         ...current,
         thumbnail: thumb || current.thumbnail,
+      })
+      .then((written) => {
+        if (!written) gate.markPending();
       })
       .catch(() => gate.markPending());
   }, [artworkRef, gate]);

@@ -17,18 +17,21 @@ import { useAccount } from "@/features/shared/auth/useAccount";
 import { getSyncEngine, isDriveSyncSupported } from "./syncEngine";
 
 export function useDriveSync(): void {
-  const { status, user } = useAccount();
+  const { status, user, provisional } = useAccount();
   const userId = user?.id;
 
   useLayoutEffect(() => {
     if (!isDriveSyncSupported() || status === "loading") return;
     if (status === "signedIn" && userId) {
       artworkService.setActiveOwner(userId);
+      // A provisional owner is a guess (the session request failed): show their local drawings, but
+      // start the engine (and its adoption of signed-out drawings) only once the server confirms.
+      if (provisional) return;
       void getSyncEngine().start(userId);
       return () => {
         void getSyncEngine().stop();
       };
     }
     artworkService.setActiveOwner(null);
-  }, [status, userId]);
+  }, [status, userId, provisional]);
 }

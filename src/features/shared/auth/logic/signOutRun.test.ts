@@ -12,6 +12,7 @@ function setup(overrides: Partial<ISignOutDeps> = {}) {
     stopEngine: async () => void calls.push("stop"),
     wipeOwner: async (id) => void calls.push(`wipe:${id}`),
     clearMarker: () => void calls.push("clearMarker"),
+    clearAccountHint: () => void calls.push("clearHint"),
     setActiveOwner: (id) => void calls.push(`owner:${id}`),
     ...overrides,
   };
@@ -25,6 +26,7 @@ describe("runSignOut", () => {
     expect(calls).toEqual([
       "signOut",
       "verify",
+      "clearHint",
       "writeMarker:u1",
       "owner:null",
       "stop",

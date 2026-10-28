@@ -13,6 +13,7 @@ import { signIn } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
+import { shell } from "@/content/shell";
 import { useAccount } from "@/features/shared/auth/useAccount";
 import { syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
 import { useSyncMessage } from "@/features/shared/sync/useSyncMessage";
@@ -53,6 +54,13 @@ export function useAccountControl() {
   /** Hidden while the sign-in expired: the panel's reauth note already says so. */
   const message = account.status === "signedIn" && !account.needsReauth ? syncMessage : null;
   const label = account.user?.name || account.user?.email || "";
+  /** A provisional account is a guess: signing out waits for the server to confirm it. */
+  const signOutDisabled = signOutFlow.busy || Boolean(account.provisional);
+  const signOutLabel = signOutFlow.busy
+    ? shell.account.signingOut
+    : account.provisional
+      ? shell.account.reconnecting
+      : shell.account.signOut;
 
   return {
     account,
@@ -60,7 +68,7 @@ export function useAccountControl() {
     syncStatusText: message ? syncStatusText(message) : null,
     driveFolderUrl: DRIVE_FOLDER_URL,
     /** First character (code point) of the name, falling back to the email. */
-    initial: (Array.from(label)[0] ?? "").toUpperCase(),
+    initial: (Array.from(label)[0] ?? "?").toUpperCase(),
     open,
     toggle: () => setOpenedOn(open ? null : pathname),
     close: () => setOpenedOn(null),
@@ -85,7 +93,8 @@ export function useAccountControl() {
     },
     requestSignIn: () => void signIn("google"),
     requestSignOut: signOutFlow.start,
-    signOutBusy: signOutFlow.busy,
+    signOutDisabled,
+    signOutLabel,
     signOutDialog: signOutFlow.dialog,
   };
 }

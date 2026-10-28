@@ -260,7 +260,8 @@ export async function createArtworkFromImport(
   return hydrateArtwork(artwork);
 }
 
-export async function saveArtwork(artwork: IArtwork): Promise<void> {
+/** Resolves `true` when the row was written; `false` when it is missing or belongs to another owner. */
+export async function saveArtwork(artwork: IArtwork): Promise<boolean> {
   validateDimensions(artwork.width, artwork.height);
   if (artwork.palette.length > MAX_PALETTE_ENTRIES) {
     throw new Error(shared.artwork.errors.paletteTooLarge(MAX_PALETTE_ENTRIES));
@@ -297,9 +298,11 @@ export async function saveArtwork(artwork: IArtwork): Promise<void> {
     return true;
   });
   if (written) emitChanged(artwork.id);
+  return written;
 }
 
-export async function deleteArtwork(id: string): Promise<void> {
+/** Resolves `true` when the row was deleted; `false` when it is missing or belongs to another owner. */
+export async function deleteArtwork(id: string): Promise<boolean> {
   const owner = activeOwner;
   const deleted = await db.transaction("rw", db.artworks, db.deletions, async () => {
     const row = await db.artworks.get(id);
@@ -311,9 +314,11 @@ export async function deleteArtwork(id: string): Promise<void> {
     return true;
   });
   if (deleted) emitChanged(id);
+  return deleted;
 }
 
-export async function renameArtwork(id: string, title: string): Promise<void> {
+/** Resolves `true` when the row was renamed; `false` when it is missing or belongs to another owner. */
+export async function renameArtwork(id: string, title: string): Promise<boolean> {
   const owner = activeOwner;
   const renamed = await db.transaction("rw", db.artworks, async () => {
     const stored = await db.artworks.get(id);
@@ -327,6 +332,7 @@ export async function renameArtwork(id: string, title: string): Promise<void> {
     return true;
   });
   if (renamed) emitChanged(id);
+  return renamed;
 }
 
 /** Stores a regenerated thumbnail; leaves `updatedAt` alone so the gallery order doesn't change. */
