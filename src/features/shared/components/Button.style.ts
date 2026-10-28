@@ -10,7 +10,7 @@ export const button = {
   base: cx(
     "inline-flex touch-manipulation items-center justify-center font-medium transition-colors",
     focusRing,
-    "disabled:pointer-events-none disabled:opacity-50",
+    "disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50",
   ),
   size: {
     default: "min-h-10 rounded-lg px-3 py-2 text-sm pointer-coarse:min-h-11",

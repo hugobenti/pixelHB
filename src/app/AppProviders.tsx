@@ -18,8 +18,10 @@ export function AppProviders({ children }: IAppProvidersProps) {
   useThemeSync();
   return (
     <AuthSessionProvider>
-      <DriveSync />
-      <ToastProvider>{children}</ToastProvider>
+      <ToastProvider>
+        <DriveSync />
+        {children}
+      </ToastProvider>
     </AuthSessionProvider>
   );
 }

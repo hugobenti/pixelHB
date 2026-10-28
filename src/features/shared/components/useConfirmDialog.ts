@@ -11,7 +11,7 @@
  */
 "use client";
 
-import { useEffect, useId, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 
 import type { IConfirmDialogProps } from "./ConfirmDialog.type";
 
@@ -22,11 +22,23 @@ export function useConfirmDialog({ options, onCancel }: IConfirmDialogProps) {
   const descriptionId = useId();
   const warningId = useId();
   const open = options !== null;
+  const contentRef = useRef<HTMLDivElement>(null);
+  const title = options?.title;
+  const openedTitle = useRef<string | undefined>(undefined);
   const isClient = useSyncExternalStore(
     subscribeNever,
     () => true,
     () => false,
   );
+
+  /** The same dialog moved to another step (new title): focus returns to the first action, or it would be lost on body. */
+  useEffect(() => {
+    const previous = openedTitle.current;
+    openedTitle.current = title;
+    if (previous !== undefined && title !== undefined && previous !== title) {
+      contentRef.current?.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
+  }, [title]);
 
   useEffect(() => {
     if (!open) {
@@ -46,6 +58,7 @@ export function useConfirmDialog({ options, onCancel }: IConfirmDialogProps) {
 
   return {
     open,
+    contentRef,
     portalTarget: isClient ? document.body : null,
     titleId,
     descriptionId,

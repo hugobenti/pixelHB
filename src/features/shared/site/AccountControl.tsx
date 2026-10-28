@@ -12,6 +12,7 @@
 import { shared } from "@/content/shared";
 import { shell } from "@/content/shell";
 import { Button } from "@/features/shared/components/Button";
+import { ConfirmDialog } from "@/features/shared/components/ConfirmDialog";
 import { cx } from "@/features/shared/utils/cx";
 import { accountControl } from "./AccountControl.style";
 import type { IAccountControlProps } from "./AccountControl.type";
@@ -32,6 +33,8 @@ export function AccountControl({ placement }: IAccountControlProps) {
     onBlur,
     requestSignIn,
     requestSignOut,
+    signOutBusy,
+    signOutDialog,
   } = useAccountControl();
 
   if (account.status === "disabled") {
@@ -77,18 +80,22 @@ export function AccountControl({ placement }: IAccountControlProps) {
       <Button
         variant="outline"
         className={accountControl.action[placement]}
+        disabled={signOutBusy}
         onClick={requestSignOut}
       >
-        {shell.account.signOut}
+        {signOutBusy ? shell.account.signingOut : shell.account.signOut}
       </Button>
     </div>
   );
+
+  const signOutConfirm = <ConfirmDialog {...signOutDialog} />;
 
   if (placement === "sheet") {
     return (
       <section className={cx(accountControl.placement.sheet, accountControl.sheetSection)}>
         <h3 className={accountControl.heading}>{shell.account.sectionTitle}</h3>
         {account.status === "signedOut" ? signInButton : details}
+        {signOutConfirm}
       </section>
     );
   }
@@ -127,6 +134,7 @@ export function AccountControl({ placement }: IAccountControlProps) {
           {details}
         </div>
       ) : null}
+      {signOutConfirm}
     </div>
   );
 }

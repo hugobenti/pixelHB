@@ -1,27 +1,29 @@
 /**
  * Purpose:
  * AccountControl behavior: the account state, the avatar monogram, the disclosure popover (closes
- * on Escape, on a press outside and on navigation) and the sign-in / sign-out requests.
+ * on Escape, on a press outside and on navigation) and the sign-in request and the sign-out flow.
  *
  * Notes:
  * Escape closes the panel and returns focus to the avatar, whether focus is on the avatar or inside
- * the panel. `requestSignOut` is a plain Auth.js sign-out.
+ * the panel. `requestSignOut` starts the sign-out flow (flush, unsynced check, wipe).
  */
 "use client";
 
-import { signIn, signOut } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
 import { useAccount } from "@/features/shared/auth/useAccount";
 import { syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
 import { useSyncMessage } from "@/features/shared/sync/useSyncMessage";
+import { useSignOutFlow } from "./useSignOutFlow";
 
 /** The client never learns the folder id, so this is a Drive search for the folder's name. */
 const DRIVE_FOLDER_URL = "https://drive.google.com/drive/search?q=PixelHB";
 
 export function useAccountControl() {
   const account = useAccount();
+  const signOutFlow = useSignOutFlow(account);
   const syncMessage = useSyncMessage();
   const pathname = usePathname();
   const triggerId = useId();
@@ -34,9 +36,11 @@ export function useAccountControl() {
     setOpenedOn(null);
   }
   const open = openedOn === pathname;
+  /** The sign-out dialog portals to `body`, outside the control: while it is open the panel stays put. */
+  const dialogOpen = signOutFlow.dialog.options !== null;
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || dialogOpen) return;
     const closeOnOutsidePointer = (event: PointerEvent) => {
       if (event.target instanceof Node && !rootRef.current?.contains(event.target)) {
         setOpenedOn(null);
@@ -44,7 +48,7 @@ export function useAccountControl() {
     };
     document.addEventListener("pointerdown", closeOnOutsidePointer);
     return () => document.removeEventListener("pointerdown", closeOnOutsidePointer);
-  }, [open]);
+  }, [open, dialogOpen]);
 
   /** Hidden while the sign-in expired: the panel's reauth note already says so. */
   const message = account.status === "signedIn" && !account.needsReauth ? syncMessage : null;
@@ -66,6 +70,7 @@ export function useAccountControl() {
     /** Focus left the control (Tab away): close. A null target (click on non-focusable content) is left to the pointer listener. */
     onBlur: (event: FocusEvent<HTMLElement>) => {
       if (
+        !dialogOpen &&
         event.relatedTarget instanceof Node &&
         !event.currentTarget.contains(event.relatedTarget)
       ) {
@@ -79,6 +84,8 @@ export function useAccountControl() {
       document.getElementById(triggerId)?.focus();
     },
     requestSignIn: () => void signIn("google"),
-    requestSignOut: () => void signOut(),
+    requestSignOut: signOutFlow.start,
+    signOutBusy: signOutFlow.busy,
+    signOutDialog: signOutFlow.dialog,
   };
 }
