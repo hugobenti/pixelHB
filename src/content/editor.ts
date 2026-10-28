@@ -7,7 +7,7 @@ export const editor: IEditorContent = {
   },
   screen: {
     notFound: "Artwork not found.",
-    loadFailed: "This artwork couldn’t be opened. Your browser’s storage may be blocked or full.",
+    loadFailed: "This artwork couldn’t be opened. Your browser’s storage may be blocked or full. Try again in a moment.",
     documentTitle: (artworkTitle) => `${artworkTitle} · ${site.name}`,
     backToGallery: "Back to gallery",
     loading: "Loading artwork…",

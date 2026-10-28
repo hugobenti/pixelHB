@@ -30,7 +30,10 @@ src/
 │   └── shared/                 # Shared Kernel / Global App Infrastructure
 │       ├── artwork/            # artwork.type.ts, artworkService.ts (Dexie.js persistence + limits), artworkFileService.ts (JSON/PNG import/export)
 │       ├── components/         # Primitive UI atoms (Button.tsx, Input.tsx - Pure Tailwind)
-│       ├── db/                 # dexie.config.ts (IndexedDB Schema setup)
+│       ├── auth/               # Auth.js session, account control, sign-out wipe marker
+│       ├── db/                 # dexie.config.ts (IndexedDB Schema setup, v4)
+│       ├── drive/              # Drive client + stateless gallery API proxy (server/)
+│       ├── sync/               # sync engine and the hooks that drive it
 │       └── utils/              # colorConverter.ts, binaryHelpers.ts
 ```
 
@@ -49,23 +52,59 @@ We optimize memory layout by saving data into a flat, typed array (`Uint8Array`)
 | **Memory impact** | A $1000 \times 1000$ grid using `Uint8Array` takes exactly 1.00MB of raw memory. |
 | **Palette constraint** | `Uint8Array` supports up to 256 colors per document, which is more than sufficient for standard pixel art workflows. |
 
-### IndexedDB Database Schema (via Dexie.js)
+### IndexedDB Database Schema (via Dexie.js, v4)
 
 ```typescript
-// features/shared/artwork/artwork.type.ts
+// features/shared/db/dexie.config.ts
+artworks: "id, updatedAt, title, ownerId"
+deletions: "id, ownerId"
+```
+
+```typescript
+// features/shared/artwork/artwork.type.ts + artworkSync.type.ts
 
 export interface IArtwork {
   id: string;               // UUID v4 Primary Key
   title: string;
   width: number;            // Up to 1000
-  height: number;           // Up to 1000 
+  height: number;           // Up to 1000
   createdAt: number;        // Epoch timestamp
   updatedAt: number;        // Epoch timestamp
-  thumbnail: string;        // WebP Base64 compression string (~150x150px) for quick gallery loads
+  thumbnail: string;        // Small preview data URL for quick gallery loads
   palette: string[];        // Indexed color map. Max 256 strings (e.g. ["#000000", "#FFFFFF"])
-  pixelData: Uint8Array;    // Flat matrix representation of width * height
+  layers: IArtworkLayer[];  // { id, name, visible, pixelData: Uint8Array (width * height) }
+  activeLayerId: string;
+  referenceImageDataUrl?: string; // Optional guide image overlay
+}
+
+export interface IStoredArtwork extends IArtwork {
+  ownerId: string | null;   // Google account that owns the copy; null = signed out
+  sync: {
+    state: "local" | "dirty" | "synced" | "tooLarge";
+    syncedUpdatedAt: number | null; // updatedAt last confirmed in Drive
+  };
+}
+
+export interface IArtworkDeletion { // tombstone: deleted locally after it had synced
+  id: string;
+  ownerId: string;
+  deletedAt: number;
 }
 ```
+
+### File format (v3)
+
+Export JSON and the files stored in Drive share one format: `version: 3`, `id`, `createdAt`, `updatedAt`, `title`, `width`, `height`, `palette`, `layers` (each `{ id, name, visible, pixelDataBase64 }`), `activeLayerId` and an optional `referenceImageDataUrl`. Versions 1 and 2 are still imported.
+
+### Sync model (signed in, optional)
+
+Drive sync is behind `NEXT_PUBLIC_DRIVE_SYNC`. `/api/gallery` route handlers are stateless proxies to the Drive `drive.file` scope; nothing is stored server-side.
+
+- IndexedDB is always the local working copy; the editor never waits on the network.
+- Dirty artworks are pushed to the `PixelHB` Drive folder, oldest first, about ten seconds after the last edit.
+- Pulling lists the Drive folder first, then downloads only artworks that are new or newer.
+- The latest `updatedAt` wins; on a tie, Drive wins.
+- Deleting a synced artwork leaves a tombstone in `deletions` until Drive confirms it; signing out removes that account's rows from the browser (after offering to download unsynced ones). Artworks too large for Drive are marked `tooLarge` and stay local.
 
 ---
 

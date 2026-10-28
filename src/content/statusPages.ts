@@ -8,7 +8,7 @@ export const statusPages: IStatusPagesContent = {
   },
   error: {
     title: "Something went wrong.",
-    text: "Your artworks are safe in this browser.",
+    text: "Your saved artworks aren’t affected. Try again, or go back to your gallery.",
     retry: "Try again",
   },
   gallery: "Go to your gallery",

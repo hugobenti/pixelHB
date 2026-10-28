@@ -38,6 +38,13 @@ export function HelpScreen() {
               {paragraph}
             </p>
           ))}
+          {section.id === "saving" && (
+            <p className={helpScreen.prose}>
+              <Link href="/privacy" className={helpScreen.link}>
+                {help.privacyLink}
+              </Link>
+            </p>
+          )}
         </section>
       ))}
 
