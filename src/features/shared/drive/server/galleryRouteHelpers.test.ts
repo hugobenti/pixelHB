@@ -124,10 +124,10 @@ describe("galleryRouteHelpers", () => {
 
   it("withGalleryAccess runs the handler with a store and maps a Drive 401 thrown inside to reauth", async () => {
     vi.mocked(getDriveAccess).mockResolvedValue({ kind: "ok", accessToken: "tok" });
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(Response.json({ files: [] }));
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => Response.json({ files: [] }));
     try {
       const ok = await withGalleryAccess(new Request(URL_), ID, async (store) => {
-        expect(await store.list()).toEqual({ items: [], unreadableIds: [] });
+        expect(await store.list()).toEqual({ items: [], unreadableIds: [], rootFolderTrashed: false });
         return new Response(null, { status: 204 });
       });
       expect(ok.status).toBe(204);

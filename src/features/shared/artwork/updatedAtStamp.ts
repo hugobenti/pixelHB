@@ -28,3 +28,13 @@ export function nextUpdatedAt(
 export function deletionStamp(nowMs: number, syncedUpdatedAt: number | null): number {
   return Math.max(nowMs, syncedUpdatedAt ?? 0);
 }
+
+/**
+ * The `deletedAt` to send for a stored tombstone. One more than the tolerance ahead of the clock
+ * would be refused as `clock_skew` on every retry (the clock was ahead when the artwork was deleted),
+ * so it is restamped from the clock now. A tombstone does not carry the version Drive held, so the
+ * server's conflict check decides whether a newer remote edit wins.
+ */
+export function tombstoneStampToSend(deletedAt: number, nowMs: number): number {
+  return deletedAt > nowMs + MAX_CLOCK_SKEW_MS ? deletionStamp(nowMs, null) : deletedAt;
+}

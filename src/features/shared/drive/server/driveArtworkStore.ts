@@ -31,6 +31,7 @@ const FOLDER_MIME = "application/vnd.google-apps.folder";
 const JSON_MIME = "application/json";
 const PNG_MIME = "image/png";
 const ROOT_QUERY = `appProperties has { key='pixelhb' and value='root' } and mimeType='${FOLDER_MIME}' and trashed=false`;
+const TRASHED_ROOT_QUERY = ROOT_QUERY.replace("trashed=false", "trashed=true");
 const LIST_QUERY = "appProperties has { key='pixelhb' and value='artwork' } and trashed=false";
 const NON_NEGATIVE_INTEGER = /^\d+$/;
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f-\u009f]/g;
@@ -142,6 +143,13 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
     return rootFolder;
   }
 
+  /** True only when a trashed PixelHB folder exists and no live one does; the second query only runs after the first found one. */
+  async function isRootFolderTrashed(): Promise<boolean> {
+    const trashed = await rest.listAll({ q: TRASHED_ROOT_QUERY });
+    if (trashed.length === 0) return false;
+    return (await rest.listAll({ q: ROOT_QUERY })).length === 0;
+  }
+
   async function findArtworkFiles(id: string): Promise<IDriveArtworkFiles> {
     const files = await rest.listAll({ q: filesOfArtworkQuery(id) });
     return {
@@ -150,6 +158,25 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
         .sort((a, b) => updatedAtOf(b) - updatedAtOf(a)),
       png: files.filter((file) => file.appProperties?.pixelhb === "preview"),
     };
+  }
+
+  async function findTrashed(id: string): Promise<{ updatedAt: number } | null> {
+    const files = await rest.listAll({ q: filesOfArtworkQuery(id, true) });
+    const stamps = files
+      .filter((file) => file.appProperties?.pixelhb === "artwork")
+      .map(updatedAtOf)
+      .filter((updatedAt) => updatedAt !== MISSING_UPDATED_AT);
+    return stamps.length > 0 ? { updatedAt: Math.max(...stamps) } : null;
+  }
+
+  async function status(id: string): Promise<IGalleryStatusResponse> {
+    const { json } = await findArtworkFiles(id);
+    if (json[0]) {
+      const updatedAt = updatedAtOf(json[0]);
+      return updatedAt === MISSING_UPDATED_AT ? { state: "present" } : { state: "present", updatedAt };
+    }
+    const trashed = await findTrashed(id);
+    return trashed ? { state: "trashed", updatedAt: trashed.updatedAt } : { state: "absent" };
   }
 
   async function write(
@@ -172,6 +199,7 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
 
     async list() {
       const files = await rest.listAll({ q: LIST_QUERY });
+      const rootFolderTrashed = await isRootFolderTrashed();
       const newest = new Map<string, IGalleryListItem>();
       const unreadable = new Set<string>();
       for (const file of files) {
@@ -190,27 +218,13 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
       return {
         items: [...newest.values()].sort((a, b) => b.updatedAt - a.updatedAt),
         unreadableIds: [...unreadable].filter((id) => !newest.has(id)),
+        rootFolderTrashed,
       };
     },
 
-    async findTrashed(id) {
-      const files = await rest.listAll({ q: filesOfArtworkQuery(id, true) });
-      const stamps = files
-        .filter((file) => file.appProperties?.pixelhb === "artwork")
-        .map(updatedAtOf)
-        .filter((updatedAt) => updatedAt !== MISSING_UPDATED_AT);
-      return stamps.length > 0 ? { updatedAt: Math.max(...stamps) } : null;
-    },
+    findTrashed,
 
-    async status(id): Promise<IGalleryStatusResponse> {
-      const { json } = await findArtworkFiles(id);
-      if (json[0]) {
-        const updatedAt = updatedAtOf(json[0]);
-        return updatedAt === MISSING_UPDATED_AT ? { state: "present" } : { state: "present", updatedAt };
-      }
-      const trashed = await this.findTrashed(id);
-      return trashed ? { state: "trashed", updatedAt: trashed.updatedAt } : { state: "absent" };
-    },
+    status,
 
     async get(id) {
       const { json } = await findArtworkFiles(id);

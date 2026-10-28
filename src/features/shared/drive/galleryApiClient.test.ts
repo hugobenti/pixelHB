@@ -69,13 +69,13 @@ describe("galleryApiClient", () => {
 
   it("list returns the items and the unreadable ids", async () => {
     const item = { id: ID, title: "Sunset cat", width: 2, height: 2, createdAt: 1000, updatedAt: 2000, previewUrl: `/api/gallery/${ID}/preview?v=2000` };
-    expect(await createGalleryApiClient(fetchReturning(Response.json({ items: [item], unreadableIds: ["x"] }))).list())
-      .toEqual({ ok: true, value: { items: [item], unreadableIds: ["x"] } });
+    expect(await createGalleryApiClient(fetchReturning(Response.json({ items: [item], unreadableIds: ["x"], rootFolderTrashed: true }))).list())
+      .toEqual({ ok: true, value: { items: [item], unreadableIds: ["x"], rootFolderTrashed: true } });
   });
 
   it("list treats a body without unreadableIds as having none", async () => {
     expect(await createGalleryApiClient(fetchReturning(Response.json({ items: [] }))).list())
-      .toEqual({ ok: true, value: { items: [], unreadableIds: [] } });
+      .toEqual({ ok: true, value: { items: [], unreadableIds: [], rootFolderTrashed: false } });
   });
 
   it.each([
@@ -98,7 +98,7 @@ describe("galleryApiClient", () => {
   it("list unwraps items; remove sends DELETE with deletedAt and maps 204 to ok null", async () => {
     const item = { id: ID, title: "Sunset cat", width: 2, height: 2, createdAt: 1000, updatedAt: 2000, previewUrl: `/api/gallery/${ID}/preview?v=2000` };
     expect(await createGalleryApiClient(fetchReturning(Response.json({ items: [item] }))).list())
-      .toEqual({ ok: true, value: { items: [item], unreadableIds: [] } });
+      .toEqual({ ok: true, value: { items: [item], unreadableIds: [], rootFolderTrashed: false } });
 
     const fetchFn = fetchReturning(new Response(null, { status: 204 }));
     expect(await createGalleryApiClient(fetchFn).remove(ID, 2500)).toEqual({ ok: true, value: null });

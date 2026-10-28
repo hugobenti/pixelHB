@@ -18,6 +18,11 @@ export interface IGalleryListResponse {
    * invalid properties). They exist, so the engine must never read their absence from `items` as a deletion.
    */
   unreadableIds: string[];
+  /**
+   * The PixelHB folder is in the Drive trash and no live one exists. Every file inside inherits
+   * `trashed`, so a per-file trashed status then proves nothing about what the user meant.
+   */
+  rootFolderTrashed: boolean;
 }
 
 /** Where one artwork is in Drive: live, in the trash (only with a readable `updatedAt`), or nowhere. */

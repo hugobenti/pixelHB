@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { MAX_CLOCK_SKEW_MS } from "@/features/shared/drive/galleryApi";
-import { deletionStamp, nextUpdatedAt } from "./updatedAtStamp";
+import { deletionStamp, nextUpdatedAt, tombstoneStampToSend } from "./updatedAtStamp";
 
 const NOW = 1_000_000_000_000;
 const stored = (updatedAt: number, syncedUpdatedAt: number | null) => ({
@@ -46,5 +46,17 @@ describe("deletionStamp", () => {
     expect(deletionStamp(NOW, NOW - 1)).toBe(NOW);
     expect(deletionStamp(NOW, NOW + 5000)).toBe(NOW + 5000);
     expect(deletionStamp(NOW, null)).toBe(NOW);
+  });
+});
+
+describe("tombstoneStampToSend", () => {
+  it("sends a tombstone as stored while it is within the tolerance", () => {
+    expect(tombstoneStampToSend(NOW - 1000, NOW)).toBe(NOW - 1000);
+    expect(tombstoneStampToSend(NOW + MAX_CLOCK_SKEW_MS, NOW)).toBe(NOW + MAX_CLOCK_SKEW_MS);
+  });
+
+  it("restamps one beyond the tolerance from the clock", () => {
+    expect(tombstoneStampToSend(NOW + MAX_CLOCK_SKEW_MS + 1, NOW)).toBe(NOW);
+    expect(tombstoneStampToSend(NOW + 365 * 24 * 3_600_000, NOW)).toBe(NOW);
   });
 });

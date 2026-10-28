@@ -112,7 +112,11 @@ export function createGalleryApiClient(fetchFn: typeof fetch): IGalleryApiClient
     list: () =>
       send(fetchFn, LIST_URL, { cache: "no-store" }, async (response) => {
         const body = (await response.json()) as Partial<IGalleryListResponse>;
-        return { items: body.items ?? [], unreadableIds: body.unreadableIds ?? [] };
+        return {
+          items: body.items ?? [],
+          unreadableIds: body.unreadableIds ?? [],
+          rootFolderTrashed: body.rootFolderTrashed === true,
+        };
       }),
 
     get: (id) =>
