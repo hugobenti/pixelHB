@@ -5,7 +5,7 @@
   </picture>
 </h1>
 
-PixelHB is a local-first pixel-art editor that runs in the browser. You don't need an account or an install: open it, draw, export. Artworks are stored in the browser's IndexedDB (via Dexie), so your work survives a reload and nothing leaves the browser. Canvases go up to 1000 × 1000 pixels, each with an indexed palette of up to 256 colors and any number of layers. It works on desktop (mouse, trackpad, keyboard) and on phones (touch, pinch).
+PixelHB is a local-first pixel-art editor that runs in the browser. You don't need an account or an install: open it, draw, export. Artworks are saved in the browser's IndexedDB (via Dexie), so your work survives a reload. Signing in with Google is optional and keeps them in a PixelHB folder in your own Google Drive. Your art is always yours: PixelHB keeps no copies. Canvases go up to 1000 × 1000 pixels, each with an indexed palette of up to 256 colors and any number of layers. It works on desktop (mouse, trackpad, keyboard) and on phones (touch, pinch).
 
 ## Features
 
@@ -93,7 +93,7 @@ Then open [http://localhost:3000](http://localhost:3000). The root URL takes you
 
 ### Google sign-in (optional, behind a flag)
 
-The app works fully without an account. Sign-in (Auth.js v5, Google, with the `drive.file` scope and offline access) is built but hidden until `NEXT_PUBLIC_DRIVE_SYNC=on`; with the flag off there is no sign-in UI and no `/api/auth` request. Copy `.env.example` to `.env.local` and fill in (leave the two commented lines commented unless you need them: a blank `AUTH_TRUST_HOST=` or `AUTH_REDIRECT_PROXY_URL=` is read as an empty value and breaks Auth.js):
+The app works fully without an account. Sign-in (Auth.js v5, Google, with the `drive.file` scope and offline access) is hidden until `NEXT_PUBLIC_DRIVE_SYNC=on` (see [Launching Drive sync](#launching-drive-sync)); with the flag off there is no sign-in UI and no `/api/auth` request. Copy `.env.example` to `.env.local` and fill in (leave the two commented lines commented unless you need them: a blank `AUTH_TRUST_HOST=` or `AUTH_REDIRECT_PROXY_URL=` is read as an empty value and breaks Auth.js):
 
 | Variable                               | Purpose                                                                                                                                                                                                                |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -158,7 +158,24 @@ Every token pair is checked against WCAG 2.2 AA contrast by `src/app/tokenContra
 
 ## Data and privacy
 
-All artworks live in your browser's IndexedDB. There is no server, account or upload. Clearing site data or switching browsers or devices loses them, so use **Export JSON** from the editor settings to keep a backup. You can re-import that file from the gallery.
+The art belongs to the artist. PixelHB stores no artwork.
+
+- **Signed out:** artworks live only in the browser's IndexedDB. Nothing is sent to the artwork API. Clearing site data or switching browsers or devices loses them, so use **Export JSON** from the editor settings to keep a backup. You can re-import that file from the gallery.
+- **Signed in with Google (optional):** IndexedDB stays as the local working copy, and artworks are also saved to a `PixelHB` folder in the user's own Google Drive, using the `drive.file` scope (PixelHB can only see files it created). The route handlers in `src/app/api/gallery` are stateless proxies: artwork passes through them on its way to and from Drive and is never stored or logged. Tokens live in an encrypted Auth.js cookie. PixelHB has no database.
+
+The user-facing explanation is the [`/privacy`](src/content/privacy.ts) page.
+
+## Launching Drive sync
+
+Sync ships dark behind `NEXT_PUBLIC_DRIVE_SYNC`. The flag is inlined at build time, so changing it needs a redeploy. Turning it on is a manual step in Vercel, after the copy PR is merged and Google has verified the app:
+
+1. In the Google Auth Platform, publish the app ("In production") and get the brand verification approved. The redirect URIs are already configured.
+2. In Vercel → Project → Settings → Environment Variables, confirm `AUTH_SECRET`, `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` exist for Production. `AUTH_URL` is not needed.
+3. Add `NEXT_PUBLIC_DRIVE_SYNC=on` for Production.
+4. Redeploy the latest Production deployment (or merge to `main`) so the flag is picked up.
+5. Check production: sign in, draw, see the file in `PixelHB/` in Drive, sign in on a second browser, sign out.
+
+Rollback: set `NEXT_PUBLIC_DRIVE_SYNC` to `off` and redeploy. Data in Drive and IndexedDB is untouched.
 
 ## CI and deployment
 
