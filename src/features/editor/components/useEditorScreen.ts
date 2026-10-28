@@ -32,10 +32,10 @@ export function useEditorScreen(artworkId: string) {
     if (!accountReady) {
       return;
     }
-    if (!shouldReloadEditorArtwork(loadedRef.current, { artworkId, signedIn })) {
+    if (!shouldReloadEditorArtwork(loadedRef.current, { artworkId, signedIn, ownerId })) {
       // Same drawing, account now confirmed signed in: keep the editor, only take presence.
       const keep = markArtworkOpen(artworkId);
-      loadedRef.current = { artworkId, signedIn };
+      loadedRef.current = { artworkId, signedIn, ownerId };
       return keep;
     }
     let cancelled = false;
@@ -56,7 +56,7 @@ export function useEditorScreen(artworkId: string) {
       if (result.status === "ready") {
         setLoadError(null);
         setArtwork(result.artwork);
-        loadedRef.current = { artworkId, signedIn };
+        loadedRef.current = { artworkId, signedIn, ownerId };
         return;
       }
       loadedRef.current = null;

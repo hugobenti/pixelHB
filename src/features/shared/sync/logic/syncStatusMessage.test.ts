@@ -117,10 +117,10 @@ describe("syncStatusMessage", () => {
       name: "Ada",
     });
     expect(syncStatusText({ key: "unconfirmed", tone: "neutral", count: 0, name: "Ada" })).toBe(
-      "Offline: showing Ada’s drawings. Changes sync when we can confirm your account.",
+      "Can’t confirm your account right now. Showing Ada’s drawings; changes sync once we can.",
     );
     expect(syncStatusText({ key: "unconfirmed", tone: "neutral", count: 0 })).toContain(
-      "showing your drawings",
+      "Showing your drawings here; changes sync once we can.",
     );
   });
 });

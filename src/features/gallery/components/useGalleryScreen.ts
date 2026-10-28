@@ -70,10 +70,13 @@ export function useGalleryScreen() {
   const accountKey = `${account.status}:${account.user?.id ?? ""}:${account.provisional ? "p" : ""}`;
   useEffect(() => {
     void loadArtworks();
+  }, [loadArtworks, accountKey]);
+
+  useEffect(() => {
     const engine = getSyncEngine();
     void engine.syncNow();
     return engine.onLocalRowsChanged(() => void loadArtworks());
-  }, [loadArtworks, accountKey]);
+  }, [loadArtworks]);
 
   useStaleThumbnailRefresh(artworks, updateThumbnail);
 

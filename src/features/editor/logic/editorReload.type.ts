@@ -2,10 +2,9 @@
 export interface IEditorLoaded {
   artworkId: string;
   signedIn: boolean;
+  /** The signed-in account's id, `null` while signed out. */
+  ownerId: string | null;
 }
 
 /** What the editor screen is about to show. */
-export interface IEditorLoadTarget {
-  artworkId: string;
-  signedIn: boolean;
-}
+export type TEditorLoadTarget = IEditorLoaded;
