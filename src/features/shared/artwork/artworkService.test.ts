@@ -12,6 +12,7 @@ beforeEach(async () => {
   artworkService.setActiveOwner(null);
   await db.artworks.clear();
   await db.deletions.clear();
+  await db.removedArtworks.clear();
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -188,4 +189,75 @@ test("save, rename and delete of a missing or foreign row emit no event", async 
   await artworkService.deleteArtwork("missing");
   expect(listener).not.toHaveBeenCalled();
   off();
+});
+
+describe("clock safety", () => {
+  const MINUTE = 60_000;
+
+  test("a save never stamps an artwork at or below its stored updatedAt, even when the clock stepped back", async () => {
+    artworkService.setActiveOwner("u1");
+    at(10_000_000);
+    const art = await artworkService.createArtwork(input);
+    at(9_900_000);
+    await artworkService.saveArtwork(art);
+    expect((await db.artworks.get(art.id))?.updatedAt).toBe(10_000_001);
+    await artworkService.saveArtwork(art);
+    expect((await db.artworks.get(art.id))?.updatedAt).toBe(10_000_002);
+  });
+
+  test("a save uses the wall clock when it is ahead of the stored stamp", async () => {
+    artworkService.setActiveOwner("u1");
+    at(1000);
+    const art = await artworkService.createArtwork(input);
+    at(5000);
+    await artworkService.saveArtwork(art);
+    expect((await db.artworks.get(art.id))?.updatedAt).toBe(5000);
+  });
+
+  test("a rename is monotonic too", async () => {
+    artworkService.setActiveOwner("u1");
+    at(10_000_000);
+    const art = await artworkService.createArtwork(input);
+    at(9_900_000);
+    await artworkService.renameArtwork(art.id, "Dog");
+    expect((await db.artworks.get(art.id))?.updatedAt).toBe(10_000_001);
+  });
+
+  test("an edit after a clock correction restarts from the clock when Drive never accepted the future stamp", async () => {
+    artworkService.setActiveOwner("u1");
+    const year = 365 * 24 * 60 * MINUTE;
+    at(1_000_000 + year); // wrong clock, a year ahead
+    const art = await artworkService.createArtwork(input);
+    at(1_000_000); // clock corrected
+    await artworkService.saveArtwork(art);
+    expect((await db.artworks.get(art.id))?.updatedAt).toBe(1_000_000);
+  });
+
+  test("an edit still outranks a future stamp Drive already holds", async () => {
+    artworkService.setActiveOwner("u1");
+    const future = 1_000_000 + 365 * 24 * 60 * MINUTE;
+    await syncStore.putFromRemote("u1", { ...(await seed()), updatedAt: future }, undefined);
+    at(1_000_000);
+    const stored = (await db.artworks.toArray())[0];
+    await artworkService.saveArtwork(stored);
+    expect((await db.artworks.get(stored.id))?.updatedAt).toBe(future + 1);
+  });
+
+  test("a delete's tombstone is not older than the version Drive holds", async () => {
+    artworkService.setActiveOwner("u1");
+    const future = 1_000_000 + 10 * MINUTE;
+    await syncStore.putFromRemote("u1", { ...(await seed()), updatedAt: future }, undefined);
+    at(1_000_000);
+    const stored = (await db.artworks.toArray())[0];
+    await artworkService.deleteArtwork(stored.id);
+    expect(await db.deletions.toArray()).toEqual([{ id: stored.id, ownerId: "u1", deletedAt: future }]);
+  });
+
+  async function seed() {
+    artworkService.setActiveOwner(null);
+    const art = await artworkService.createArtwork(input);
+    await db.artworks.clear();
+    artworkService.setActiveOwner("u1");
+    return art;
+  }
 });

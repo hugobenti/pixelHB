@@ -15,6 +15,7 @@ import type { IImportedArtworkData } from "@/features/shared/artwork/artworkFile
 import { normalizeHexColor } from "@/features/shared/utils/colorConverter";
 import { clonePixelBuffer, ensureUint8PixelData } from "@/features/shared/utils/binaryHelpers";
 import { MAX_PALETTE_ENTRIES, validateDimensions } from "./artworkLimits";
+import { deletionStamp, nextUpdatedAt } from "./updatedAtStamp";
 import type { ICreateArtworkInput } from "./artworkService.type";
 
 const CANON_HEX6 = /^#[0-9A-F]{6}$/;
@@ -277,7 +278,6 @@ export async function saveArtwork(artwork: IArtwork): Promise<boolean> {
   const owner = activeOwner;
   const edited: IArtwork = {
     ...artwork,
-    updatedAt: Date.now(),
     layers: normalizedLayers.map((layer) => ({
       ...layer,
       pixelData: clonePixelBuffer(layer.pixelData),
@@ -292,6 +292,7 @@ export async function saveArtwork(artwork: IArtwork): Promise<boolean> {
     if (!stored || stored.ownerId !== owner) return false;
     await db.artworks.put({
       ...edited,
+      updatedAt: nextUpdatedAt(Date.now(), stored),
       ownerId: stored.ownerId,
       sync: editedRowSync(owner, stored.sync),
     });
@@ -309,7 +310,11 @@ export async function deleteArtwork(id: string): Promise<boolean> {
     if (!row || row.ownerId !== owner) return false;
     await db.artworks.delete(id);
     if (row.ownerId !== null && row.sync.syncedUpdatedAt !== null) {
-      await db.deletions.put({ id, ownerId: row.ownerId, deletedAt: Date.now() });
+      await db.deletions.put({
+        id,
+        ownerId: row.ownerId,
+        deletedAt: deletionStamp(Date.now(), row.sync.syncedUpdatedAt),
+      });
     }
     return true;
   });
@@ -326,7 +331,7 @@ export async function renameArtwork(id: string, title: string): Promise<boolean>
     await db.artworks.put({
       ...stored,
       title: title.trim() || shared.artwork.untitled,
-      updatedAt: Date.now(),
+      updatedAt: nextUpdatedAt(Date.now(), stored),
       sync: editedRowSync(owner, stored.sync),
     });
     return true;
