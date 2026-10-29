@@ -19,13 +19,12 @@ describe("decidePendingWipe", () => {
     expect(decidePendingWipe("signedIn", null, "u1")).toEqual({ kind: "none" });
   });
 
-  it("waits while the session loads and ignores a disabled feature", () => {
+  it("waits while the session loads", () => {
     expect(decidePendingWipe("loading", null, "u1")).toEqual({ kind: "none" });
-    expect(decidePendingWipe("disabled", null, "u1")).toEqual({ kind: "none" });
   });
 
   it("does nothing without a marker", () => {
-    for (const s of ["signedOut", "signedIn", "loading", "disabled"] as const) {
+    for (const s of ["signedOut", "signedIn", "loading"] as const) {
       expect(decidePendingWipe(s, "u1", null)).toEqual({ kind: "none" });
     }
   });
@@ -39,6 +38,5 @@ describe("isAccountSettled", () => {
     expect(isAccountSettled({ status: "signedIn", provisional: true })).toBe(false);
     expect(isAccountSettled({ status: "signedOut", provisional: true })).toBe(false);
     expect(isAccountSettled({ status: "loading" })).toBe(false);
-    expect(isAccountSettled({ status: "disabled" })).toBe(false);
   });
 });

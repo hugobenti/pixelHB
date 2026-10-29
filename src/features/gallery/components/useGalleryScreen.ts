@@ -18,7 +18,8 @@ import { gallery } from "@/content/gallery";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 import { useAccount } from "@/features/shared/auth/useAccount";
 import { syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
-import { getSyncEngine, isDriveSyncSupported } from "@/features/shared/sync/syncEngine";
+import { getSyncEngine } from "@/features/shared/sync/syncEngine";
+import { isSyncSupported } from "@/features/shared/sync/syncSupport";
 import { useSyncMessage } from "@/features/shared/sync/useSyncMessage";
 import { useSyncStore } from "@/features/shared/sync/useSyncStore";
 import type { ICreateArtworkInput } from "@/features/shared/artwork/artworkService.type";
@@ -56,7 +57,7 @@ export function useGalleryScreen() {
     !account.provisional &&
     firstListPending &&
     cards.length === 0 &&
-    (phase === "syncing" || (phase === "disabled" && isDriveSyncSupported()));
+    (phase === "syncing" || (phase === "disabled" && isSyncSupported()));
 
   const { showToast } = useToast();
   /** Fixed per mount: card times read as of when the gallery opened. */

@@ -5,8 +5,8 @@
  *
  * Notes:
  * A layout effect on purpose: React runs every layout effect of a commit before any passive effect,
- * so the owner is set before the editor's or gallery's `useEffect` reads Dexie. Without Drive sync
- * (flag off or no Web Locks) nothing here runs and the app is local-only as before.
+ * so the owner is set before the editor's or gallery's `useEffect` reads Dexie. Without Web Locks
+ * nothing here runs and the app is local-only.
  */
 "use client";
 
@@ -15,7 +15,8 @@ import { useEffect, useLayoutEffect, useRef } from "react";
 import * as artworkService from "@/features/shared/artwork/artworkService";
 import { useAccount } from "@/features/shared/auth/useAccount";
 import { shouldResyncAfterReauth } from "./logic/reauthRecovery";
-import { getSyncEngine, isDriveSyncSupported } from "./syncEngine";
+import { getSyncEngine } from "./syncEngine";
+import { isSyncSupported } from "./syncSupport";
 
 export function useDriveSync(): void {
   const { status, user, provisional, needsReauth } = useAccount();
@@ -27,11 +28,11 @@ export function useDriveSync(): void {
   useEffect(() => {
     const recovered = shouldResyncAfterReauth(previousNeedsReauth.current, needsReauth);
     previousNeedsReauth.current = needsReauth;
-    if (recovered && isDriveSyncSupported()) void getSyncEngine().syncNow();
+    if (recovered && isSyncSupported()) void getSyncEngine().syncNow();
   }, [needsReauth]);
 
   useLayoutEffect(() => {
-    if (!isDriveSyncSupported() || status === "loading") return;
+    if (!isSyncSupported() || status === "loading") return;
     if (status === "signedIn" && userId) {
       artworkService.setActiveOwner(userId);
       // A provisional owner is a guess (the session request failed): show their local drawings, but

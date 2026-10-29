@@ -6,11 +6,11 @@
  * Notes:
  * `next-auth/react` maps every failed request to `null`, the same value as "no session", which
  * signed the UI out whenever the network or the server hiccuped. Here only an explicit answer
- * (HTTP 200 without a user, or 404 because the auth route is off) means signed out. A failure
- * after a known state keeps it, so a transient error never ends a session, stops the sync engine
- * or drops an autosave. A failure with no known state yet is a guess, flagged `provisional`: the
- * last known owner (the account hint) when there is one, otherwise signed out, so a visitor is
- * never stuck in `loading` and the app stays usable offline.
+ * (HTTP 200 without a user) means signed out; any other status, a 404 included, is a failure. A
+ * failure after a known state keeps it, so a transient error never ends a session, stops the sync
+ * engine or drops an autosave. A failure with no known state yet is a guess, flagged
+ * `provisional`: the last known owner (the account hint) when there is one, otherwise signed out,
+ * so a visitor is never stuck in `loading` and the app stays usable offline.
  */
 import type { IAccountHint, IAccountState, ISessionLike, TSessionFetchResult } from "../auth.type";
 import { toAccountState } from "./publicSession";
@@ -71,7 +71,6 @@ export async function fetchAccountSession(
       signal: AbortSignal.timeout(timeoutMs),
       headers: { Accept: "application/json" },
     });
-    if (response.status === 404) return { kind: "signedOut" };
     if (!response.ok) return { kind: "failed" };
     return classifySessionBody(await response.json());
   } catch {

@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Client-side app shell providers: the Google session (only with Drive sync on), the toast stack,
+ * Client-side app shell providers: the Google session, the toast stack,
  * and keeping the light/dark theme in step with the user's pick and the OS setting.
  *
  * Notes:

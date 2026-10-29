@@ -16,6 +16,7 @@ import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent
 import { shell } from "@/content/shell";
 import { useAccount } from "@/features/shared/auth/useAccount";
 import { syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
+import { isSyncSupported } from "@/features/shared/sync/syncSupport";
 import { useSyncMessage } from "@/features/shared/sync/useSyncMessage";
 import { useSignOutFlow } from "./useSignOutFlow";
 
@@ -64,6 +65,11 @@ export function useAccountControl() {
 
   return {
     account,
+    /**
+     * Without Web Locks sync never runs, so a sign-in would promise what this browser cannot do.
+     * Decided once the account settles: the server render and hydration are always `loading`.
+     */
+    hidden: account.status !== "loading" && !isSyncSupported(),
     /** Unscoped, same mapping as the gallery note; null unless signed in. */
     syncStatusText: message ? syncStatusText(message) : null,
     driveFolderUrl: DRIVE_FOLDER_URL,

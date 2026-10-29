@@ -72,14 +72,10 @@ describe("fetchAccountSession", () => {
     expect(spy.mock.calls.map(([ms]) => ms)).toEqual([15_000, 6000]);
     spy.mockRestore();
   });
-  it("reads HTTP 404 (the auth route is off) as signed out", async () => {
-    await expect(
-      fetchAccountSession(fetchOf(new Response("Not found", { status: 404 }))),
-    ).resolves.toEqual({ kind: "signedOut" });
-  });
-  it("maps network errors, timeouts, other non-2xx and non-JSON bodies to failed", async () => {
+  it("maps network errors, timeouts, non-2xx (404 included) and non-JSON bodies to failed", async () => {
     for (const result of [
       new TypeError("Failed to fetch"),
+      new Response("Not found", { status: 404 }),
       new DOMException("timed out", "TimeoutError"),
       new Response("null", { status: 500 }),
       new Response("null", { status: 401 }),
@@ -107,7 +103,7 @@ describe("nextAccountState", () => {
   const table: [string, IAccountState, TSessionFetchResult, IAccountHint | null, IAccountState][] =
     [
       ["first load, signed in", LOADING_ACCOUNT, answerIn, null, signedIn],
-      ["first load, explicit signed out (also 404)", LOADING_ACCOUNT, answerOut, hint, signedOut],
+      ["first load, explicit signed out", LOADING_ACCOUNT, answerOut, hint, signedOut],
       [
         "first load fails, no hint: provisional signed out",
         LOADING_ACCOUNT,

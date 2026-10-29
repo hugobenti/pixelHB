@@ -21,18 +21,12 @@ const idle: ISyncStatus = {
 };
 
 describe("syncStatusMessage", () => {
-  it("says this browser only when signed out or when the flag is off", () => {
+  it("says this browser only when signed out", () => {
     expect(syncStatusMessage(signedOut, idle)).toEqual({
       key: "thisBrowserOnly",
       tone: "neutral",
       count: 0,
     });
-    expect(
-      syncStatusMessage(
-        { status: "disabled", user: null, needsReauth: false },
-        { ...idle, phase: "disabled" },
-      ),
-    ).toEqual({ key: "thisBrowserOnly", tone: "neutral", count: 0 });
   });
 
   it("says nothing while the account is still loading", () => {

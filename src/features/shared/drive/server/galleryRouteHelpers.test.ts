@@ -19,7 +19,6 @@ import {
 } from "./galleryRouteHelpers";
 
 vi.mock("@/features/shared/auth/server/driveAccess", () => ({ getDriveAccess: vi.fn() }));
-vi.mock("@/features/shared/auth/driveSyncFlag", () => ({ DRIVE_SYNC_ENABLED: true }));
 
 const ID = "3f1c9a52-0000-4000-8000-000000000001";
 const PNG_BASE64 =
@@ -156,24 +155,6 @@ describe("galleryRouteHelpers", () => {
     });
     expect(revoked.status).toBe(401);
     expect(await revoked.json()).toEqual({ code: "reauth" });
-  });
-
-  it("withGalleryAccess answers a bare 404 without touching auth when the flag is off", async () => {
-    vi.resetModules();
-    vi.doMock("@/features/shared/auth/driveSyncFlag", () => ({ DRIVE_SYNC_ENABLED: false }));
-    try {
-      const gated = await import("./galleryRouteHelpers");
-      const access = await import("@/features/shared/auth/server/driveAccess");
-      const run = vi.fn();
-      const response = await gated.withGalleryAccess(new Request(URL_), ID, run);
-      expect(response.status).toBe(404);
-      expect(await response.text()).toBe("");
-      expect(response.headers.get("Cache-Control")).toBe("private, no-store");
-      expect(access.getDriveAccess).not.toHaveBeenCalled();
-      expect(run).not.toHaveBeenCalled();
-    } finally {
-      vi.doMock("@/features/shared/auth/driveSyncFlag", () => ({ DRIVE_SYNC_ENABLED: true }));
-    }
   });
 
   it("readSaveRequest drops unknown keys from the stored JSON", async () => {

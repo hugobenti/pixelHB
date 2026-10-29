@@ -63,7 +63,7 @@ export interface IAccountUser {
   image: string | null;
 }
 
-export type TAccountStatus = "disabled" | "loading" | "signedOut" | "signedIn";
+export type TAccountStatus = "loading" | "signedOut" | "signedIn";
 
 export interface IAccountState {
   status: TAccountStatus;
@@ -89,7 +89,7 @@ export interface IAccountHint {
 /** What one `/api/auth/session` request told us. `signedIn` and `signedOut` are answers from the server. */
 export type TSessionFetchResult =
   | { kind: "signedIn"; session: ISessionLike }
-  /** HTTP 200 whose body is `null`, `{}` or has no user id, or HTTP 404 (the auth route is off). */
+  /** HTTP 200 whose body is `null`, `{}` or has no user id. */
   | { kind: "signedOut" }
   /** Network error, timeout, non-2xx status or a body that is not a session: no information. */
   | { kind: "failed" };

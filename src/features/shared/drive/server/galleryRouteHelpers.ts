@@ -1,12 +1,12 @@
 /**
  * Purpose:
- * Shared plumbing for the `/api/gallery` route handlers: flag and id gate, the CSRF guard on
+ * Shared plumbing for the `/api/gallery` route handlers: id gate, the CSRF guard on
  * state-changing requests, Drive access, request body reading with size caps, cache headers, the
  * preview's ETag revalidation and the mapping of Drive failures to the gallery error codes.
  *
  * Notes:
- * Every route starts in `withGalleryAccess`: flag off answers a bare 404, a malformed id answers 400
- * and a POST/DELETE that fails `checkMutationRequest` answers 403/415, all before auth is touched;
+ * Every route starts in `withGalleryAccess`: a malformed id answers 400 and a POST/DELETE that
+ * fails `checkMutationRequest` answers 403/415, both before auth is touched;
  * missing/expired Google access answers 401/503. The Drive access token is only handed to the store;
  * it is never logged or returned. Request bodies and artwork payloads are never logged. A non-Drive
  * exception rethrows (a 500 is a bug, not a Drive state). Every response except the preview is
@@ -14,7 +14,6 @@
  */
 import { createHash } from "node:crypto";
 import { parseArtworkFile, serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
-import { DRIVE_SYNC_ENABLED } from "@/features/shared/auth/driveSyncFlag";
 import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
 import {
   ARTWORK_ID_PATTERN,
@@ -71,7 +70,7 @@ export function galleryErrorResponse(
   return Response.json(body, { status, headers: merged });
 }
 
-/** Bare 404: flag off, or the artwork (or its preview) is not in Drive. */
+/** Bare 404: the artwork (or its preview) is not in Drive. */
 export function galleryNotFoundResponse(): Response {
   return new Response(null, { status: 404, headers: NO_STORE });
 }
@@ -293,9 +292,6 @@ export async function withGalleryAccess(
   id: string | null,
   run: (store: IDriveArtworkStore) => Promise<Response>,
 ): Promise<Response> {
-  if (!DRIVE_SYNC_ENABLED) {
-    return galleryNotFoundResponse();
-  }
   if (id !== null && !ARTWORK_ID_PATTERN.test(id)) {
     return galleryErrorResponse(400, { code: "bad_request" });
   }
