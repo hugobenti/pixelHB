@@ -13,7 +13,7 @@ import { AppProviders } from "@/app/AppProviders";
 import { siteMetadata } from "@/content/metadata";
 import { themeInitScript } from "@/features/shared/theme/themePreference";
 import { cx } from "@/features/shared/utils/cx";
-import { fontMono, fontSans } from "./fonts";
+import { fontGoogleButton, fontMono, fontSans } from "./fonts";
 import { rootLayout } from "./layout.style";
 import { siteViewport } from "./viewport";
 
@@ -31,7 +31,12 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cx(fontSans.variable, fontMono.variable, rootLayout.html)}
+      className={cx(
+        fontSans.variable,
+        fontMono.variable,
+        fontGoogleButton.variable,
+        rootLayout.html,
+      )}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />

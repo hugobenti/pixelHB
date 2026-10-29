@@ -1,7 +1,16 @@
 /**
  * Purpose:
- * Classes for AccountControl: the placement wrappers, the avatar button, the popover panel and the
- * account details.
+ * Classes for AccountControl: the placement wrappers, the avatar button, the Sign in with Google
+ * button, the popover panel and the account details.
+ *
+ * Notes:
+ * The Sign in with Google button follows Google's branding guidelines
+ * (developers.google.com/identity/branding-guidelines) and Google's own HTML button: Roboto Medium
+ * 14/20 with 0.25px tracking, 40px tall, 4px radius, 12px side padding, the 20px "G" 12px before
+ * the text, and a #303030 (light) / white (dark) state overlay at 8% on hover and 12% when pressed
+ * or focused. Its fill, stroke, text and overlay colors are Google's brand colors, the one required
+ * exception to the PixelHB palette, declared as the `google-btn-*` tokens in globals.css. It keeps
+ * the site's focus ring and stays 40px on touch screens (Google's fixed size).
  */
 
 import { focusRing } from "@/features/shared/components/focus.style";
@@ -18,10 +27,21 @@ export const accountControl = {
     "inline-flex size-10 touch-manipulation items-center justify-center rounded-full border border-line-strong bg-surface-muted text-sm font-semibold text-fg transition-colors hover:bg-surface-strong pointer-coarse:size-11",
     focusRing,
   ),
+  googleButton: cx(
+    "group relative inline-flex h-10 max-w-100 min-w-min touch-manipulation items-center gap-3 overflow-hidden rounded-sm border border-google-btn-stroke bg-google-btn-fill px-3 font-google-btn text-sm font-medium tracking-[0.25px] whitespace-nowrap text-google-btn-text select-none hover:shadow-google-btn",
+    focusRing,
+  ),
+  /** Width of the signed-out button: its content in the header row, the full menu width on phones. */
   signIn: {
     bar: "shrink-0",
-    sheet: "min-h-12 w-full",
+    sheet: "w-full",
   },
+  /** The reauth button fills the panel or the menu section. */
+  reauth: "w-full",
+  googleState:
+    "absolute inset-0 bg-google-btn-state opacity-0 transition-opacity group-hover:opacity-8 group-focus-visible:opacity-12 group-active:opacity-12",
+  googleLogo: "relative size-5 shrink-0",
+  googleLabel: "relative grow truncate text-center",
   panel:
     "absolute right-0 top-full z-50 mt-1 flex w-72 flex-col gap-3 rounded-lg border border-line bg-surface p-4 shadow-lg",
   sheetSection: "flex flex-col gap-3",

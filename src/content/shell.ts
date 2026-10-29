@@ -19,8 +19,7 @@ export const shell: IShellContent = {
     signIn: "Sign in with Google",
     openAccount: "Account",
     signOut: "Sign out",
-    signInAgain: "Sign in again",
-    reauthNote: "Your Google sign-in expired. Sign in again to keep syncing.",
+    reauthNote: "Your Google sign-in expired. Sign in with Google again to keep syncing.",
     signingOut: "Signing out…",
     reconnecting: "Reconnecting…",
     signOutDialog: {

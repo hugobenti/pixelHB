@@ -41,6 +41,10 @@ colors:
   guide-vertical: "#2b3a9e"
   loupe-edge-dark: "#000000"
   loupe-edge-light: "#ffffff"
+  google-btn-fill: "#ffffff"
+  google-btn-stroke: "#747775"
+  google-btn-text: "#1f1f1f"
+  google-btn-state: "#303030"
   bg-dark: "#141312"
   surface-dark: "#1c1b19"
   surface-subtle-dark: "#22211f"
@@ -80,6 +84,10 @@ colors:
   guide-vertical-dark: "#5fa8ff"
   loupe-edge-dark-dark: "#000000"
   loupe-edge-light-dark: "#ffffff"
+  google-btn-fill-dark: "#131314"
+  google-btn-stroke-dark: "#8e918f"
+  google-btn-text-dark: "#e3e3e3"
+  google-btn-state-dark: "#ffffff"
 typography:
   page-title:
     fontFamily: "Schibsted Grotesk, ui-sans-serif, sans-serif"
@@ -258,6 +266,12 @@ Every color token, as declared in `src/app/globals.css`. Light values are the `@
 | `guide-vertical`   | `#2b3a9e`                                              | `#5fa8ff`                                                 | Vertical symmetry guide (canvas renderer)                               |
 | `loupe-edge-dark`  | `#000000`                                              | `#000000`                                                 | Color picker: the black line on each side of the loupe ring and around the picked pixel |
 | `loupe-edge-light` | `#ffffff`                                              | `#ffffff`                                                 | Color picker: the white line paired with `loupe-edge-dark`, so the edges read on any artwork color |
+| `google-btn-fill`  | `#ffffff`                                              | `#131314`                                                 | Sign in with Google button fill (Google brand color, see below)          |
+| `google-btn-stroke` | `#747775`                                             | `#8e918f`                                                 | Sign in with Google button border (1px, inside)                          |
+| `google-btn-text`  | `#1f1f1f`                                              | `#e3e3e3`                                                 | Sign in with Google button label                                         |
+| `google-btn-state` | `#303030`                                              | `#ffffff`                                                 | Sign in with Google hover (8%) and pressed/focus (12%) overlay           |
+
+The `google-btn-*` tokens (and the `shadow-google-btn` hover elevation) are Google's brand colors, required by the [Sign in with Google branding guidelines](https://developers.google.com/identity/branding-guidelines) for app verification. They are the one exception to the PixelHB palette: use them for the Sign in with Google button only, never elsewhere.
 
 ### Theming
 
@@ -265,7 +279,7 @@ Every color token, as declared in `src/app/globals.css`. Light values are the `@
 - **Switch.** The resolved theme is written to `data-theme` on `<html>`. An inline script rendered in `<head>` by `src/app/layout.tsx` sets it before first paint, so there is no flash of the wrong theme. `useThemeSync` (called in `src/app/AppProviders.tsx`) keeps it in sync with a pick in this or another tab, and with the OS setting while nothing has been picked yet.
 - **Tokens.** Light values live in the `@theme static` block of `src/app/globals.css`; dark values override the same `--color-*` custom properties under `[data-theme="dark"]`, which also sets `color-scheme: dark`. Tailwind utilities (`bg-surface`, `text-muted`, `outline-focus`) resolve to whichever value is active.
 - **Canvas.** The editor's canvas renderers read the grid and guide colors from the CSS variables (`--color-grid-line`, `--color-guide-horizontal`, `--color-guide-vertical`) and re-read them when the resolved theme changes.
-- **Contrast.** `src/app/tokenContrast.test.ts` checks the same pair list against both token sets: text pairs at 4.5:1, UI pairs (focus, accent, danger, swatch rings, `control-border` on `bg` / `surface` / `surface-subtle`, guides on the checkerboard, `surface` on `surface-inverse`) at 3:1. It also fails if the dark block leaves any color token undefined, so a light value can never leak into dark.
+- **Contrast.** `src/app/tokenContrast.test.ts` checks the same pair list against both token sets: text pairs at 4.5:1, UI pairs (focus, accent, danger, swatch rings, `control-border` on `bg` / `surface` / `surface-subtle`, guides on the checkerboard, `surface` on `surface-inverse`, the Google button border on its fill and the page) at 3:1. It also fails if the dark block leaves any color token undefined, so a light value can never leak into dark.
 
 ### Named Rules
 
@@ -273,12 +287,13 @@ Every color token, as declared in `src/app/globals.css`. Light values are the `@
 
 **The One Accent Rule.** Burnt amber in light, studio amber in dark. The accent marks the primary action and the primary-slot swatch ring; the only other use is the border of the active layer row, which is a selection of the same kind. Never decoration, headings, links or body text, with one exception: the Home "How it works" step numerals (01–03) use `text-accent` as decoration; nothing else does. One primary button per view; everything else is ghost or outline.
 
-**The Tokens Only Rule.** Both themes come from the same semantic token names. Components use the token utilities and never branch on theme: no `dark:` variants, no `if (theme === "dark")` in style files or renderers, no hex literals. A color that looks wrong in one theme is fixed in that theme's token value.
+**The Tokens Only Rule.** Both themes come from the same semantic token names. Components use the token utilities and never branch on theme: no `dark:` variants, no `if (theme === "dark")` in style files or renderers, no hex literals. A color that looks wrong in one theme is fixed in that theme's token value. The Google brand colors of the Sign in with Google button are tokens too (`google-btn-*`), kept at Google's values in both themes.
 
 ## Typography
 
 **UI Font:** Schibsted Grotesk (with `ui-sans-serif, sans-serif`)
 **Numbers Font:** JetBrains Mono (with `ui-monospace, monospace`)
+**Sign in with Google button:** Roboto Medium 14px / 20px, 0.25px tracking (`font-google-btn`), as Google's branding guidelines and Google's own HTML button require; nothing else uses it.
 
 **Character:** A sturdy, slightly editorial grotesk that stays crisp in a dense toolbar, paired with a monospace for anything the user measures. The same faces and metrics in both themes, so a theme switch never reflows a line.
 
