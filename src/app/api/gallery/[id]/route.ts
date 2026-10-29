@@ -4,17 +4,22 @@
  */
 import {
   galleryErrorResponse,
+  galleryNotFoundResponse,
+  gallerySavedResponse,
+  galleryTrashedResponse,
   readDeleteRequest,
   readSaveRequest,
   withGalleryAccess,
 } from "@/features/shared/drive/server/galleryRouteHelpers";
+
+export const maxDuration = 30;
 
 export async function GET(request: Request, ctx: RouteContext<"/api/gallery/[id]">): Promise<Response> {
   const { id } = await ctx.params;
   return withGalleryAccess(request, id, async (store) => {
     const stream = await store.get(id);
     return stream === null
-      ? new Response(null, { status: 404 })
+      ? galleryNotFoundResponse()
       : new Response(stream, {
           headers: {
             "Content-Type": "application/json; charset=utf-8",
@@ -33,7 +38,7 @@ export async function POST(request: Request, ctx: RouteContext<"/api/gallery/[id
     }
     const result = await store.upsert(save.upsert);
     return result.kind === "saved"
-      ? Response.json({ updatedAt: result.updatedAt })
+      ? gallerySavedResponse(result.updatedAt)
       : galleryErrorResponse(409, { code: "conflict", updatedAt: result.updatedAt });
   });
 }
@@ -47,7 +52,7 @@ export async function DELETE(request: Request, ctx: RouteContext<"/api/gallery/[
     }
     const result = await store.trash(id, removal.deletedAt);
     return result.kind === "trashed"
-      ? new Response(null, { status: 204 })
+      ? galleryTrashedResponse()
       : galleryErrorResponse(409, { code: "conflict", updatedAt: result.updatedAt });
   });
 }

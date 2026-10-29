@@ -9,8 +9,8 @@ export interface ISaveBodyLimits {
 
 export type TRequestRejection = {
   ok: false;
-  status: 400 | 413;
-  code: "bad_request" | "too_large" | "clock_skew";
+  status: 400 | 403 | 413 | 415;
+  code: "bad_request" | "too_large" | "clock_skew" | "forbidden" | "unsupported_media_type";
 };
 
 export type TSaveRequestResult = { ok: true; upsert: IDriveArtworkUpsert } | TRequestRejection;

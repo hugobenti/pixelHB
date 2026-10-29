@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { createDriveRest, DriveError } from "./driveRest";
+import { describe, expect, it, vi } from "vitest";
+import { createDriveRest, DRIVE_REQUEST_TIMEOUT_MS, DriveError } from "./driveRest";
+import type { IDriveRest } from "./driveRest.type";
 
 interface IRecordedCall { method: string; url: URL; headers: Headers; body: Uint8Array | null }
 
@@ -93,6 +94,97 @@ describe("driveRest", () => {
     const { fetchFn } = recorder([new TypeError("fetch failed")]);
     await expect(createDriveRest({ accessToken: "tok", fetchFn }).download("f-1"))
       .rejects.toMatchObject({ status: 0, reason: "network" });
+  });
+
+  it("gives up on a Drive call that hangs past the timeout with DriveError status 0 reason 'timeout'", async () => {
+    const hanging = (async (_input: RequestInfo | URL, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+      })) as typeof fetch;
+    const rest = createDriveRest({ accessToken: "tok", fetchFn: hanging, timeoutMs: 20 });
+    const error = await rest.listAll({ q: "trashed=false" }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(DriveError);
+    expect(error).toMatchObject({ status: 0, reason: "timeout", retryAfter: null });
+  });
+
+  /** Answers headers at once, then a body that never ends until the request's signal aborts (as real fetch does). */
+  const stalledBody = (status: number, seen: Array<AbortSignal | undefined> = []) =>
+    (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const signal = init?.signal ?? undefined;
+      seen.push(signal);
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          signal?.addEventListener("abort", () => controller.error(signal.reason));
+        },
+      });
+      return new Response(body, { status, headers: { "Content-Type": "application/json" } });
+    }) as typeof fetch;
+
+  // `AbortSignal.timeout` runs on the platform clock (fake timers don't reach it): 20 ms real waits.
+  it.each([
+    ["a list page", (rest: IDriveRest) => rest.listAll({ q: "trashed=false" }), 200],
+    ["a created file", (rest: IDriveRest) => rest.createFolder({ name: "PixelHB" }), 200],
+    ["an error body", (rest: IDriveRest) => rest.listAll({ q: "trashed=false" }), 400],
+  ])("maps a timeout while reading %s to the retryable timeout DriveError", async (_label, run, status) => {
+    const rest = createDriveRest({ accessToken: "tok", fetchFn: stalledBody(status), timeoutMs: 20 });
+    const error = await run(rest).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(DriveError);
+    expect(error).toMatchObject({ status: 0, reason: "timeout", retryAfter: null });
+  });
+
+  it("does not cut a download's body once Drive's headers arrived", async () => {
+    const seen: Array<AbortSignal | undefined> = [];
+    const rest = createDriveRest({ accessToken: "tok", fetchFn: stalledBody(200, seen), timeoutMs: 20 });
+    const stream = await rest.download("f-1");
+    // Real wait past the deadline: a platform `AbortSignal.timeout` would fire here, fake timers would not.
+    const { promise, resolve } = Promise.withResolvers<void>();
+    setTimeout(resolve, 60);
+    await promise;
+    expect(stream).not.toBeNull();
+    expect(seen[0]?.aborted).toBe(false);
+    await stream?.cancel();
+  });
+
+  it("still times out a download whose headers never arrive", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      const hanging = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+        const { promise, reject } = Promise.withResolvers<Response>();
+        init?.signal?.addEventListener("abort", () => reject(init.signal?.reason));
+        return promise;
+      }) as typeof fetch;
+      const rest = createDriveRest({ accessToken: "tok", fetchFn: hanging, timeoutMs: 20 });
+      const pending = rest.download("f-1");
+      vi.advanceTimersByTime(20);
+      await expect(pending).rejects.toMatchObject({ status: 0, reason: "timeout" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("bounds every Drive request, the resumable PUT included, with a 25 s abort signal by default", async () => {
+    expect(DRIVE_REQUEST_TIMEOUT_MS).toBe(25_000);
+    const signals: Array<AbortSignal | null | undefined> = [];
+    const session = "https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&upload_id=abc";
+    const responses = [
+      new Response(null, { status: 200, headers: { Location: session } }),
+      Response.json({ id: "f-1", name: "big.json" }),
+      Response.json({ files: [] }),
+      new Response("{}"),
+    ];
+    const fetchFn = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      signals.push(init?.signal);
+      return responses.shift()!;
+    }) as typeof fetch;
+    const rest = createDriveRest({ accessToken: "tok", fetchFn });
+    await rest.uploadNew({ name: "big.json" }, new Uint8Array(5 * 1024 * 1024 + 1), "application/json");
+    await rest.listAll({ q: "trashed=false" });
+    await rest.download("f-1");
+    expect(signals).toHaveLength(4);
+    for (const signal of signals) {
+      expect(signal).toBeInstanceOf(AbortSignal);
+      expect(signal?.aborted).toBe(false);
+    }
   });
 
   it("download returns null on 404; trash sends {trashed:true} and ignores 404", async () => {

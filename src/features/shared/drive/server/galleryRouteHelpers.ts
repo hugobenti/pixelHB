@@ -1,21 +1,25 @@
 /**
  * Purpose:
- * Shared plumbing for the `/api/gallery` route handlers: flag and id gate, Drive access, request body
- * reading with size caps, and the mapping of Drive failures to the gallery error codes.
+ * Shared plumbing for the `/api/gallery` route handlers: flag and id gate, the CSRF guard on
+ * state-changing requests, Drive access, request body reading with size caps, cache headers, the
+ * preview's ETag revalidation and the mapping of Drive failures to the gallery error codes.
  *
  * Notes:
  * Every route starts in `withGalleryAccess`: flag off answers a bare 404, a malformed id answers 400
- * before auth is touched, missing/expired Google access answers 401/503. The Drive access token is only
- * handed to the store; it is never logged or returned. Request bodies and artwork payloads are never
- * logged. A non-Drive exception rethrows (a 500 is a bug, not a Drive state).
+ * and a POST/DELETE that fails `checkMutationRequest` answers 403/415, all before auth is touched;
+ * missing/expired Google access answers 401/503. The Drive access token is only handed to the store;
+ * it is never logged or returned. Request bodies and artwork payloads are never logged. A non-Drive
+ * exception rethrows (a 500 is a bug, not a Drive state). Every response except the preview is
+ * `private, no-store`; the preview is `private, no-cache` with a strong ETag.
  */
+import { createHash } from "node:crypto";
 import { parseArtworkFile, serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import { DRIVE_SYNC_ENABLED } from "@/features/shared/auth/driveSyncFlag";
 import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
 import { ARTWORK_ID_PATTERN, MAX_CLOCK_SKEW_MS, MAX_SYNC_BODY_BYTES } from "../galleryApi";
-import type { IGalleryErrorResponse } from "../galleryApi.type";
+import type { IGalleryErrorResponse, IGallerySaveResponse } from "../galleryApi.type";
 import { createDriveArtworkStore } from "./driveArtworkStore";
-import type { IDriveArtworkStore } from "./driveArtworkStore.type";
+import type { IDriveArtworkStore, IDrivePreview } from "./driveArtworkStore.type";
 import { DriveError } from "./driveRest";
 import type {
   ISaveBodyLimits,
@@ -41,17 +45,74 @@ const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_TOO_MANY_REQUESTS = 429;
 const HTTP_SERVER_ERROR = 500;
+const NO_STORE = { "Cache-Control": "private, no-store" };
+/** Cached by the browser but revalidated on every use, so a preview never outlives a sign-out. */
+const PREVIEW_CACHE_CONTROL = "private, no-cache";
+const ETAG_HEX_LENGTH = 32;
+const JSON_MEDIA_TYPE = "application/json";
 
 const BAD_REQUEST: TRequestRejection = { ok: false, status: 400, code: "bad_request" };
 const TOO_LARGE: TRequestRejection = { ok: false, status: 413, code: "too_large" };
 const CLOCK_SKEW: TRequestRejection = { ok: false, status: 400, code: "clock_skew" };
+const FORBIDDEN: TRequestRejection = { ok: false, status: 403, code: "forbidden" };
+const UNSUPPORTED_MEDIA_TYPE: TRequestRejection = { ok: false, status: 415, code: "unsupported_media_type" };
 
 export function galleryErrorResponse(
   status: number,
   body: IGalleryErrorResponse,
   headers?: HeadersInit,
 ): Response {
-  return Response.json(body, { status, headers });
+  const merged = new Headers(headers);
+  merged.set("Cache-Control", NO_STORE["Cache-Control"]);
+  return Response.json(body, { status, headers: merged });
+}
+
+/** Bare 404: flag off, or the artwork (or its preview) is not in Drive. */
+export function galleryNotFoundResponse(): Response {
+  return new Response(null, { status: 404, headers: NO_STORE });
+}
+
+export function gallerySavedResponse(updatedAt: number): Response {
+  return Response.json({ updatedAt } satisfies IGallerySaveResponse, { headers: NO_STORE });
+}
+
+export function galleryTrashedResponse(): Response {
+  return new Response(null, { status: 204, headers: NO_STORE });
+}
+
+/** Host the browser addressed: `X-Forwarded-Host` behind a proxy (Vercel), else `Host`, else the URL's. */
+function requestHost(request: Request): string {
+  const forwarded = request.headers.get("X-Forwarded-Host")?.split(",")[0].trim();
+  return forwarded || request.headers.get("Host") || new URL(request.url).host;
+}
+
+function originHost(origin: string): string | null {
+  try {
+    return new URL(origin).host;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * CSRF defence in depth for POST/DELETE (the session cookie is already SameSite=Lax). A browser
+ * request must come from this origin: `Sec-Fetch-Site` other than `same-origin` (cross-site, a sibling
+ * `same-site` subdomain, or `none`) and an `Origin` whose host is not the one the request was sent to
+ * (compared like Next's Server Actions check: `X-Forwarded-Host`, else `Host`) are refused with 403.
+ * A client that sends neither header (not a browser) is let through. The body must be declared
+ * `application/json` (415 otherwise), which a cross-site form or a no-CORS fetch cannot send.
+ */
+export function checkMutationRequest(request: Request): TRequestRejection | null {
+  const fetchSite = request.headers.get("Sec-Fetch-Site");
+  if (fetchSite !== null && fetchSite !== "same-origin") {
+    return FORBIDDEN;
+  }
+  const origin = request.headers.get("Origin");
+  if (origin !== null && originHost(origin) !== requestHost(request)) {
+    return FORBIDDEN;
+  }
+  const mediaType = request.headers.get("Content-Type")?.split(";")[0].trim().toLowerCase();
+  return mediaType === JSON_MEDIA_TYPE ? null : UNSUPPORTED_MEDIA_TYPE;
 }
 
 export function driveErrorToResponse(error: DriveError): Response {
@@ -229,10 +290,15 @@ export async function withGalleryAccess(
   run: (store: IDriveArtworkStore) => Promise<Response>,
 ): Promise<Response> {
   if (!DRIVE_SYNC_ENABLED) {
-    return new Response(null, { status: 404 });
+    return galleryNotFoundResponse();
   }
   if (id !== null && !ARTWORK_ID_PATTERN.test(id)) {
     return galleryErrorResponse(400, { code: "bad_request" });
+  }
+  const reads = request.method === "GET" || request.method === "HEAD";
+  const rejection = reads ? null : checkMutationRequest(request);
+  if (rejection) {
+    return galleryErrorResponse(rejection.status, { code: rejection.code });
   }
   const access = await getDriveAccess(request);
   switch (access.kind) {
@@ -257,4 +323,44 @@ export async function withGalleryAccess(
     }
     throw error;
   }
+}
+
+/**
+ * Strong ETag of a preview: a hash of the artwork id, the artwork's `updatedAt` and the PNG's Drive
+ * file id, so it changes whenever a save rewrites the preview (the JSON stamp moves on every save).
+ */
+export function previewEtag(id: string, preview: IDrivePreview): string {
+  const hash = createHash("sha256").update(`${id}:${preview.updatedAt ?? ""}:${preview.fileId}`).digest("hex");
+  return `"${hash.slice(0, ETAG_HEX_LENGTH)}"`;
+}
+
+/** `If-None-Match` uses the weak comparison: `W/"x"` matches `"x"`; `*` matches any tag. */
+function matchesIfNoneMatch(header: string | null, etag: string): boolean {
+  if (header === null) {
+    return false;
+  }
+  return header
+    .split(",")
+    .map((tag) => tag.trim().replace(/^W\//, ""))
+    .some((tag) => tag === "*" || tag === etag);
+}
+
+/** 304 when the browser already holds this version (no download from Drive), else the PNG. */
+export async function previewResponse(
+  request: Request,
+  id: string,
+  preview: IDrivePreview | null,
+): Promise<Response> {
+  if (!preview) {
+    return galleryNotFoundResponse();
+  }
+  const etag = previewEtag(id, preview);
+  const cacheHeaders = { ETag: etag, "Cache-Control": PREVIEW_CACHE_CONTROL };
+  if (matchesIfNoneMatch(request.headers.get("If-None-Match"), etag)) {
+    return new Response(null, { status: 304, headers: cacheHeaders });
+  }
+  const stream = await preview.open();
+  return stream === null
+    ? galleryNotFoundResponse()
+    : new Response(stream, { headers: { ...cacheHeaders, "Content-Type": "image/png" } });
 }

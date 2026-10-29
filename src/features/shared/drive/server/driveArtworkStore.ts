@@ -238,8 +238,17 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
     },
 
     async getPreview(id) {
-      const { png } = await findArtworkFiles(id);
-      return png[0] ? rest.download(png[0].id) : null;
+      const { json, png } = await findArtworkFiles(id);
+      const file = png[0];
+      if (!file) {
+        return null;
+      }
+      const updatedAt = json[0] ? updatedAtOf(json[0]) : MISSING_UPDATED_AT;
+      return {
+        fileId: file.id,
+        updatedAt: updatedAt === MISSING_UPDATED_AT ? null : updatedAt,
+        open: () => rest.download(file.id),
+      };
     },
 
     async upsert(input: IDriveArtworkUpsert): Promise<TUpsertResult> {

@@ -26,6 +26,8 @@ export interface IDriveListQuery {
 export interface IDriveRestOptions {
   accessToken: string;
   fetchFn: typeof fetch;
+  /** Per-request abort deadline; defaults to `DRIVE_REQUEST_TIMEOUT_MS`. Tests shorten it. */
+  timeoutMs?: number;
 }
 
 export interface IDriveRest {

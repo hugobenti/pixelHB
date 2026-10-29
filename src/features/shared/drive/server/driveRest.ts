@@ -30,7 +30,14 @@ const MULTIPART_MAX_BYTES = 5 * 1024 * 1024;
 const BOUNDARY_PREFIX = "pixelhb-";
 const JSON_UTF8 = "application/json; charset=UTF-8";
 const NETWORK_REASON = "network";
+const TIMEOUT_REASON = "timeout";
 const BAD_RESPONSE_REASON = "badResponse";
+/**
+ * Longest one Drive call may take: response headers plus, for calls whose JSON body we read, that
+ * body (a download only until its headers arrive). Below the gallery routes' 30 s `maxDuration`, so
+ * a hung Google call ends as a 503 retry instead of a killed function.
+ */
+export const DRIVE_REQUEST_TIMEOUT_MS = 25_000;
 const BAD_GATEWAY = 502;
 
 function isGoogleUrl(value: string): boolean {
@@ -55,13 +62,25 @@ export class DriveError extends Error {
   }
 }
 
+/** The abort reason of `AbortSignal.timeout` (also what a body read rejects with once it fires). */
+function isTimeout(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "TimeoutError";
+}
+
+function timeoutError(): DriveError {
+  return new DriveError(0, TIMEOUT_REASON, null);
+}
+
 async function errorFromResponse(response: Response): Promise<DriveError> {
   let reason: string | null = null;
   try {
     const body = (await response.json()) as IDriveErrorBody | null;
     const first = body?.error?.errors?.[0]?.reason;
     reason = typeof first === "string" ? first : null;
-  } catch {
+  } catch (error) {
+    if (isTimeout(error)) {
+      return timeoutError();
+    }
     reason = null;
   }
   return new DriveError(response.status, reason, response.headers.get("Retry-After"));
@@ -84,28 +103,40 @@ function multipartBody(metadata: IDriveFileMetadata, content: Uint8Array, mimeTy
 }
 
 export function createDriveRest(options: IDriveRestOptions): IDriveRest {
-  const { accessToken, fetchFn } = options;
+  const { accessToken, fetchFn, timeoutMs = DRIVE_REQUEST_TIMEOUT_MS } = options;
   const authorization = `Bearer ${accessToken}`;
 
-  async function call(url: string, init: RequestInit): Promise<Response> {
+  /**
+   * One Drive call. By default the deadline covers the response headers and the body (every caller
+   * reads it right away); `streamBody` stops the clock once headers arrive, so a download can stream
+   * to the browser for as long as the route allows.
+   */
+  async function call(url: string, init: RequestInit, streamBody = false): Promise<Response> {
+    const controller = streamBody ? new AbortController() : null;
+    const signal = controller ? controller.signal : AbortSignal.timeout(timeoutMs);
+    const timer = controller
+      ? setTimeout(() => controller.abort(new DOMException("Drive call timed out", "TimeoutError")), timeoutMs)
+      : null;
     try {
-      return await fetchFn(url, init);
+      return await fetchFn(url, { ...init, signal });
     } catch {
-      throw new DriveError(0, NETWORK_REASON, null);
+      throw new DriveError(0, signal.aborted ? TIMEOUT_REASON : NETWORK_REASON, null);
+    } finally {
+      clearTimeout(timer ?? undefined);
     }
   }
 
-  async function authorized(url: string, init: RequestInit): Promise<Response> {
+  async function authorized(url: string, init: RequestInit, streamBody = false): Promise<Response> {
     const headers = new Headers(init.headers);
     headers.set("Authorization", authorization);
-    return call(url, { ...init, headers });
+    return call(url, { ...init, headers }, streamBody);
   }
 
   async function readFile(response: Response): Promise<IDriveFile> {
     try {
       return (await response.json()) as IDriveFile;
-    } catch {
-      throw new DriveError(BAD_GATEWAY, BAD_RESPONSE_REASON, null);
+    } catch (error) {
+      throw isTimeout(error) ? timeoutError() : new DriveError(BAD_GATEWAY, BAD_RESPONSE_REASON, null);
     }
   }
 
@@ -132,8 +163,8 @@ export function createDriveRest(options: IDriveRestOptions): IDriveRest {
     const response = await expectOk(await authorized(`${DRIVE_FILES_URL}?${params}`, {}));
     try {
       return (await response.json()) as IDriveListPage;
-    } catch {
-      throw new DriveError(BAD_GATEWAY, BAD_RESPONSE_REASON, null);
+    } catch (error) {
+      throw isTimeout(error) ? timeoutError() : new DriveError(BAD_GATEWAY, BAD_RESPONSE_REASON, null);
     }
   }
 
@@ -231,7 +262,8 @@ export function createDriveRest(options: IDriveRestOptions): IDriveRest {
       upload("PATCH", `${DRIVE_UPLOAD_URL}/${encodeURIComponent(fileId)}`, metadata, content, mimeType),
 
     async download(fileId) {
-      const response = await authorized(fileUrl(DRIVE_FILES_URL, fileId, { alt: "media" }), {});
+      // The body streams on to the browser: only the wait for Drive's headers is bounded.
+      const response = await authorized(fileUrl(DRIVE_FILES_URL, fileId, { alt: "media" }), {}, true);
       if (response.status === 404) {
         await response.body?.cancel();
         return null;

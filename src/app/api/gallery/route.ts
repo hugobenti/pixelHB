@@ -5,6 +5,8 @@
 import type { IGalleryListResponse } from "@/features/shared/drive/galleryApi.type";
 import { withGalleryAccess } from "@/features/shared/drive/server/galleryRouteHelpers";
 
+export const maxDuration = 30;
+
 export async function GET(request: Request): Promise<Response> {
   return withGalleryAccess(request, null, async (store) =>
     Response.json((await store.list()) satisfies IGalleryListResponse, {

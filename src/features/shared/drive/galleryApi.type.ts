@@ -55,6 +55,8 @@ export type TGalleryErrorCode =
   | "bad_request"
   | "clock_skew"
   | "too_large"
+  | "forbidden"
+  | "unsupported_media_type"
   | "drive_error"
   | "drive_full"
   | "drive_unavailable";
