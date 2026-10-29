@@ -90,8 +90,8 @@
 @theme inline {
   --font-sans: var(--font-schibsted-grotesk);
   --font-mono: var(--font-jetbrains-mono);
-  /* Roboto Medium: the Sign in with Google button only (Google's branding guidelines) */
-  --font-google-btn: var(--font-roboto);
+  /* Google Sans Medium: the Sign in with Google button only (Google's branding guidelines) */
+  --font-google-btn: var(--font-google-sans);
 }
 
 /* Dark theme: warm graphite. Same token names, every color overridden. */
@@ -154,12 +154,16 @@
   --color-google-btn-stroke: #8e918f;
   --color-google-btn-text: #e3e3e3;
   --color-google-btn-state: #ffffff;
+  --google-btn-logo: url("/brand/google-g-dark.png");
 
   color-scheme: dark;
 }
 
 html {
   color-scheme: light;
+  /* The Google "G" of the Sign in with Google button, on the light fill; the dark block swaps in the
+   * one on the dark fill. Sources (Google's signin-assets.zip): AccountControl.style.ts. */
+  --google-btn-logo: url("/brand/google-g-light.png");
 }
 
 /* Font, size (14/20) and color come from utilities on <body> (layout.style.ts); unlayered rules here

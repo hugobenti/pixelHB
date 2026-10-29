@@ -7,13 +7,11 @@
  * Notes:
  * `bar` sits in the header row from `sm` up; `sheet` is an inline section of the phone menu, with no
  * popover. When the Google sign-in expired, the panel shows a note and "Sign in with Google" again.
- * Both sign-in buttons are Google-branded (Google's "G" from public/brand/google-g.svg, unaltered;
- * classes and the guideline values in AccountControl.style.ts); the "G" is decorative, so the
- * button's accessible name is its text.
+ * Both sign-in buttons are Google-branded (Google's official "G" asset for the active theme, set by
+ * `--google-btn-logo` in globals.css; classes, sources and the guideline values in
+ * AccountControl.style.ts); the "G" is decorative, so the button's accessible name is its text.
  */
 "use client";
-
-import Image from "next/image";
 
 import { shared } from "@/content/shared";
 import { shell } from "@/content/shell";
@@ -58,15 +56,7 @@ export function AccountControl({ placement }: IAccountControlProps) {
   const googleButtonContent = (
     <>
       <span aria-hidden className={accountControl.googleState} />
-      <Image
-        src="/brand/google-g.svg"
-        alt=""
-        aria-hidden
-        width={20}
-        height={20}
-        unoptimized
-        className={accountControl.googleLogo}
-      />
+      <span aria-hidden className={accountControl.googleLogo} />
       <span className={accountControl.googleLabel}>{shell.account.signIn}</span>
     </>
   );

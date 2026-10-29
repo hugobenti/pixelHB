@@ -271,7 +271,7 @@ Every color token, as declared in `src/app/globals.css`. Light values are the `@
 | `google-btn-text`  | `#1f1f1f`                                              | `#e3e3e3`                                                 | Sign in with Google button label                                         |
 | `google-btn-state` | `#303030`                                              | `#ffffff`                                                 | Sign in with Google hover (8%) and pressed/focus (12%) overlay           |
 
-The `google-btn-*` tokens (and the `shadow-google-btn` hover elevation) are Google's brand colors, required by the [Sign in with Google branding guidelines](https://developers.google.com/identity/branding-guidelines) for app verification. They are the one exception to the PixelHB palette: use them for the Sign in with Google button only, never elsewhere.
+The `google-btn-*` tokens (and the `shadow-google-btn` hover elevation) are Google's brand colors, required by the [Sign in with Google branding guidelines](https://developers.google.com/identity/branding-guidelines) for app verification. They are the one exception to the PixelHB palette: use them for the Sign in with Google button only, never elsewhere. The button is 40px tall with 12px side padding, a 20px Google "G" and 10px between the "G" and the text. The "G" is Google's official gradient logo from its sign-in asset bundle, one image per theme (`--google-btn-logo`, `public/brand/google-g-{light,dark}.png`; sources in `AccountControl.style.ts`).
 
 ### Theming
 
@@ -293,7 +293,7 @@ The `google-btn-*` tokens (and the `shadow-google-btn` hover elevation) are Goog
 
 **UI Font:** Schibsted Grotesk (with `ui-sans-serif, sans-serif`)
 **Numbers Font:** JetBrains Mono (with `ui-monospace, monospace`)
-**Sign in with Google button:** Roboto Medium 14px / 20px, 0.25px tracking (`font-google-btn`), as Google's branding guidelines and Google's own HTML button require; nothing else uses it.
+**Sign in with Google button:** Google Sans Medium 14px / 20px, 0.25px tracking (`font-google-btn`, not preloaded), as Google's branding guidelines require; nothing else uses it.
 
 **Character:** A sturdy, slightly editorial grotesk that stays crisp in a dense toolbar, paired with a monospace for anything the user measures. The same faces and metrics in both themes, so a theme switch never reflows a line.
 
