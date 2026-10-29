@@ -3,7 +3,7 @@
  * End-to-end data-safety scenarios: the real sync engine, local store (fake-indexeddb), browser API
  * client and `/api/gallery` route handlers over an in-memory fake of the Drive v3 REST API. Each case
  * is a way the engine used to lose a user's art (deletion inferred from a short or lagging Drive list,
- * wall-clock stamps) and asserts that the art is still there afterwards.
+ * wall-clock stamps, last-writer-wins) and asserts that the art is still there afterwards.
  */
 import "fake-indexeddb/auto";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -60,6 +60,10 @@ function createFakeDrive() {
     hideFromList: null as null | ((file: IFakeFile) => boolean),
     /** Every query answers empty, trashed or not (the app lost its `drive.file` access to the files). */
     scopeLost: false,
+    /** Uploads answer 403 storageQuotaExceeded. */
+    full: false,
+    /** Trashing these Drive file ids answers this HTTP status. */
+    failTrash: new Map<string, number>(),
   };
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -119,6 +123,7 @@ function createFakeDrive() {
       return json(view(file));
     }
     if (path.startsWith("/upload/drive/v3/files")) {
+      if (state.full) return json({ error: { errors: [{ reason: "storageQuotaExceeded" }] } }, 403);
       const raw = latin1(await new Response(init.body as BodyInit).arrayBuffer());
       const { metadata, content } = parseMultipart(headers.get("Content-Type")!, raw);
       if (method === "POST") {
@@ -146,6 +151,8 @@ function createFakeDrive() {
       const file = files.get(id);
       if (!file) return new Response(null, { status: 404 });
       if (method === "PATCH") {
+        const failure = state.failTrash.get(id);
+        if (failure) return json({ error: { errors: [{ reason: "invalid" }] } }, failure);
         if (JSON.parse(String(init.body)).trashed === true) {
           file.trashed = true;
           file.explicitlyTrashed = true;
@@ -212,6 +219,7 @@ function makeDevice(routes: IRoutes) {
       },
     },
     now: () => Date.now(),
+    newId: () => crypto.randomUUID(),
     setStatus: (patch) => {
       status = { ...status, ...patch };
     },
@@ -529,6 +537,91 @@ describe("clock safety", () => {
     expect(drive.artworkFileOf(id)!.appProperties.updatedAt).toBe(
       String((await syncStore.getStored(id))!.updatedAt),
     );
+    await device.engine.stop();
+  });
+
+  it("a local edit that lost to a newer Drive copy is kept as a conflict copy, and uploaded", async () => {
+    artworkService.setActiveOwner(OWNER);
+    const device = makeDevice(routes);
+    const start = Date.now();
+    vi.spyOn(Date, "now").mockReturnValue(start);
+    await artworkService.createArtwork(input("Sunset"));
+    await device.engine.start(OWNER);
+    const [{ id }] = await rows();
+
+    // Another device saves a newer version first; this device edited the old one meanwhile.
+    expect(
+      (
+        await postFromAnotherDevice(id, {
+          title: "Sunset (other device)",
+          updatedAt: start + 20_000,
+        })
+      ).status,
+    ).toBe(200);
+    vi.spyOn(Date, "now").mockReturnValue(start + 10_000);
+    await artworkService.renameArtwork(id, "Sunset (my edit)");
+    await device.engine.syncNow();
+    await device.engine.syncNow();
+
+    const all = await rows();
+    expect(all).toHaveLength(2);
+    expect(all.find((row) => row.id === id)).toMatchObject({
+      title: "Sunset (other device)",
+      sync: { state: "synced" },
+    });
+    const copy = all.find((row) => row.id !== id)!;
+    expect(copy).toMatchObject({
+      title: "Sunset (my edit) (conflict copy)",
+      ownerId: OWNER,
+      sync: { state: "synced" },
+    });
+    expect(
+      drive
+        .liveArtworkFiles()
+        .map((file) => file.name)
+        .sort(),
+    ).toEqual([
+      "Sunset (my edit) (conflict copy).pixelhb.json",
+      "Sunset (other device).pixelhb.json",
+    ]);
+    await device.engine.stop();
+  });
+});
+
+describe("smaller sync fixes", () => {
+  it("a tombstone Drive refuses does not stop the rest of the pass", async () => {
+    artworkService.setActiveOwner(OWNER);
+    const device = makeDevice(routes);
+    await artworkService.createArtwork(input("Doomed"));
+    await artworkService.createArtwork(input("Other"));
+    await device.engine.start(OWNER);
+    const [doomed] = (await rows()).filter((row) => row.title === "Doomed");
+    for (const file of drive.state.files.values()) {
+      if (file.appProperties.artworkId === doomed.id) drive.state.failTrash.set(file.id, 400);
+    }
+    await artworkService.deleteArtwork(doomed.id);
+    await artworkService.createArtwork(input("Brand new"));
+    await device.engine.syncNow();
+    expect(await db.deletions.count()).toBe(1);
+    expect((await rows()).find((row) => row.title === "Brand new")?.sync.state).toBe("synced");
+    expect(await db.artworks.get(doomed.id)).toBeUndefined();
+    expect(device.status().phase).toBe("error");
+    expect(device.retryTimers()).toBeGreaterThan(0);
+    await device.engine.stop();
+  });
+
+  it("a full Google Drive reads as full, not as offline", async () => {
+    artworkService.setActiveOwner(OWNER);
+    const device = makeDevice(routes);
+    await artworkService.createArtwork(input("Mine"));
+    drive.state.full = true;
+    await device.engine.start(OWNER);
+    expect(device.status()).toMatchObject({ phase: "error", driveFull: true });
+    expect(syncStatusMessage(signedIn, device.status())?.key).toBe("driveFull");
+    expect((await rows())[0].sync.state).toBe("dirty");
+    drive.state.full = false;
+    await device.engine.syncNow();
+    expect(device.status()).toMatchObject({ phase: "idle", driveFull: false });
     await device.engine.stop();
   });
 });

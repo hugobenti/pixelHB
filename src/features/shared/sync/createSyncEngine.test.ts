@@ -54,8 +54,9 @@ function setup(seed: ISetupSeed = {}) {
       r.sync.state = "tooLarge";
       return true;
     }),
-    putFromRemote: vi.fn(async (ownerId: string, artwork: IArtwork, expected: ISyncExpectedRow | undefined) => {
+    putFromRemote: vi.fn(async (ownerId: string, artwork: IArtwork, expected: ISyncExpectedRow | undefined, conflictCopy?: IStoredArtwork) => {
       if (!matches(rows.get(artwork.id), expected)) return false;
+      if (conflictCopy) rows.set(conflictCopy.id, structuredClone(conflictCopy));
       rows.set(artwork.id, { ...artwork, ownerId, sync: { state: "synced", syncedUpdatedAt: artwork.updatedAt } });
       return true;
     }),
@@ -117,8 +118,9 @@ function setup(seed: ISetupSeed = {}) {
   const warn = vi.fn();
   let lockBlocked = false;
   let rendered = PNG;
+  let idCounter = 0;
   const engine = createSyncEngine({
-    api, store, warn, now: () => now, renderThumbnail: () => rendered,
+    api, store, warn, now: () => now, renderThumbnail: () => rendered, newId: () => `new-${++idCounter}`,
     presence: {
       openIds: async () => new Set(open),
       waitForRelease: (id) => new Promise<void>((resolve) => releaseWaiters.set(id, resolve)),
@@ -790,9 +792,168 @@ describe("sync engine", () => {
       await vi.waitFor(() => expect(h.rows.get("future")?.sync.state).toBe("synced"));
       expect(h.status()).toMatchObject({ clockSkewIds: [], phase: "idle" });
     });
+
+    describe("conflict copy", () => {
+      const conflict = (localTitle = "Cat") => {
+        const local = { ...row("a", 100, "dirty"), title: localTitle };
+        const h = setup({ local: [local], remote: [{ ...row("a", 500, "synced"), title: "Cat (remote)" }] });
+        return h;
+      };
+
+      it("keeps the local version as a new dirty row before the newer Drive copy replaces it", async () => {
+        const h = conflict();
+        h.setNow(9_000);
+        await h.engine.start(OWNER);
+        expect(h.rows.get("a")).toMatchObject({ title: "Cat (remote)", updatedAt: 500, sync: { state: "synced" } });
+        const copies = [...h.rows.values()].filter((r) => r.id !== "a");
+        expect(copies).toHaveLength(1);
+        expect(copies[0]).toMatchObject({ id: "new-1", title: "Cat (conflict copy)", ownerId: OWNER, createdAt: 9_000 });
+        expect(Array.from(copies[0].layers[0].pixelData)).toEqual([0]);
+      });
+
+      it("uploads the copy right away, so the work is in Drive too", async () => {
+        const h = conflict();
+        await h.engine.start(OWNER);
+        await vi.waitFor(() => expect(h.drive.get("new-1")?.title).toBe("Cat (conflict copy)"));
+        expect(h.rows.get("new-1")?.sync.state).toBe("synced");
+      });
+
+      it("writes the copy and the Drive copy in one conditional store call, and neither when the row changed meanwhile", async () => {
+        const h = conflict();
+        h.store.getStored.mockImplementationOnce(async (id) => {
+          const seen = structuredClone(h.rows.get(id));
+          h.edit(id, 150);
+          return seen;
+        });
+        await h.engine.start(OWNER);
+        expect(h.store.putFromRemote.mock.calls[0][3]).toMatchObject({ id: "new-1", title: "Cat (conflict copy)" });
+        expect(h.rows.has("new-1")).toBe(false);
+        expect(h.rows.get("a")).toMatchObject({ updatedAt: 150, sync: { state: "dirty" } });
+      });
+
+      it("also saves the loser of a 409 on push", async () => {
+        const h = conflict();
+        h.api.list.mockResolvedValueOnce({ ok: true, value: { items: [], unreadableIds: [], rootFolderTrashed: false } });
+        await h.engine.start(OWNER);
+        expect(h.rows.get("a")?.updatedAt).toBe(500);
+        expect([...h.rows.values()].some((r) => r.title === "Cat (conflict copy)")).toBe(true);
+      });
+
+      it("makes no copy when the artwork is open in an editor: the pull is deferred as before", async () => {
+        const h = conflict();
+        h.open.add("a");
+        await h.engine.start(OWNER);
+        expect(h.rows.size).toBe(1);
+        expect(h.rows.get("a")).toMatchObject({ updatedAt: 100, sync: { state: "dirty" } });
+      });
+
+      it("makes no copy for a synced row, a tie, or when the local edit is the newer one", async () => {
+        const synced = setup({ local: [row("a", 100, "synced")], remote: [row("a", 500, "synced")] });
+        await synced.engine.start(OWNER);
+        expect(synced.rows.size).toBe(1);
+
+        const tie = setup({ local: [row("a", 100, "dirty")], remote: [row("a", 100, "synced")] });
+        await tie.engine.start(OWNER);
+        expect(tie.rows.size).toBe(1);
+
+        const newer = setup({ local: [row("a", 900, "dirty")], remote: [row("a", 500, "synced")] });
+        await newer.engine.start(OWNER);
+        expect(newer.rows.size).toBe(1);
+        expect(newer.drive.get("a")?.updatedAt).toBe(900);
+      });
+
+      it("keeps a too-large local version too, as a dirty copy", async () => {
+        const h = setup({ local: [row("a", 100, "tooLarge")], remote: [row("a", 500, "synced")] });
+        await h.engine.start(OWNER);
+        expect(h.rows.get("new-1")).toMatchObject({ title: "a (conflict copy)", sync: { state: expect.stringMatching(/dirty|tooLarge/) } });
+      });
+
+      it("does not stack suffixes: a conflict copy that conflicts again keeps one", async () => {
+        const h = conflict("Cat (conflict copy)");
+        await h.engine.start(OWNER);
+        expect(h.rows.get("new-1")?.title).toBe("Cat (conflict copy)");
+      });
+
+      it("fits a long title into the Drive file name limit and keeps the suffix", async () => {
+        const h = conflict("x".repeat(300));
+        await h.engine.start(OWNER);
+        const title = h.rows.get("new-1")!.title;
+        expect(Array.from(title)).toHaveLength(100);
+        expect(title.endsWith(" (conflict copy)")).toBe(true);
+      });
+
+      it("a copy that is not in conflict is a plain row: no further copies on later passes", async () => {
+        const h = conflict();
+        await h.engine.start(OWNER);
+        await vi.waitFor(() => expect(h.rows.get("new-1")?.sync.state).toBe("synced"));
+        await h.engine.syncNow();
+        await h.engine.syncNow();
+        expect(h.rows.size).toBe(2);
+      });
+    });
   });
 
-  describe("tombstone stamps", () => {
+  describe("smaller sync fixes (L3, L4)", () => {
+    it("skips a tombstone Drive rejects, keeps it, syncs the rest, and does not download the deleted art back", async () => {
+      const h = setup({
+        local: [row("a", 100, "dirty")],
+        remote: [row("x", 200, "synced")],
+        deletions: [{ id: "x", ownerId: OWNER, deletedAt: 300 }],
+      });
+      h.api.remove.mockResolvedValueOnce({ ok: false, kind: "failed", status: 400 });
+      await h.engine.start(OWNER);
+      expect(h.rows.get("a")?.sync.state).toBe("synced");
+      expect(h.deletions.has("x")).toBe(true);
+      expect(h.rows.has("x")).toBe(false);
+      expect(h.api.get).not.toHaveBeenCalledWith("x");
+      expect(h.status()).toMatchObject({ phase: "error", pendingCount: 1 });
+      expect(h.pendingDelays()).toEqual([1_000]);
+    });
+
+    it("retries a skipped tombstone with backoff and trashes it once Drive accepts", async () => {
+      const h = setup({ remote: [row("x", 200, "synced")], deletions: [{ id: "x", ownerId: OWNER, deletedAt: 300 }] });
+      h.api.remove.mockResolvedValueOnce({ ok: false, kind: "failed", status: 400 });
+      await h.engine.start(OWNER);
+      h.advance(1_000);
+      await vi.waitFor(() => expect(h.deletions.size).toBe(0));
+      expect(h.status().phase).toBe("idle");
+    });
+
+    it("still aborts the pass for a tombstone failure that is not the row's (offline, reauth, retry)", async () => {
+      const h = setup({ local: [row("a", 100, "dirty")], deletions: [{ id: "x", ownerId: OWNER, deletedAt: 300 }] });
+      h.api.remove.mockResolvedValueOnce({ ok: false, kind: "offline" });
+      await h.engine.start(OWNER);
+      expect(h.status().phase).toBe("offline");
+      expect(h.api.save).not.toHaveBeenCalled();
+    });
+
+    it("reports a full Drive, stops pushing, and backs off", async () => {
+      const h = setup({ local: [row("a", 100, "dirty"), row("b", 200, "dirty")] });
+      h.api.save.mockResolvedValueOnce({ ok: false, kind: "driveFull" });
+      await h.engine.start(OWNER);
+      expect(h.api.save).toHaveBeenCalledTimes(1);
+      expect(h.status()).toMatchObject({ phase: "error", driveFull: true, pendingCount: 2 });
+      expect(h.pendingDelays()).toEqual([1_000]);
+    });
+
+    it("clears the Drive-full flag once a pass completes", async () => {
+      const h = setup({ local: [row("a", 100, "dirty")] });
+      h.api.save.mockResolvedValueOnce({ ok: false, kind: "driveFull" });
+      await h.engine.start(OWNER);
+      h.advance(1_000);
+      await vi.waitFor(() => expect(h.rows.get("a")?.sync.state).toBe("synced"));
+      expect(h.status()).toMatchObject({ phase: "idle", driveFull: false });
+    });
+
+    it("reports a full Drive from a tombstone too", async () => {
+      const h = setup({ deletions: [{ id: "x", ownerId: OWNER, deletedAt: 300 }] });
+      h.api.remove.mockResolvedValueOnce({ ok: false, kind: "driveFull" });
+      await h.engine.start(OWNER);
+      expect(h.status()).toMatchObject({ phase: "error", driveFull: true });
+    });
+  });
+
+  describe("tombstone stamps and the Drive-full flag", () => {
     it("restamps a tombstone whose deletedAt is far ahead of the clock before sending it", async () => {
       const h = setup({ remote: [row("x", 200, "synced")], deletions: [{ id: "x", ownerId: OWNER, deletedAt: 1_000 + 365 * 24 * 3_600_000 }] });
       await h.engine.start(OWNER);
@@ -804,6 +965,25 @@ describe("sync engine", () => {
       const h = setup({ remote: [row("x", 200, "synced")], deletions: [{ id: "x", ownerId: OWNER, deletedAt: 300 }] });
       await h.engine.start(OWNER);
       expect(h.api.remove).toHaveBeenCalledWith("x", 300);
+    });
+
+    it("drops the Drive-full flag when the next failure has another cause", async () => {
+      const h = setup({ local: [row("a", 100, "dirty")] });
+      h.api.save.mockResolvedValueOnce({ ok: false, kind: "driveFull" });
+      await h.engine.start(OWNER);
+      expect(h.status().driveFull).toBe(true);
+      h.api.list.mockResolvedValueOnce({ ok: false, kind: "offline" });
+      h.advance(1_000);
+      await vi.waitFor(() => expect(h.status()).toMatchObject({ phase: "offline", driveFull: false }));
+    });
+
+    it("drops the flag when the device goes offline between passes", async () => {
+      const h = setup({ local: [row("a", 100, "dirty")] });
+      h.api.save.mockResolvedValueOnce({ ok: false, kind: "driveFull" });
+      await h.engine.start(OWNER);
+      h.setOnline(false);
+      h.advance(1_000);
+      await vi.waitFor(() => expect(h.status()).toMatchObject({ phase: "offline", driveFull: false }));
     });
   });
 });

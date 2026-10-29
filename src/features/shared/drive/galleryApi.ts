@@ -10,6 +10,8 @@
 export const MAX_SYNC_BODY_BYTES = 4_000_000;
 /** How far ahead of the server clock an `updatedAt` / `deletedAt` may be before the server refuses it. */
 export const MAX_CLOCK_SKEW_MS = 5 * 60_000;
+/** Longest Drive file base name; also the longest title that stays whole in the Drive listing. */
+export const DRIVE_FILE_NAME_MAX = 100;
 export const ARTWORK_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
 export function galleryArtworkUrl(id: string): string {

@@ -60,6 +60,8 @@ async function toFailure<T>(response: Response): Promise<TApiResult<T>> {
     }
     case 413:
       return { ok: false, kind: "tooLarge" };
+    case 507:
+      return { ok: false, kind: "driveFull" };
     case 429:
     case 503:
       return { ok: false, kind: "retry", retryAfterMs: retryAfterMs(response) };
