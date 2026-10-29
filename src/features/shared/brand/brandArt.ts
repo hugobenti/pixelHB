@@ -33,6 +33,15 @@ export const WORDMARK_GRID: TBrandGrid = [
   "i.....iii.i...i..iiii.iii.h...h.hhhh.",
 ];
 
+/** Wordmark column where "HB" starts; the empty column before it separates it from "Pixel". */
+const WORDMARK_HB_COLUMN = 26;
+
+/** "Pixel" alone, from the wordmark. 25 × 7. */
+export const PIXEL_WORD_GRID: TBrandGrid = WORDMARK_GRID.map((row) => row.slice(0, WORDMARK_HB_COLUMN - 1));
+
+/** "HB" alone, from the wordmark. 11 × 7. */
+export const HB_WORD_GRID: TBrandGrid = WORDMARK_GRID.map((row) => row.slice(WORDMARK_HB_COLUMN));
+
 /** The pencil with a long body stamped "PIXEL HB", for banners and the social image. 50 × 7. */
 export const BRAND_PENCIL_GRID: TBrandGrid = [
   ".eeeemMmyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyww.......",

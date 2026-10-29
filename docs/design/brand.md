@@ -101,13 +101,14 @@ The pencil seen from its tip: amber hexagon (lit from the top left), wood ring, 
 
 ## Lockups
 
-| Lockup       | Build                                                                   | Use                                 |
-| ------------ | ----------------------------------------------------------------------- | ----------------------------------- |
-| Horizontal   | Pencil, a gap of 4 pixels, wordmark; both 7 pixels tall and top-aligned | App header, anywhere wide and short |
-| Stacked      | Pencil centered above the wordmark, 3 pixels apart                      | Square-ish spaces                   |
-| Brand pencil | The banner mark alone                                                   | README banner, social image         |
-| Pencil alone | The primary mark alone                                                  | Small wide spaces                   |
-| Square icon  | Pencil end alone                                                        | Favicon, app icons, anything square |
+| Lockup          | Build                                                                   | Use                                    |
+| --------------- | ----------------------------------------------------------------------- | -------------------------------------- |
+| Horizontal      | Pencil, a gap of 4 pixels, wordmark; both 7 pixels tall and top-aligned | App header, anywhere wide and short    |
+| Stacked         | Pencil centered above the wordmark, 3 pixels apart                      | Square-ish spaces                      |
+| Brand pencil    | The banner mark alone                                                   | README banner, social image            |
+| Pencil alone    | The primary mark alone                                                  | Small wide spaces                      |
+| Square icon     | Pencil end alone                                                        | Favicon, app icons, anything square    |
+| Square wordmark | "Pixel" centered above "HB" drawn 2× larger, 2 pixels apart             | Square spaces that must name the brand |
 
 "Pixels" in lockup measurements are logo pixels, so they scale with the logo.
 
@@ -178,6 +179,7 @@ xxxxx.xx.xxx.x.x..xxxxxx.xxx.....
 | PWA icons 192 and 512, plus a maskable 512 | Same tile; the maskable keeps the hexagon inside the central 80% safe zone                                                               |
 | Web app manifest                           | name `PixelHB`, short name `PixelHB`, theme and background colors from the light tokens                                                  |
 | Open Graph / social image, 1200 × 630      | Brand pencil centered on paper `#ECE9E1` with a faint pixel grid, and below it **Pixel-art editor for the browser** in Schibsted Grotesk |
+| OAuth consent-screen logo, 120 × 120       | Square wordmark at 4× ("HB" at 8×) centered on surface `#FCFBF7`, no transparency: `public/brand/pixelhb-logo-120.png`                   |
 | Logo SVGs                                  | Horizontal lockup (light and dark) and brand pencil, for the README and docs                                                             |
 
 ## In the product
