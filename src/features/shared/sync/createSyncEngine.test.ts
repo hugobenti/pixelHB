@@ -528,4 +528,42 @@ describe("sync engine", () => {
       await vi.waitFor(() => expect(h.status().pendingCount).toBe(1));
     });
   });
+
+  describe("clock safety (H2, M2)", () => {
+    it("skips a row the server refuses for its timestamp, uploads the rest, and reports the row", async () => {
+      const h = setup({ local: [row("future", 100, "dirty"), row("ok", 200, "dirty")] });
+      const save = h.api.save.getMockImplementation()!;
+      h.api.save.mockImplementation(async (request) => (request.artwork.id === "future" ? { ok: false, kind: "clockSkew" } : save(request)));
+      await h.engine.start(OWNER);
+      expect(h.rows.get("ok")?.sync.state).toBe("synced");
+      expect(h.rows.get("future")?.sync.state).toBe("dirty");
+      expect(h.status()).toMatchObject({ phase: "error", clockSkewIds: ["future"] });
+      expect(h.pendingDelays()).toEqual([1_000]);
+    });
+
+    it("forgets the clock problem once the row uploads", async () => {
+      const h = setup({ local: [row("future", 100, "dirty")] });
+      h.api.save.mockResolvedValueOnce({ ok: false, kind: "clockSkew" });
+      await h.engine.start(OWNER);
+      expect(h.status().clockSkewIds).toEqual(["future"]);
+      h.advance(1_000);
+      await vi.waitFor(() => expect(h.rows.get("future")?.sync.state).toBe("synced"));
+      expect(h.status()).toMatchObject({ clockSkewIds: [], phase: "idle" });
+    });
+  });
+
+  describe("tombstone stamps", () => {
+    it("restamps a tombstone whose deletedAt is far ahead of the clock before sending it", async () => {
+      const h = setup({ remote: [row("x", 200, "synced")], deletions: [{ id: "x", ownerId: OWNER, deletedAt: 1_000 + 365 * 24 * 3_600_000 }] });
+      await h.engine.start(OWNER);
+      expect(h.api.remove).toHaveBeenCalledWith("x", 1_000);
+      expect(h.deletions.size).toBe(0);
+    });
+
+    it("sends a tombstone within the tolerance as stored", async () => {
+      const h = setup({ remote: [row("x", 200, "synced")], deletions: [{ id: "x", ownerId: OWNER, deletedAt: 300 }] });
+      await h.engine.start(OWNER);
+      expect(h.api.remove).toHaveBeenCalledWith("x", 300);
+    });
+  });
 });

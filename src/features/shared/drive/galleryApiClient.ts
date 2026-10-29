@@ -43,6 +43,12 @@ async function toFailure<T>(response: Response): Promise<TApiResult<T>> {
       const body = await readErrorBody(response);
       return { ok: false, kind: body.code === "reauth" ? "reauth" : "unauthenticated" };
     }
+    case 400: {
+      const body = await readErrorBody(response);
+      return body.code === "clock_skew"
+        ? { ok: false, kind: "clockSkew" }
+        : { ok: false, kind: "failed", status: response.status };
+    }
     case 404:
       return { ok: false, kind: "notFound" };
     case 409: {

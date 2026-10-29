@@ -19,6 +19,7 @@ import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import type { IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 import { isThumbnailCurrent } from "@/features/shared/artwork/thumbnailFreshness";
+import { tombstoneStampToSend } from "@/features/shared/artwork/updatedAtStamp";
 import type { IGalleryListItem } from "@/features/shared/drive/galleryApi.type";
 import type { IGalleryApiClient, TApiResult } from "@/features/shared/drive/galleryApiClient.type";
 import { pngBase64FromDataUrl, remoteFileToArtwork } from "./logic/remoteArtwork";
@@ -46,6 +47,7 @@ export const INITIAL_SYNC_STATUS: ISyncStatus = {
   remoteOnly: [],
   tooLargeIds: [],
   lastSyncedAt: null,
+  clockSkewIds: [],
 };
 
 /** Thrown to unwind a pass that was stopped or already reported its failure. */
@@ -103,6 +105,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   const running = new Set<Promise<void>>();
   const deferred = new Set<string>();
   const tooLarge = new Set<string>();
+  const clockSkew = new Set<string>();
   const rowListeners = new Set<() => void>();
 
   function track(work: Promise<unknown>): void {
@@ -179,7 +182,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     if (gen !== generation) return;
     try {
       const pendingCount = await store.countUnsynced(owner);
-      update(gen, { pendingCount, tooLargeIds: [...tooLarge] });
+      update(gen, { pendingCount, tooLargeIds: [...tooLarge], clockSkewIds: [...clockSkew] });
     } catch {
       // A failed count leaves the previous one; the next pass publishes again.
     }
@@ -242,6 +245,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     const written = await store.putFromRemote(owner, { ...artwork, thumbnail }, local ? expectedOf(local) : undefined);
     if (!written) return "skipped";
     tooLarge.delete(id);
+    clockSkew.delete(id);
     dropRemoteOnly(gen, id);
     emitRows(gen);
     return "written";
@@ -271,7 +275,10 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     const { owner, gen } = ctx;
     const row = await store.getStored(id);
     guard(gen);
-    if (!row || row.ownerId !== owner || row.sync.state === "tooLarge") return;
+    if (!row || row.ownerId !== owner || row.sync.state === "tooLarge") {
+      if (!row) clockSkew.delete(id);
+      return;
+    }
     const previewPngBase64 = previewFor(row);
     if (previewPngBase64 === null) {
       deps.warn("No preview could be made for artwork", id);
@@ -283,12 +290,17 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     if (result.ok) {
       await store.markSynced(id, result.value.updatedAt);
       tooLarge.delete(id);
+      clockSkew.delete(id);
       emitRows(gen);
     } else if (result.kind === "conflict") {
       if ((await pullOne(ctx, id)) === "deferred") ctx.deferredIds.add(id);
     } else if (result.kind === "tooLarge") {
       if (await store.markTooLarge(id, row.updatedAt)) tooLarge.add(id);
       emitRows(gen);
+    } else if (result.kind === "clockSkew") {
+      deps.warn("Server refused the artwork timestamp: the device clock looks ahead", id);
+      clockSkew.add(id);
+      ctx.failedIds.add(id);
     } else if (result.kind === "failed") {
       deps.warn("Drive rejected artwork", id);
       ctx.failedIds.add(id);
@@ -352,10 +364,11 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
 
     for (const deletion of await store.listDeletions(owner)) {
       guard(gen);
-      const result = await api.remove(deletion.id, deletion.deletedAt);
+      const result = await api.remove(deletion.id, tombstoneStampToSend(deletion.deletedAt, deps.now()));
       guard(gen);
       if (result.ok) {
         await store.dropDeletion(deletion.id);
+        clockSkew.delete(deletion.id);
         remote?.delete(deletion.id);
       } else if (result.kind === "conflict") {
         // Edited on another device after the delete: the edit wins, so pull it back.
@@ -395,17 +408,17 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
 
     registerDeferred(ctx);
     const pendingCount = await store.countUnsynced(owner);
+    const summary: Partial<ISyncStatus> = {
+      pendingCount,
+      tooLargeIds: [...tooLarge],
+      clockSkewIds: [...clockSkew],
+    };
     if (ctx.failedIds.size > 0) {
-      update(gen, { pendingCount, tooLargeIds: [...tooLarge], phase: "error" });
+      update(gen, { ...summary, phase: "error" });
       scheduleRetry(gen, retryDelayMs(attempt++, null));
       return true;
     }
-    update(gen, {
-      pendingCount,
-      tooLargeIds: [...tooLarge],
-      phase: "idle",
-      lastSyncedAt: deps.now(),
-    });
+    update(gen, { ...summary, phase: "idle", lastSyncedAt: deps.now() });
     if (kind === "full") {
       attempt = 0;
       cancelRetry();
@@ -482,6 +495,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     loop = null;
     deferred.clear();
     tooLarge.clear();
+    clockSkew.clear();
     cancelDebounce();
     cancelRetry();
     for (const unsubscribe of unsubscribers) unsubscribe();

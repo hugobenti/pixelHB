@@ -12,7 +12,7 @@
 import { parseArtworkFile, serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import { DRIVE_SYNC_ENABLED } from "@/features/shared/auth/driveSyncFlag";
 import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
-import { ARTWORK_ID_PATTERN, MAX_SYNC_BODY_BYTES } from "../galleryApi";
+import { ARTWORK_ID_PATTERN, MAX_CLOCK_SKEW_MS, MAX_SYNC_BODY_BYTES } from "../galleryApi";
 import type { IGalleryErrorResponse } from "../galleryApi.type";
 import { createDriveArtworkStore } from "./driveArtworkStore";
 import type { IDriveArtworkStore } from "./driveArtworkStore.type";
@@ -42,6 +42,7 @@ const HTTP_SERVER_ERROR = 500;
 
 const BAD_REQUEST: TRequestRejection = { ok: false, status: 400, code: "bad_request" };
 const TOO_LARGE: TRequestRejection = { ok: false, status: 413, code: "too_large" };
+const CLOCK_SKEW: TRequestRejection = { ok: false, status: 400, code: "clock_skew" };
 
 export function galleryErrorResponse(
   status: number,
@@ -127,7 +128,12 @@ function decodePng(base64: string): Uint8Array | null {
     : null;
 }
 
-function parseSaveBody(body: unknown, id: string): TSaveRequestResult {
+/** A stamp ahead of the server clock by more than the tolerance would freeze the artwork on every device. */
+function isTooFarAhead(stamp: number, nowMs: number): boolean {
+  return stamp > nowMs + MAX_CLOCK_SKEW_MS;
+}
+
+function parseSaveBody(body: unknown, id: string, nowMs: number): TSaveRequestResult {
   if (!isPlainObject(body) || !isPlainObject(body.artwork) || typeof body.previewPngBase64 !== "string") {
     return BAD_REQUEST;
   }
@@ -142,6 +148,9 @@ function parseSaveBody(body: unknown, id: string): TSaveRequestResult {
   const { meta, data } = parsed;
   if (!Number.isSafeInteger(meta.createdAt) || !Number.isSafeInteger(meta.updatedAt)) {
     return BAD_REQUEST;
+  }
+  if (isTooFarAhead(meta.updatedAt, nowMs)) {
+    return CLOCK_SKEW;
   }
   const previewPng = decodePng(previewPngBase64);
   if (!previewPng) {
@@ -167,6 +176,7 @@ export async function readSaveRequest(
   request: Request,
   id: string,
   limits: ISaveBodyLimits = DEFAULT_LIMITS,
+  nowMs: number = Date.now(),
 ): Promise<TSaveRequestResult> {
   try {
     const compressed = await readBodyBytes(request, limits.maxCompressedBytes);
@@ -182,13 +192,13 @@ export async function readSaveRequest(
       }
     }
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    return parseSaveBody(JSON.parse(text), id);
+    return parseSaveBody(JSON.parse(text), id, nowMs);
   } catch {
     return BAD_REQUEST;
   }
 }
 
-export async function readDeleteRequest(request: Request): Promise<TDeleteRequestResult> {
+export async function readDeleteRequest(request: Request, nowMs: number = Date.now()): Promise<TDeleteRequestResult> {
   try {
     const bytes = await readBodyBytes(request, MAX_DELETE_BODY_BYTES);
     if (bytes === null) {
@@ -199,9 +209,10 @@ export async function readDeleteRequest(request: Request): Promise<TDeleteReques
       return BAD_REQUEST;
     }
     const { deletedAt } = body;
-    return typeof deletedAt === "number" && Number.isSafeInteger(deletedAt) && deletedAt >= 0
-      ? { ok: true, deletedAt }
-      : BAD_REQUEST;
+    if (typeof deletedAt !== "number" || !Number.isSafeInteger(deletedAt) || deletedAt < 0) {
+      return BAD_REQUEST;
+    }
+    return isTooFarAhead(deletedAt, nowMs) ? CLOCK_SKEW : { ok: true, deletedAt };
   } catch {
     return BAD_REQUEST;
   }
