@@ -41,6 +41,7 @@ const textPairs = [
   ["danger-fg", "danger-surface"],
   ["danger-fg-strong", "danger-surface"],
   ["success-fg", "success-surface"],
+  ["google-btn-text", "google-btn-fill"],
 ];
 
 const uiPairs = [
@@ -64,6 +65,9 @@ const uiPairs = [
   ["control-border", "bg"],
   ["control-border", "surface"],
   ["control-border", "surface-subtle"],
+  ["google-btn-stroke", "google-btn-fill"],
+  ["google-btn-stroke", "bg"],
+  ["google-btn-stroke", "surface"],
 ];
 
 describe.each(themes)("%s theme tokens meet WCAG 2.2 AA", (_name, tokens) => {

@@ -68,6 +68,18 @@
   --color-loupe-edge-dark: #000000;
   --color-loupe-edge-light: #ffffff;
 
+  /* Sign in with Google button: Google's brand colors, a required exception to the palette. The
+   * Sign in with Google branding guidelines fix the fill, stroke and text of the light and dark
+   * buttons (developers.google.com/identity/branding-guidelines); `state` is the hover/press overlay
+   * from Google's own HTML button. Use them for that button only. */
+  --color-google-btn-fill: #ffffff;
+  --color-google-btn-stroke: #747775;
+  --color-google-btn-text: #1f1f1f;
+  --color-google-btn-state: #303030;
+
+  /* Google's hover elevation for the same button */
+  --shadow-google-btn: 0 1px 2px 0 rgb(60 64 67 / 0.3), 0 1px 3px 1px rgb(60 64 67 / 0.15);
+
   /* Radius: sharp controls, softer sheets */
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -78,6 +90,8 @@
 @theme inline {
   --font-sans: var(--font-schibsted-grotesk);
   --font-mono: var(--font-jetbrains-mono);
+  /* Google Sans Medium: the Sign in with Google button only (Google's branding guidelines) */
+  --font-google-btn: var(--font-google-sans);
 }
 
 /* Dark theme: warm graphite. Same token names, every color overridden. */
@@ -135,11 +149,21 @@
   --color-loupe-edge-dark: #000000;
   --color-loupe-edge-light: #ffffff;
 
+  /* Sign in with Google button: Google's dark-theme brand colors */
+  --color-google-btn-fill: #131314;
+  --color-google-btn-stroke: #8e918f;
+  --color-google-btn-text: #e3e3e3;
+  --color-google-btn-state: #ffffff;
+  --google-btn-logo: url("/brand/google-g-dark.png");
+
   color-scheme: dark;
 }
 
 html {
   color-scheme: light;
+  /* The Google "G" of the Sign in with Google button, on the light fill; the dark block swaps in the
+   * one on the dark fill. Sources (Google's signin-assets.zip): AccountControl.style.ts. */
+  --google-btn-logo: url("/brand/google-g-light.png");
 }
 
 /* Font, size (14/20) and color come from utilities on <body> (layout.style.ts); unlayered rules here

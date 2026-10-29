@@ -34,7 +34,6 @@ export interface IShellContent {
     signIn: string;
     openAccount: string;
     signOut: string;
-    signInAgain: string;
     reauthNote: string;
     signingOut: string;
     reconnecting: string;
