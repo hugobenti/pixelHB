@@ -31,8 +31,8 @@ export function LayersDrawer(props: ILayersDrawerProps) {
     height,
     onSelectLayer,
     onToggleVisibility,
+    maxLayersReached,
     onAddLayer,
-    onCopyLayer,
   } = props;
   const {
     panelEntered,
@@ -42,6 +42,8 @@ export function LayersDrawer(props: ILayersDrawerProps) {
     layerIds,
     handleRenameClick,
     handleDeleteClick,
+    handleCopyClick,
+    limitNote,
     deleteDialog,
     renameSession,
     dismissRename,
@@ -65,10 +67,12 @@ export function LayersDrawer(props: ILayersDrawerProps) {
               type="button"
               variant="primary"
               className={layersDrawer.addButton}
+              disabled={maxLayersReached}
               onClick={onAddLayer}
             >
               {editor.layers.add}
             </Button>
+            {limitNote ? <p className={layersDrawer.limitNote}>{limitNote}</p> : null}
           </div>
         }
         footer={<footer className={layersDrawer.footer}>{editor.layers.footer}</footer>}
@@ -91,7 +95,7 @@ export function LayersDrawer(props: ILayersDrawerProps) {
                     height={height}
                     onSelectLayer={onSelectLayer}
                     onToggleVisibility={onToggleVisibility}
-                    onCopyLayer={onCopyLayer}
+                    onCopyLayer={handleCopyClick}
                     onRenameClick={handleRenameClick}
                     onDeleteClick={handleDeleteClick}
                     drawerOpen={panelEntered}

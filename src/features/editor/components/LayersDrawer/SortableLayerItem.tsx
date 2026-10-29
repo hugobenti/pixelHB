@@ -27,6 +27,7 @@ export function SortableLayerItem(props: ISortableLayerItemProps) {
     visibilityIcon,
     select,
     toggleVisibility,
+    canCopy,
     copy,
     rename,
     canDelete,
@@ -74,6 +75,7 @@ export function SortableLayerItem(props: ISortableLayerItemProps) {
           <IconButton
             icon={LAYER_ICON_SRC.copy}
             label={editor.layers.item.duplicate}
+            disabled={!canCopy}
             onClick={copy}
           />
           <IconButton

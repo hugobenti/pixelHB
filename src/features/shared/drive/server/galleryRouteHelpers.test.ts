@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
-import { MAX_CLOCK_SKEW_MS } from "../galleryApi";
+import { MAX_CLOCK_SKEW_MS, MAX_INFLATED_BODY_BYTES } from "../galleryApi";
 import type { IDrivePreview } from "./driveArtworkStore.type";
 import { DriveError } from "./driveRest";
 import {
@@ -372,5 +372,13 @@ describe("preview responses", () => {
     const response = await previewResponse(get(), ID, current);
     expect(response.status).toBe(404);
     expect(response.headers.get("Cache-Control")).toBe("private, no-store");
+  });
+});
+
+describe("request limits", () => {
+  it("caps the inflated save body at 32 MiB by default", async () => {
+    expect(MAX_INFLATED_BODY_BYTES).toBe(32 * 1024 * 1024);
+    const request = await saveRequest({ pad: "0".repeat(MAX_INFLATED_BODY_BYTES) });
+    expect(await readSaveRequest(request, ID)).toEqual(TOO_LARGE);
   });
 });

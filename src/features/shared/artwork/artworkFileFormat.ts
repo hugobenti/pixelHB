@@ -10,10 +10,12 @@
 import { shared } from "@/content/shared";
 import type { IArtwork, IArtworkLayer } from "./artwork.type";
 import type { IArtworkFileV3, IArtworkFileMeta, IParsedArtworkFile } from "./artworkFileService.type";
-import { MAX_PALETTE_ENTRIES, validateDimensions } from "./artworkLimits";
+import { MAX_LAYERS, MAX_PALETTE_ENTRIES, MAX_REFERENCE_IMAGE_DATA_URL_LENGTH, validateDimensions } from "./artworkLimits";
 
 const FILE_SCHEMA_VERSION = 3;
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
+/** Only inline raster images: a remote URL would leak the viewer's IP to whoever wrote the file. */
+const REFERENCE_IMAGE_DATA_URL = /^data:image\/(png|jpeg|webp|gif|bmp);base64,[A-Za-z0-9+/=]+$/;
 const BASE64_CHUNK_BYTES = 0x8000;
 
 function uint8ArrayToBase64(buffer: Uint8Array): string {
@@ -145,7 +147,7 @@ function validate(raw: unknown): IParsedArtworkFile {
     }
   }
 
-  if (!Array.isArray(file.layers) || file.layers.length === 0) {
+  if (!Array.isArray(file.layers) || file.layers.length === 0 || file.layers.length > MAX_LAYERS) {
     return invalid();
   }
   const pixelCount = (width as number) * (height as number);
@@ -156,7 +158,14 @@ function validate(raw: unknown): IParsedArtworkFile {
       ? file.activeLayerId
       : layers[0].id;
 
-  if (file.referenceImageDataUrl != null && typeof file.referenceImageDataUrl !== "string") {
+  // An empty string is how some older rows said "no reference"; it reads as none.
+  const reference = file.referenceImageDataUrl === "" ? null : file.referenceImageDataUrl;
+  if (
+    reference != null &&
+    (typeof reference !== "string" ||
+      reference.length > MAX_REFERENCE_IMAGE_DATA_URL_LENGTH ||
+      !REFERENCE_IMAGE_DATA_URL.test(reference))
+  ) {
     return invalid();
   }
 
@@ -169,7 +178,7 @@ function validate(raw: unknown): IParsedArtworkFile {
       palette: [...(palette as string[])],
       layers,
       activeLayerId,
-      referenceImageDataUrl: file.referenceImageDataUrl ?? undefined,
+      referenceImageDataUrl: reference ?? undefined,
     },
   };
 }

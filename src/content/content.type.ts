@@ -356,6 +356,8 @@ export interface IEditorContent {
     title: string;
     closeLabel: string;
     add: string;
+    /** Shown in place of adding once the artwork has the most layers it can hold. */
+    limitReached: (max: number) => string;
     footer: string;
     newLayerName: (position: number) => string;
     item: {

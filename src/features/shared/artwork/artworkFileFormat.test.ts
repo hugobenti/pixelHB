@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import type { IArtwork } from "./artwork.type";
 import { parseArtworkFile, serializeArtworkFile } from "./artworkFileFormat";
+import { MAX_LAYERS, MAX_REFERENCE_IMAGE_DATA_URL_LENGTH } from "./artworkLimits";
 
 const b64 = (bytes: number[]) => Buffer.from(bytes).toString("base64");
 
@@ -39,6 +40,10 @@ function v2File(overrides: Record<string, unknown> = {}): Record<string, unknown
 
 function v3File(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return { ...v2File(), version: 3, id: "art-9", createdAt: 10, updatedAt: 20, ...overrides };
+}
+
+function layersOf(count: number) {
+  return Array.from({ length: count }, (_, i) => ({ id: `l${i}`, name: "L", visible: true, pixelDataBase64: b64([0, 1]) }));
 }
 
 describe("serializeArtworkFile + parseArtworkFile", () => {
@@ -124,7 +129,35 @@ describe("parseArtworkFile", () => {
     ["v3 with string updatedAt", v3File({ updatedAt: "20" })],
     ["a string", "hello"],
     ["null", null],
+    [`more than ${MAX_LAYERS} layers`, v2File({ layers: layersOf(MAX_LAYERS + 1) })],
+    ["a reference image that is a remote URL", v3File({ referenceImageDataUrl: "https://tracker.example/p.png" })],
+    ["a reference image of an unlisted type", v3File({ referenceImageDataUrl: "data:image/svg+xml;base64,PHN2Zz4=" })],
+    ["a reference image that is not base64", v3File({ referenceImageDataUrl: "data:image/png;base64,AA AA" })],
+    ["a reference image without the base64 marker", v3File({ referenceImageDataUrl: "data:image/png,AAAA" })],
+    [
+      "a reference image over the length cap",
+      v3File({
+        referenceImageDataUrl: `data:image/png;base64,${"A".repeat(MAX_REFERENCE_IMAGE_DATA_URL_LENGTH)}`,
+      }),
+    ],
   ])("rejects %s", (_label, raw) => {
     expect(parseArtworkFile(raw)).toBeNull();
+  });
+
+  test(`accepts exactly ${MAX_LAYERS} layers`, () => {
+    expect(parseArtworkFile(v2File({ layers: layersOf(MAX_LAYERS) }))?.data.layers).toHaveLength(MAX_LAYERS);
+  });
+
+  test.each(["png", "jpeg", "webp", "gif", "bmp"])("accepts a base64 %s reference image", (type) => {
+    const referenceImageDataUrl = `data:image/${type};base64,iVBORw0K+/A=`;
+    expect(parseArtworkFile(v3File({ referenceImageDataUrl }))?.data.referenceImageDataUrl).toBe(
+      referenceImageDataUrl,
+    );
+  });
+
+  test("reads a missing, null or empty reference image as none", () => {
+    expect(parseArtworkFile(v3File())?.data.referenceImageDataUrl).toBeUndefined();
+    expect(parseArtworkFile(v3File({ referenceImageDataUrl: null }))?.data.referenceImageDataUrl).toBeUndefined();
+    expect(parseArtworkFile(v3File({ referenceImageDataUrl: "" }))?.data.referenceImageDataUrl).toBeUndefined();
   });
 });

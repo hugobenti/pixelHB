@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import { createGalleryApiClient } from "./galleryApiClient";
-import { MAX_SYNC_BODY_BYTES } from "./galleryApi";
+import { MAX_INFLATED_BODY_BYTES, MAX_SYNC_BODY_BYTES } from "./galleryApi";
 
 const ID = "3f1c9a52-0000-4000-8000-000000000001";
 const PNG_BASE64 =
@@ -26,6 +26,16 @@ describe("galleryApiClient", () => {
     const previewPngBase64 = randomBytes(5_000_000).toString("base64"); // incompressible, gzip ≈ 5 MB
     const result = await createGalleryApiClient(fetchFn).save({ artwork, previewPngBase64 });
     expect(MAX_SYNC_BODY_BYTES).toBe(4_000_000);
+    expect(result).toEqual({ ok: false, kind: "tooLarge" });
+    expect(fetchFn).not.toHaveBeenCalled();
+  });
+
+  it("save returns tooLarge without calling fetch when the JSON is over the server's inflated cap", async () => {
+    const fetchFn = fetchReturning(new Response(null, { status: 500 }));
+    // Highly compressible: gzip is tiny, but the server would refuse it after inflating.
+    const previewPngBase64 = "A".repeat(MAX_INFLATED_BODY_BYTES);
+    const result = await createGalleryApiClient(fetchFn).save({ artwork, previewPngBase64 });
+    expect(MAX_INFLATED_BODY_BYTES).toBe(32 * 1024 * 1024);
     expect(result).toEqual({ ok: false, kind: "tooLarge" });
     expect(fetchFn).not.toHaveBeenCalled();
   });
