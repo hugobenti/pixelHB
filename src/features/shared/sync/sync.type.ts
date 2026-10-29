@@ -13,6 +13,8 @@ export interface ISyncStatus {
   remoteOnly: IGalleryListItem[];
   tooLargeIds: string[];
   lastSyncedAt: number | null;
+  /** Artworks the server refused because this device's clock is ahead of it. */
+  clockSkewIds: string[];
 }
 
 export type TSyncPassKind = "full" | "push";

@@ -34,6 +34,7 @@ export type TGalleryErrorCode =
   | "reauth"
   | "conflict"
   | "bad_request"
+  | "clock_skew"
   | "too_large"
   | "drive_error"
   | "drive_unavailable";

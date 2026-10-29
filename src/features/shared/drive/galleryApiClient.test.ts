@@ -57,6 +57,9 @@ describe("galleryApiClient", () => {
     ["503 without Retry-After", Response.json({ code: "drive_unavailable" }, { status: 503 }), { ok: false, kind: "retry", retryAfterMs: 30_000 }],
     ["429 with an HTTP-date Retry-After", new Response(null, { status: 429, headers: { "Retry-After": "Wed, 21 Oct 2026 07:28:00 GMT" } }), { ok: false, kind: "retry", retryAfterMs: 30_000 }],
     ["502", Response.json({ code: "drive_error" }, { status: 502 }), { ok: false, kind: "failed", status: 502 }],
+    ["400 clock_skew", Response.json({ code: "clock_skew" }, { status: 400 }), { ok: false, kind: "clockSkew" }],
+    ["400 bad_request", Response.json({ code: "bad_request" }, { status: 400 }), { ok: false, kind: "failed", status: 400 }],
+    ["400 with an unparsable body", new Response("<html>", { status: 400 }), { ok: false, kind: "failed", status: 400 }],
     ["200 with a non-JSON body", new Response("<html>", { status: 200 }), { ok: false, kind: "failed", status: 200 }],
   ])("get maps %s", async (_label, response, expected) => {
     const result = await createGalleryApiClient(fetchReturning(response)).get(ID);

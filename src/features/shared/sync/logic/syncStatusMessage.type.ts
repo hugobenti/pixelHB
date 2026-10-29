@@ -1,12 +1,19 @@
 export type TSyncMessageKey =
-  "thisBrowserOnly" | "syncing" | "saved" | "offline" | "signInAgain" | "tooLarge" | "unconfirmed";
+  | "thisBrowserOnly"
+  | "syncing"
+  | "saved"
+  | "offline"
+  | "signInAgain"
+  | "tooLarge"
+  | "unconfirmed"
+  | "clockSkew";
 
 export type TSyncTone = "neutral" | "progress" | "attention";
 
 export interface ISyncStatusMessage {
   key: TSyncMessageKey;
   tone: TSyncTone;
-  /** Too-large artworks for `tooLarge`, otherwise 0. */
+  /** Artworks the message is about for `tooLarge` and `clockSkew`, otherwise 0. */
   count: number;
   /** Whose drawings an `unconfirmed` message says are shown; empty when the name is unknown. */
   name?: string;

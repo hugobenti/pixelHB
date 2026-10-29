@@ -12,6 +12,8 @@ export type TApiResult<T> =
   | { ok: false; kind: "unauthenticated" }
   | { ok: false; kind: "reauth" }
   | { ok: false; kind: "tooLarge" }
+  /** The server refused a timestamp too far ahead of its clock: this device's clock is wrong. */
+  | { ok: false; kind: "clockSkew" }
   | { ok: false; kind: "notFound" }
   | { ok: false; kind: "retry"; retryAfterMs: number }
   /** 400/502/unexpected/unparsable: push stays dirty and backs off; a pull `get` skips the item. */

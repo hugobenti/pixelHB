@@ -78,6 +78,7 @@ export interface ISharedContent {
     signInAgain: string;
     tooLarge: (count: number) => string;
     unconfirmed: (name: string | undefined) => string;
+    clockSkew: (count: number) => string;
     openDriveFolder: string;
     /** Screen-reader suffix of a link that opens a new tab. */
     opensInNewTab: string;

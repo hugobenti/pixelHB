@@ -23,6 +23,7 @@ export function useSyncStatus(): ISyncStatus {
       remoteOnly: state.remoteOnly,
       tooLargeIds: state.tooLargeIds,
       lastSyncedAt: state.lastSyncedAt,
+      clockSkewIds: state.clockSkewIds,
     })),
   );
 }

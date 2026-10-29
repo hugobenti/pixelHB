@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { shared } from "@/content/shared";
 import type { IAccountState } from "@/features/shared/auth/auth.type";
 import type { ISyncStatus } from "@/features/shared/sync/sync.type";
 import { syncStatusMessage, syncStatusText } from "./syncStatusMessage";
@@ -13,6 +14,7 @@ const idle: ISyncStatus = {
   remoteOnly: [],
   tooLargeIds: [],
   lastSyncedAt: 1,
+  clockSkewIds: [],
 };
 
 describe("syncStatusMessage", () => {
@@ -122,5 +124,23 @@ describe("syncStatusMessage", () => {
     expect(syncStatusText({ key: "unconfirmed", tone: "neutral", count: 0 })).toContain(
       "Showing your drawings here; changes sync once we can.",
     );
+  });
+
+  describe("clock skew", () => {
+    it("says the clock looks wrong, ahead of offline, counting the artworks that cannot sync", () => {
+      const skewed: ISyncStatus = { ...idle, phase: "error", pendingCount: 2, clockSkewIds: ["a", "b"] };
+      expect(syncStatusMessage(signedIn, skewed)).toEqual({ key: "clockSkew", tone: "attention", count: 2 });
+      expect(syncStatusText({ key: "clockSkew", tone: "attention", count: 2 })).toBe(shared.sync.clockSkew(2));
+    });
+
+    it("scoped to one artwork, only that artwork's clock problem counts", () => {
+      const skewed: ISyncStatus = { ...idle, phase: "error", pendingCount: 1, clockSkewIds: ["other"] };
+      expect(syncStatusMessage(signedIn, skewed, { artworkId: "mine" })?.key).toBe("offline");
+      expect(syncStatusMessage(signedIn, skewed, { artworkId: "other" })).toEqual({
+        key: "clockSkew",
+        tone: "attention",
+        count: 1,
+      });
+    });
   });
 });
