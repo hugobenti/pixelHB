@@ -1,6 +1,7 @@
 /**
  * Purpose:
- * Unit tests for the PixelHB logo grids, their run encoding and the icon / social image layouts.
+ * Unit tests for the PixelHB logo grids, their run encoding and the icon / wordmark / social image
+ * layouts.
  */
 
 import { describe, expect, it } from "vitest";
@@ -9,9 +10,17 @@ import {
   BRAND_FIXED_COLORS,
   BRAND_GRIDS,
   BRAND_STATIC_THEME_COLORS,
+  HB_WORD_GRID,
   PENCIL_END_GRID,
+  PIXEL_WORD_GRID,
+  WORDMARK_GRID,
 } from "@/features/shared/brand/brandArt";
-import { TRANSPARENT_BACKGROUND, iconImage, ogImage } from "@/features/shared/brand/brandImageLayout";
+import {
+  TRANSPARENT_BACKGROUND,
+  iconImage,
+  ogImage,
+  wordmarkSquareImage,
+} from "@/features/shared/brand/brandImageLayout";
 import { gridRuns } from "@/features/shared/brand/brandPixels";
 
 const TOKENS = { surface: "#fcfbf7", bg: "#ece9e1", line: "#dcd8cd", fgSecondary: "#3a3c46" };
@@ -28,6 +37,16 @@ describe("brand grids", () => {
     expect(BRAND_GRIDS.pencil).toHaveLength(7);
     expect(BRAND_GRIDS.wordmark).toHaveLength(7);
     expect(BRAND_GRIDS.brandPencil).toHaveLength(7);
+  });
+});
+
+describe("wordmark split", () => {
+  it("splits the wordmark into Pixel and HB around their one-column gap", () => {
+    WORDMARK_GRID.forEach((row, y) => {
+      expect(`${PIXEL_WORD_GRID[y]}.${HB_WORD_GRID[y]}`).toBe(row);
+    });
+    expect(PIXEL_WORD_GRID.join("")).not.toMatch(/h/);
+    expect(HB_WORD_GRID.join("")).toMatch(/^[h.]+$/);
   });
 });
 
@@ -97,5 +116,28 @@ describe("ogImage", () => {
     expect(bounds.left).toBe(1200 - bounds.right);
     expect(pencil.every((b) => b.left % 20 === 0 && b.top % 20 === 0 && b.height === 20)).toBe(true);
     expect(image.caption?.top).toBeGreaterThan(bounds.bottom);
+  });
+});
+
+describe("wordmarkSquareImage", () => {
+  it("draws Pixel at 4x above HB at 8x, centered on an opaque 120px square", () => {
+    const image = wordmarkSquareImage(120, TOKENS.surface);
+    expect([image.width, image.height, image.background]).toEqual([120, 120, TOKENS.surface]);
+    const pixel = image.blocks.filter((b) => b.color === BRAND_STATIC_THEME_COLORS.i);
+    const hb = image.blocks.filter((b) => b.color === BRAND_STATIC_THEME_COLORS.h);
+    expect(pixel.length + hb.length).toBe(image.blocks.length);
+    expect(pixel.every((b) => b.height === 4)).toBe(true);
+    expect(hb.every((b) => b.height === 8)).toBe(true);
+    expect(opaqueBounds(pixel)).toEqual({ left: 10, top: 14, right: 110, bottom: 42 });
+    expect(opaqueBounds(hb)).toEqual({ left: 16, top: 50, right: 104, bottom: 106 });
+  });
+
+  it.each([96, 120, 180, 256])("stays centered at whole-number positions at %ipx", (size) => {
+    const image = wordmarkSquareImage(size, TOKENS.surface);
+    expect(image.blocks.every((b) => [b.left, b.top, b.width, b.height].every(Number.isInteger))).toBe(true);
+    const bounds = opaqueBounds(image.blocks);
+    expect(bounds.left).toBeGreaterThan(0);
+    expect(Math.abs(bounds.left - (size - bounds.right))).toBeLessThanOrEqual(1);
+    expect(Math.abs(bounds.top - (size - bounds.bottom))).toBeLessThanOrEqual(1);
   });
 });

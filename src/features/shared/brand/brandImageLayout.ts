@@ -1,7 +1,8 @@
 /**
  * Purpose:
- * Layouts of the generated brand images: the pencil-end icon at every size and the 1200 × 630
- * social image, always at whole-number scales so every logo pixel stays square and sharp.
+ * Layouts of the generated brand images: the pencil-end icon at every size, the square "Pixel"/"HB"
+ * wordmark and the 1200 × 630 social image, always at whole-number scales so every logo pixel stays
+ * square and sharp.
  */
 
 import type { IBrandImageProps, IOgImageColors } from "./BrandImage.type";
@@ -9,7 +10,9 @@ import {
   BRAND_FIXED_COLORS,
   BRAND_PENCIL_GRID,
   BRAND_STATIC_THEME_COLORS,
+  HB_WORD_GRID,
   PENCIL_END_GRID,
+  PIXEL_WORD_GRID,
 } from "./brandArt";
 import { gridBlocks } from "./brandPixels";
 
@@ -27,6 +30,13 @@ const OG_CELL = 20;
 const OG_PENCIL_TOP = 200;
 const OG_CAPTION_GAP = 40;
 const OG_CAPTION_SIZE = 40;
+
+/** "HB" is drawn this many times larger than "Pixel" in the square wordmark. */
+const SQUARE_HB_FACTOR = 2;
+/** Space between "Pixel" and "HB", in "Pixel" pixels. */
+const SQUARE_WORD_GAP = 2;
+/** Minimum space left and right of "Pixel", in "Pixel" pixels. */
+const SQUARE_SIDE_MARGIN = 1;
 
 const COLORS = { ...BRAND_FIXED_COLORS, ...BRAND_STATIC_THEME_COLORS };
 
@@ -48,6 +58,30 @@ export function iconImage(size: number, tile: string): IBrandImageProps {
     height: size,
     background: tile,
     blocks: gridBlocks(PENCIL_END_GRID, COLORS, scale, offset, offset),
+  };
+}
+
+/**
+ * "Pixel" above a twice-as-large "HB", centered on an opaque `background` square of `size` px, at the
+ * largest whole-number scale that keeps a side margin. Used where a square logo must name the brand
+ * (the Google OAuth consent screen).
+ */
+export function wordmarkSquareImage(size: number, background: string): IBrandImageProps {
+  const pixelWidth = PIXEL_WORD_GRID[0].length;
+  const scale = Math.floor(size / (pixelWidth + 2 * SQUARE_SIDE_MARGIN));
+  const hbScale = scale * SQUARE_HB_FACTOR;
+  const gap = scale * SQUARE_WORD_GAP;
+  const height = PIXEL_WORD_GRID.length * scale + gap + HB_WORD_GRID.length * hbScale;
+  const top = Math.floor((size - height) / 2);
+  const hbTop = top + PIXEL_WORD_GRID.length * scale + gap;
+  return {
+    width: size,
+    height: size,
+    background,
+    blocks: [
+      ...gridBlocks(PIXEL_WORD_GRID, COLORS, scale, Math.floor((size - pixelWidth * scale) / 2), top),
+      ...gridBlocks(HB_WORD_GRID, COLORS, hbScale, Math.floor((size - HB_WORD_GRID[0].length * hbScale) / 2), hbTop),
+    ],
   };
 }
 
