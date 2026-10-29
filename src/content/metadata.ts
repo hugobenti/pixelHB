@@ -7,6 +7,7 @@ import { home } from "./home";
 import { privacy } from "./privacy";
 import { site } from "./site";
 import { statusPages } from "./statusPages";
+import { terms } from "./terms";
 
 /**
  * Page metadata for the whole app, derived from the site content.
@@ -50,6 +51,12 @@ export const privacyMetadata: Metadata = {
   title: privacy.metaTitle,
   description: privacy.metaDescription,
   alternates: { canonical: "/privacy" },
+};
+
+export const termsMetadata: Metadata = {
+  title: terms.metaTitle,
+  description: terms.metaDescription,
+  alternates: { canonical: "/terms" },
 };
 
 export const contactMetadata: Metadata = {

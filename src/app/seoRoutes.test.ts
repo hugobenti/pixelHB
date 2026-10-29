@@ -13,6 +13,7 @@ describe("sitemap", () => {
       "/about",
       "/contact",
       "/privacy",
+      "/terms",
     ]);
     for (const url of urls) {
       expect(url).toMatch(/^https:\/\/[^/]+(\/[^/]*)?$/);

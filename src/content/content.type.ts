@@ -22,6 +22,7 @@ export interface IShellContent {
     about: string;
     contact: string;
     privacy: string;
+    terms: string;
     github: string;
     label: string;
   };
@@ -465,6 +466,23 @@ export interface IPrivacyContent {
   revokeLink: { label: string; href: string };
   /** Rendered inside section "contact", linking to /contact. */
   contactLink: string;
+}
+
+/** Copy for the Terms of Service page. */
+export interface ITermsContent {
+  metaTitle: string;
+  metaDescription: string;
+  h1: string;
+  intro: string;
+  /** "Last updated: <date>" */
+  updated: string;
+  /** A section's optional `link` is rendered as an internal link after its paragraphs. */
+  sections: {
+    id: string;
+    title: string;
+    paragraphs: string[];
+    link?: { label: string; href: string };
+  }[];
 }
 
 /** Copy for the Feedback & contact page. */
