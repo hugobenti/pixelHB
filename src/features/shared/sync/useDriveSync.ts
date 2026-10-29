@@ -10,15 +10,25 @@
  */
 "use client";
 
-import { useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 import * as artworkService from "@/features/shared/artwork/artworkService";
 import { useAccount } from "@/features/shared/auth/useAccount";
+import { shouldResyncAfterReauth } from "./logic/reauthRecovery";
 import { getSyncEngine, isDriveSyncSupported } from "./syncEngine";
 
 export function useDriveSync(): void {
-  const { status, user, provisional } = useAccount();
+  const { status, user, provisional, needsReauth } = useAccount();
   const userId = user?.id;
+  const previousNeedsReauth = useRef<boolean | undefined>(undefined);
+
+  // The engine stops retrying while Drive access needs a new sign-in. When it no longer does (signed
+  // in again in another tab), nothing else would restart it, so ask for a full pass.
+  useEffect(() => {
+    const recovered = shouldResyncAfterReauth(previousNeedsReauth.current, needsReauth);
+    previousNeedsReauth.current = needsReauth;
+    if (recovered && isDriveSyncSupported()) void getSyncEngine().syncNow();
+  }, [needsReauth]);
 
   useLayoutEffect(() => {
     if (!isDriveSyncSupported() || status === "loading") return;
