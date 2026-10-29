@@ -60,6 +60,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
     layersDrawerOpen,
     toggleLayersDrawer,
     closeLayersDrawer,
+    maxLayersReached,
     addLayer,
     settingsDrawerOpen,
     toggleSettingsDrawer,
@@ -147,6 +148,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           onClose={closeLayersDrawer}
           onSelectLayer={layersState.setActiveLayerId}
           onToggleVisibility={layersState.toggleLayerVisibility}
+          maxLayersReached={maxLayersReached}
           onAddLayer={addLayer}
           onCopyLayer={layersState.copyLayer}
           onDeleteLayer={layersState.deleteLayer}

@@ -9,6 +9,8 @@ export interface ILayersDrawerProps {
   onClose: () => void;
   onSelectLayer: (layerId: string) => void;
   onToggleVisibility: (layerId: string) => void;
+  /** The artwork holds `MAX_LAYERS`: add and duplicate are disabled and a note says why. */
+  maxLayersReached: boolean;
   onAddLayer: () => void;
   onCopyLayer: (layerId: string) => void;
   onDeleteLayer: (layerId: string) => void;

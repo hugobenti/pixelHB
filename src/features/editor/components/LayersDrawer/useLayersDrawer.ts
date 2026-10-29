@@ -21,12 +21,15 @@ import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { editor } from "@/content/editor";
 import { useLayerRenameDialog } from "@/features/editor/components/LayersDrawer/hooks/useLayerRenameDialog";
 import { useLayersDrawerPanel } from "@/features/editor/components/LayersDrawer/useLayersDrawerPanel";
+import { MAX_LAYERS } from "@/features/shared/artwork/artworkLimits";
 import { useConfirm } from "@/features/shared/components/useConfirm";
 import type { ILayersDrawerProps } from "./LayersDrawer.type";
 
 export function useLayersDrawer({
   layers,
+  maxLayersReached,
   onClose,
+  onCopyLayer,
   onRenameLayer,
   onReorderLayers,
   onDeleteLayer,
@@ -107,6 +110,9 @@ export function useLayersDrawer({
     handleRenameClick,
     /** Undefined while only one layer is left, which disables every row's delete button. */
     handleDeleteClick: layers.length > 1 ? handleDeleteClick : undefined,
+    /** Undefined at the layer cap, which disables every row's duplicate button. */
+    handleCopyClick: maxLayersReached ? undefined : onCopyLayer,
+    limitNote: maxLayersReached ? editor.layers.limitReached(MAX_LAYERS) : null,
     deleteDialog,
     renameSession: layerRename.session,
     dismissRename,

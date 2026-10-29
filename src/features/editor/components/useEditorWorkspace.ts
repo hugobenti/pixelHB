@@ -36,7 +36,7 @@ import { clampPaletteIndex } from "@/features/editor/logic/paletteMutations";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
 import type { IHistoryCommand } from "@/features/editor/types/editor.type";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import { MAX_PALETTE_ENTRIES } from "@/features/shared/artwork/artworkLimits";
+import { canAddLayer, MAX_PALETTE_ENTRIES } from "@/features/shared/artwork/artworkLimits";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 import type { IEditorWorkspaceProps } from "./EditorWorkspace.type";
 
@@ -332,6 +332,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     layersDrawerOpen,
     toggleLayersDrawer: () => setLayersDrawerOpen((v) => !v),
     closeLayersDrawer: () => setLayersDrawerOpen(false),
+    maxLayersReached: !canAddLayer(artwork.layers.length),
     addLayer: () => {
       layersState.addLayer();
     },

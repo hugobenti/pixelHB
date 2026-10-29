@@ -9,7 +9,7 @@
  * `fetch` means the network is unreachable; any other thrown error is a bug and propagates.
  */
 import type { IArtworkFileV3 } from "@/features/shared/artwork/artworkFileService.type";
-import { galleryArtworkUrl, galleryStatusUrl, MAX_SYNC_BODY_BYTES } from "./galleryApi";
+import { galleryArtworkUrl, galleryStatusUrl, MAX_INFLATED_BODY_BYTES, MAX_SYNC_BODY_BYTES } from "./galleryApi";
 import type {
   IGalleryErrorResponse,
   IGalleryListResponse,
@@ -102,11 +102,6 @@ async function send<T>(
   }
 }
 
-function gzipJson(value: unknown): Promise<ArrayBuffer> {
-  const stream = new Blob([JSON.stringify(value)]).stream().pipeThrough(new CompressionStream("gzip"));
-  return new Response(stream).arrayBuffer();
-}
-
 export function createGalleryApiClient(fetchFn: typeof fetch): IGalleryApiClient {
   return {
     list: () =>
@@ -130,7 +125,12 @@ export function createGalleryApiClient(fetchFn: typeof fetch): IGalleryApiClient
       }),
 
     save: async (request: IGallerySaveRequest) => {
-      const body = await gzipJson(request);
+      // UTF-8 bytes, as the server counts them after gunzip.
+      const json = new Blob([JSON.stringify(request)]);
+      if (json.size > MAX_INFLATED_BODY_BYTES) {
+        return { ok: false, kind: "tooLarge" };
+      }
+      const body = await new Response(json.stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer();
       if (body.byteLength > MAX_SYNC_BODY_BYTES) {
         return { ok: false, kind: "tooLarge" };
       }

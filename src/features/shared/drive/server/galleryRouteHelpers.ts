@@ -16,7 +16,12 @@ import { createHash } from "node:crypto";
 import { parseArtworkFile, serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import { DRIVE_SYNC_ENABLED } from "@/features/shared/auth/driveSyncFlag";
 import { getDriveAccess } from "@/features/shared/auth/server/driveAccess";
-import { ARTWORK_ID_PATTERN, MAX_CLOCK_SKEW_MS, MAX_SYNC_BODY_BYTES } from "../galleryApi";
+import {
+  ARTWORK_ID_PATTERN,
+  MAX_CLOCK_SKEW_MS,
+  MAX_INFLATED_BODY_BYTES,
+  MAX_SYNC_BODY_BYTES,
+} from "../galleryApi";
 import type { IGalleryErrorResponse, IGallerySaveResponse } from "../galleryApi.type";
 import { createDriveArtworkStore } from "./driveArtworkStore";
 import type { IDriveArtworkStore, IDrivePreview } from "./driveArtworkStore.type";
@@ -29,7 +34,6 @@ import type {
   TSaveRequestResult,
 } from "./galleryRouteHelpers.type";
 
-export const MAX_INFLATED_BODY_BYTES = 64_000_000;
 export const DEFAULT_RETRY_AFTER_SECONDS = "30";
 const MAX_DELETE_BODY_BYTES = 1024;
 const DEFAULT_LIMITS: ISaveBodyLimits = {

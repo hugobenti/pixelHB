@@ -14,6 +14,7 @@ import {
 } from "@/features/editor/logic/layerEdits";
 import { removeLayer } from "@/features/editor/logic/layerRemoval";
 import type { IArtworkLayer } from "@/features/shared/artwork/artwork.type";
+import { canAddLayer } from "@/features/shared/artwork/artworkLimits";
 import { TRANSPARENT_PIXEL_INDEX } from "@/features/shared/artwork/artworkService";
 import { clonePixelBuffer } from "@/features/shared/utils/binaryHelpers";
 import type { IUseArtworkLayersParams } from "./useArtworkLayers.type";
@@ -85,7 +86,11 @@ export function useArtworkLayers({
     [layers, setArtwork, onLayersChanged]
   );
 
+  /** Adds an empty layer on top; does nothing once the artwork has `MAX_LAYERS`. */
   const addLayer = useCallback(() => {
+    if (!canAddLayer(layers.length)) {
+      return "";
+    }
     let createdLayerId = "";
     setArtwork((prev) => {
       const pixelCount = prev.width * prev.height;
@@ -105,11 +110,11 @@ export function useArtworkLayers({
     });
     onLayersChanged();
     return createdLayerId;
-  }, [setArtwork, onLayersChanged]);
+  }, [layers.length, setArtwork, onLayersChanged]);
 
   const copyLayer = useCallback(
     (layerId: string) => {
-      if (!layers.some((layer) => layer.id === layerId)) {
+      if (!canAddLayer(layers.length) || !layers.some((layer) => layer.id === layerId)) {
         return;
       }
       setArtwork((prev) => {

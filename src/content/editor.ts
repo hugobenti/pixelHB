@@ -112,6 +112,7 @@ export const editor: IEditorContent = {
     title: "Layers",
     closeLabel: "Close layers panel",
     add: "Add layer",
+    limitReached: (max) => `Layers full (${max} maximum). Delete one to add another.`,
     footer: "Top items render in front of lower items.",
     copyName: (name) => `${name} copy`,
     newLayerName: (position) => `Layer ${position}`,
