@@ -8,7 +8,7 @@ export const privacy: IPrivacyContent = {
   h1: "Privacy",
   intro:
     "Your art belongs to you. PixelHB is the tool, not the owner: it keeps no copies of your work and makes no claim on it. This page explains exactly where your artworks go.",
-  updated: "Last updated: October 27, 2026",
+  updated: "Last updated: October 29, 2026",
   sections: [
     {
       id: "without-account",
@@ -26,6 +26,7 @@ export const privacy: IPrivacyContent = {
         "PixelHB asks Google for your name, email address and profile picture, to show who is signed in, and for permission to see and change only the files PixelHB itself creates in your Drive (Google calls this “drive.file”). It cannot see, open or list any other file in your Drive.",
         "When an artwork is saved or opened, it passes through PixelHB’s server on its way between your browser and Google Drive. The server does not store it, log its contents or keep a copy. It only forwards it.",
         "Your Google sign-in is kept in a secure, encrypted cookie in your browser. The cookie lasts up to 7 days after your last visit, and signing out also asks Google to revoke PixelHB’s access. PixelHB has no user database and no account records.",
+        "PixelHB’s use and transfer to any other app of information received from Google APIs will adhere to the Google API Services User Data Policy, including the Limited Use requirements. In plain words: what PixelHB gets from Google is used only to sign you in, show who is signed in and keep your artworks in your Drive. It is never sold, never used for advertising and never passed on to anyone else, except that it travels through PixelHB’s hosting provider, Vercel, on its way between your browser and Google, or where the law requires it.",
       ],
     },
     {

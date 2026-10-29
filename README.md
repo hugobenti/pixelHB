@@ -99,11 +99,18 @@ The app works fully without an account. Sign-in (Auth.js v5, Google, with the `d
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `NEXT_PUBLIC_DRIVE_SYNC`               | `on` enables sign-in; anything else = today's app                                                                                                                                                                      |
 | `AUTH_SECRET`                          | `npx auth secret` or `openssl rand -base64 33`; same value in Production and Preview                                                                                                                                   |
-| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client                                                                                                                                                                                                |
-| `AUTH_REDIRECT_PROXY_URL`              | `https://pixelhb.vercel.app/api/auth` in **both** Production and Preview, so previews sign in through production. Auth.js appends `/callback/google`, so Google only needs the production and localhost redirect URIs. |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client: the **Dev** client in `.env.local`, the **production** client only in Vercel (see below)                                                                                                     |
+| `AUTH_REDIRECT_PROXY_URL`              | `https://pixelhb.vercel.app/api/auth` in **both** Production and Preview, so previews sign in through production. Auth.js appends `/callback/google`, so the production client needs only the production redirect URI. |
 | `AUTH_TRUST_HOST`                      | `true`, only for a local `npm start`. Vercel and `next dev` already trust the host.                                                                                                                                    |
 
 If preview sign-in proves fragile, unset `NEXT_PUBLIC_DRIVE_SYNC` for Preview, so previews show the signed-out app. Tokens stay in the encrypted `HttpOnly` session cookie and never reach client JavaScript; the session the browser sees holds only the user's id, name, email and image.
+
+**Two OAuth clients.** Local development uses a separate **Dev** OAuth client (Google Auth Platform → Clients, type Web application) whose only authorized redirect URI is `http://localhost:3000/api/auth/callback/google`; its id and secret go in `.env.local`. The **production** client lists only `https://pixelhb.vercel.app/api/auth/callback/google` (no localhost URIs) and its secret lives only in Vercel, never on a dev machine.
+
+**Before turning the flag on (launch checklist):**
+
+- Vercel → Settings → Deployment Protection: protect Preview deployments (Vercel Authentication), since previews hold `AUTH_SECRET` and the production Google secret.
+- Optional: a Vercel Firewall rate-limit rule on `/api/gallery/*` (per IP), so one client cannot burn the project's Drive quota.
 
 ## Scripts
 
