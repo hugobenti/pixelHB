@@ -172,15 +172,20 @@ describe("driveArtworkStore", () => {
     expect(await s.get(ID)).toBeNull();
   });
 
-  it("getPreview streams the PNG; null when only the JSON exists", async () => {
+  it("getPreview describes the PNG and its artwork version and downloads only on open; null without a PNG", async () => {
     const { fetchFn, calls } = recorder([
       json({ files: [jsonFile("f-1", 2000), pngFile("p-1")] }), new Response(PNG),
       json({ files: [jsonFile("f-1", 2000)] }),
+      json({ files: [pngFile("p-2")] }),
     ]);
     const s = store(fetchFn);
-    expect(new Uint8Array(await new Response(await s.getPreview(ID)).arrayBuffer())).toEqual(PNG);
+    const preview = await s.getPreview(ID);
+    expect(preview).toMatchObject({ fileId: "p-1", updatedAt: 2000 });
+    expect(calls).toHaveLength(1);
+    expect(new Uint8Array(await new Response(await preview!.open()).arrayBuffer())).toEqual(PNG);
     expect(calls[1].url.href).toBe("https://www.googleapis.com/drive/v3/files/p-1?alt=media");
     expect(await s.getPreview(ID)).toBeNull();
+    expect(await s.getPreview(ID)).toMatchObject({ fileId: "p-2", updatedAt: null });
   });
 
   it("upsert of a new artwork creates PNG then JSON in the root folder", async () => {

@@ -6,6 +6,8 @@
  */
 import { withGalleryAccess } from "@/features/shared/drive/server/galleryRouteHelpers";
 
+export const maxDuration = 30;
+
 export async function GET(
   request: Request,
   ctx: RouteContext<"/api/gallery/[id]/status">,

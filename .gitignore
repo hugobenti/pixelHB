@@ -3,7 +3,8 @@ node_modules/
 
 # Next.js
 .next/
-.next-verify/
+# Isolated builds (NEXT_DIST_DIR=.next-verify, .next-verify2, ...)
+.next-*/
 out/
 
 # Production build

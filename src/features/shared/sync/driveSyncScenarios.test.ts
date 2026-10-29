@@ -429,6 +429,7 @@ describe("deletion needs positive evidence", () => {
     await routes.item.DELETE(
       new Request(`http://localhost/api/gallery/${first.id}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ deletedAt: first.updatedAt }),
       }),
       { params: Promise.resolve({ id: first.id }) },
