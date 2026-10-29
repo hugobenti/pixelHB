@@ -103,7 +103,7 @@ Export JSON and the files stored in Drive share one format: `version: 3`, `id`, 
 
 ### Sync model (signed in, optional)
 
-Drive sync is behind `NEXT_PUBLIC_DRIVE_SYNC`. `/api/gallery` route handlers are stateless proxies to the Drive `drive.file` scope; nothing is stored server-side.
+Sign-in and Drive sync are always on (no feature flag); browsers without Web Locks (`isSyncSupported`) hide the account control and stay local-only. `/api/gallery` route handlers are stateless proxies to the Drive `drive.file` scope; nothing is stored server-side. `next build` needs no `AUTH_*` variables. The Auth.js config is built per request: a production server missing `AUTH_SECRET`, `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` logs them by name at its first auth request, and the session endpoint's error reads as a failed request (the app stays usable signed out).
 
 - IndexedDB is always the local working copy; the editor never waits on the network.
 - Dirty artworks are pushed to the `PixelHB` Drive folder, oldest first, about ten seconds after the last edit.

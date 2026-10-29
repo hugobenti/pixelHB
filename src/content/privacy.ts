@@ -50,7 +50,7 @@ export const privacy: IPrivacyContent = {
       title: "Disconnecting PixelHB from Google",
       paragraphs: [
         "Sign out from the menu in the top corner. To remove PixelHB’s access to your Google account entirely, open your Google account’s third-party connections page and remove PixelHB.",
-        "Removing access does not delete anything: the PixelHB folder and its files stay in your Drive, and you can move, share or delete them like any other file.",
+        "Removing access does not delete anything: the PixelHB folder and its files stay in your Drive, and you can move or share them like any other file. Moving a single artwork file to the Drive trash also removes it from PixelHB on your devices at their next sync; restore it from the Drive trash within 30 days and it comes back. Trashing the whole PixelHB folder doesn’t remove anything from your devices.",
       ],
     },
     {

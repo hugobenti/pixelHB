@@ -49,6 +49,13 @@ PixelHB is a local-first pixel-art editor that runs in the browser. You don't ne
 - Export the current artwork as a PNG snapshot.
 - Export the full editable document as JSON, and import it again from the gallery.
 
+### Google Drive sync (optional)
+
+- Sign in with Google from the header (or the phone menu) to save artworks to a `PixelHB` folder in your own Drive and see them on every device where you sign in.
+- Sync runs in the background: about ten seconds after the last edit, when you leave the tab, when the browser is back online and when the gallery opens. Offline, drawing keeps working.
+- Deleting an artwork moves its Drive copy to the Drive trash, and it disappears from your other devices too. Trashing the file in Drive removes it from PixelHB the same way; restoring it from the Drive trash brings it back.
+- Signing out removes that account's artworks from this browser (they stay in Drive), after offering to download changes that haven't reached Drive yet.
+
 ## Keyboard shortcuts
 
 | Keys                                | Action                                              |
@@ -91,26 +98,20 @@ npm run dev
 
 Then open [http://localhost:3000](http://localhost:3000). The root URL takes you to the gallery.
 
-### Google sign-in (optional, behind a flag)
+### Google sign-in
 
-The app works fully without an account. Sign-in (Auth.js v5, Google, with the `drive.file` scope and offline access) is hidden until `NEXT_PUBLIC_DRIVE_SYNC=on` (see [Launching Drive sync](#launching-drive-sync)); with the flag off there is no sign-in UI and no `/api/auth` request. Copy `.env.example` to `.env.local` and fill in (leave the two commented lines commented unless you need them: a blank `AUTH_TRUST_HOST=` or `AUTH_REDIRECT_PROXY_URL=` is read as an empty value and breaks Auth.js):
+The app works fully without an account; signing in with Google (Auth.js v5, with the `drive.file` scope and offline access) adds Drive sync. Sign-in is always on, so every environment that should offer it needs the variables below. Without them the app still builds and runs signed out; **Sign in with Google** ends on the home page when `AUTH_SECRET` is missing, or on Google's error page when only `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is missing. A production server logs the missing variables by name at its first auth request. Copy `.env.example` to `.env.local` and fill in (leave the two commented lines commented unless you need them: a blank `AUTH_TRUST_HOST=` or `AUTH_REDIRECT_PROXY_URL=` is read as an empty value and breaks Auth.js):
 
 | Variable                               | Purpose                                                                                                                                                                                                                |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_DRIVE_SYNC`               | `on` enables sign-in; anything else = today's app                                                                                                                                                                      |
 | `AUTH_SECRET`                          | `npx auth secret` or `openssl rand -base64 33`; same value in Production and Preview                                                                                                                                   |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client: the **Dev** client in `.env.local`, the **production** client only in Vercel (see below)                                                                                                     |
 | `AUTH_REDIRECT_PROXY_URL`              | `https://pixelhb.vercel.app/api/auth` in **both** Production and Preview, so previews sign in through production. Auth.js appends `/callback/google`, so the production client needs only the production redirect URI. |
 | `AUTH_TRUST_HOST`                      | `true`, only for a local `npm start`. Vercel and `next dev` already trust the host.                                                                                                                                    |
 
-If preview sign-in proves fragile, unset `NEXT_PUBLIC_DRIVE_SYNC` for Preview, so previews show the signed-out app. Tokens stay in the encrypted `HttpOnly` session cookie and never reach client JavaScript; the session the browser sees holds only the user's id, name, email and image.
+Tokens stay in the encrypted `HttpOnly` session cookie and never reach client JavaScript; the session the browser sees holds only the user's id, name, email and image. Browsers without the Web Locks API (which sync needs) show no account control and stay local-only.
 
-**Two OAuth clients.** Local development uses a separate **Dev** OAuth client (Google Auth Platform → Clients, type Web application) whose only authorized redirect URI is `http://localhost:3000/api/auth/callback/google`; its id and secret go in `.env.local`. The **production** client lists only `https://pixelhb.vercel.app/api/auth/callback/google` (no localhost URIs) and its secret lives only in Vercel, never on a dev machine.
-
-**Before turning the flag on (launch checklist):**
-
-- Vercel → Settings → Deployment Protection: protect Preview deployments (Vercel Authentication), since previews hold `AUTH_SECRET` and the production Google secret.
-- Optional: a Vercel Firewall rate-limit rule on `/api/gallery/*` (per IP), so one client cannot burn the project's Drive quota.
+**Two OAuth clients.** Local development uses a separate **Dev** OAuth client (Google Auth Platform → Clients, type Web application) whose only authorized redirect URI is `http://localhost:3000/api/auth/callback/google`; its id and secret go in `.env.local`. The **production** client lists only `https://pixelhb.vercel.app/api/auth/callback/google` (no localhost URIs) and its secret lives only in Vercel, never on a dev machine. Deploying: see [Production setup](#production-setup).
 
 ## Scripts
 
@@ -168,21 +169,30 @@ Every token pair is checked against WCAG 2.2 AA contrast by `src/app/tokenContra
 The art belongs to the artist. PixelHB stores no artwork.
 
 - **Signed out:** artworks live only in the browser's IndexedDB. Nothing is sent to the artwork API. Clearing site data or switching browsers or devices loses them, so use **Export JSON** from the editor settings to keep a backup. You can re-import that file from the gallery.
-- **Signed in with Google (optional):** IndexedDB stays as the local working copy, and artworks are also saved to a `PixelHB` folder in the user's own Google Drive, using the `drive.file` scope (PixelHB can only see files it created). The route handlers in `src/app/api/gallery` are stateless proxies: artwork passes through them on its way to and from Drive and is never stored or logged. Tokens live in an encrypted Auth.js cookie. PixelHB has no database.
+- **Signed in with Google (optional):** IndexedDB stays as the local working copy, and artworks are also saved to a `PixelHB` folder in the user's own Google Drive, using the `drive.file` scope (PixelHB can only see files it created). The route handlers in `src/app/api/gallery` are stateless proxies: artwork passes through them on its way to and from Drive and is never stored or logged. Tokens live in an encrypted Auth.js cookie. PixelHB has no database. Deletions propagate both ways: deleting in PixelHB trashes the Drive file, and a file trashed in Drive is removed from every signed-in device at its next sync (kept in a local "removed" table for 30 days); restoring it from the Drive trash brings it back.
 
 The user-facing explanation is the [`/privacy`](src/content/privacy.ts) page.
 
-## Launching Drive sync
+## Production setup
 
-Sync ships dark behind `NEXT_PUBLIC_DRIVE_SYNC`. The flag is inlined at build time, so changing it needs a redeploy. Turning it on is a manual step in Vercel, done **before** the copy PR is merged (or followed by a redeploy), so the copy never promises a sign-in button that does not exist:
+Sign-in and Drive sync are always on; there is no feature flag.
 
-1. In the Google Auth Platform, publish the app ("In production") and get the brand verification approved. Authorized redirect URIs: `https://pixelhb.vercel.app/api/auth/callback/google` and `http://localhost:3000/api/auth/callback/google`.
-2. In Vercel → Project → Settings → Environment Variables, confirm `AUTH_SECRET`, `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` exist for Production and Preview, and that `AUTH_REDIRECT_PROXY_URL=https://pixelhb.vercel.app/api/auth` is set for both Production and Preview (see the table above). `AUTH_URL` is not needed.
-3. Set `NEXT_PUBLIC_DRIVE_SYNC=on` for Production.
-4. Merge the copy PR (the merge deploy picks up the flag), or redeploy the latest Production deployment if it was merged earlier.
-5. Check production: sign in, draw, see the file in `PixelHB/` in Drive, sign in on a second browser, sign out.
+1. **Google Auth Platform:** the app is published ("In production") with brand verification approved. The **production** OAuth client lists only `https://pixelhb.vercel.app/api/auth/callback/google`; `http://localhost:3000/api/auth/callback/google` belongs on the separate **Dev** client (see [Google sign-in](#google-sign-in)).
+2. **Vercel → Settings → Environment Variables**, for **Production and Preview**: `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` (the production client) and `AUTH_REDIRECT_PROXY_URL=https://pixelhb.vercel.app/api/auth`, so previews sign in through production. `AUTH_URL` is not needed. The build needs none of them (CI builds without).
+3. **Vercel → Settings → Deployment Protection:** protect Preview deployments (Vercel Authentication), since previews hold `AUTH_SECRET` and the production Google secret.
+4. Optional: a **Vercel Firewall** rate-limit rule on `/api/gallery/*` (per IP), so one client cannot burn the project's Drive quota.
 
-Rollback: set `NEXT_PUBLIC_DRIVE_SYNC` to `off` and redeploy. Data in Drive and IndexedDB is untouched.
+**After each deploy that touches auth or sync, check production:**
+
+- Sign in, open `/api/auth/session` and note `user.id`; sign out, sign in again: same id.
+- Draw, and see the file appear in `PixelHB/` in Drive (a `403` on `POST /api/gallery/<id>` means the request origin check disagrees with the host).
+- Sign in on a second browser: the drawing is there; edit it there and see the change come back.
+- Open an artwork, go offline (DevTools → Network), switch tabs and come back: the editor stays open; back online, the change syncs.
+- Delete an artwork in one browser: it disappears from the other after its next sync. Trash one artwork file in Drive: it disappears too; restore it from the Drive trash: it comes back.
+- Go offline, draw, then sign out: the dialog offers Download, Sign out anyway and Cancel; Cancel keeps everything.
+- Remove PixelHB from the Google account's third-party connections: the next sync asks to sign in again (gallery note, account panel); nothing is deleted on the device or in Drive.
+
+**Recovery:** to stop sign-in in an emergency, remove the `AUTH_*` variables in Vercel and redeploy. The app keeps working signed out; **Sign in with Google** ends on the home page when `AUTH_SECRET` is missing, or on Google's error page when only `AUTH_GOOGLE_ID` or `AUTH_GOOGLE_SECRET` is missing. Nothing is deleted: drawings of signed-in users stay in IndexedDB under their account id (for up to 7 days after a visit the app keeps showing them on that browser with a "can't confirm your account" note) and reappear, and sync, once the variables are back and the same Google account signs in. Drawings made meanwhile without an account are added to the account that signs in next.
 
 ## CI and deployment
 

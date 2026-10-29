@@ -6,7 +6,7 @@
  *
  * Notes:
  * The hint is written on every signed-in answer and cleared on every explicit signed-out answer
- * (HTTP 200 without a user, or 404); a failed request touches nothing. Retries are scheduled only
+ * (HTTP 200 without a user); a failed request touches nothing. Retries are scheduled only
  * while the browser reports online: offline, the `online` event is the retry.
  */
 import type { IAccountState } from "../auth.type";

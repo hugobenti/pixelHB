@@ -11,7 +11,6 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/features/shared/auth/server/driveAccess", () => ({
   getDriveAccess: async () => ({ kind: "ok", accessToken: "tok" }),
 }));
-vi.mock("@/features/shared/auth/driveSyncFlag", () => ({ DRIVE_SYNC_ENABLED: true }));
 
 import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import * as artworkService from "@/features/shared/artwork/artworkService";

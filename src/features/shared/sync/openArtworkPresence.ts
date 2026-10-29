@@ -9,12 +9,12 @@
  * engine's `stop()` can cancel a wait that has not been granted yet.
  */
 import { openIdsFromLocks, openLockName, SYNC_LOCK_NAME } from "./logic/presenceLocks";
-import { isDriveSyncSupported } from "./syncEngine";
 import type { IArtworkPresence } from "./sync.type";
+import { isSyncSupported } from "./syncSupport";
 
-/** Marks an artwork open in this tab; returns an idempotent release. A no-op without Drive sync. */
+/** Marks an artwork open in this tab; returns an idempotent release. A no-op without Web Locks. */
 export function markArtworkOpen(id: string): () => void {
-  if (!isDriveSyncSupported()) return () => {};
+  if (!isSyncSupported()) return () => {};
   let release = () => {};
   const held = new Promise<void>((resolve) => {
     release = resolve;

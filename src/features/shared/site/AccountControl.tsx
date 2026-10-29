@@ -1,7 +1,8 @@
 /**
  * Purpose:
  * Header account control: a "Sign in with Google" button when signed out, a monogram avatar with a
- * disclosure panel (name, email, sync status, Drive folder link, sign out) when signed in. Renders nothing when Drive sync is off.
+ * disclosure panel (name, email, sync status, Drive folder link, sign out) when signed in. Renders
+ * nothing in a browser that cannot sync (no Web Locks).
  *
  * Notes:
  * `bar` sits in the header row from `sm` up; `sheet` is an inline section of the phone menu, with no
@@ -21,6 +22,7 @@ import { useAccountControl } from "./useAccountControl";
 export function AccountControl({ placement }: IAccountControlProps) {
   const {
     account,
+    hidden,
     syncStatusText,
     driveFolderUrl,
     initial,
@@ -38,7 +40,7 @@ export function AccountControl({ placement }: IAccountControlProps) {
     signOutDialog,
   } = useAccountControl();
 
-  if (account.status === "disabled") {
+  if (hidden) {
     return null;
   }
 
