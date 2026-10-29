@@ -4,9 +4,9 @@
  * editor bar, account panel), and looks its copy up.
  *
  * Notes:
- * Order: unconfirmed (provisional account), reauth, clock skew, offline, syncing, too large, Drive folder in the trash, artworks missing
+ * Order: unconfirmed (provisional account), reauth, Drive full, clock skew, offline, syncing, too large, Drive folder in the trash, artworks missing
  * in Drive, saved. Engine phase `error` reads as offline (Drive could not be reached and the local copy is
- * what is shown) unless a more specific cause is known (wrong clock); phase `disabled` while signed in means
+ * what is shown) unless a more specific cause is known (full Drive, wrong clock); phase `disabled` while signed in means
  * the engine is not running (e.g. no Web Locks), so work stays in this browser. Idle with more pending changes than too-large ones means a push is still
  * debounced, so it is not "saved" yet. `null` while the account is loading.
  */
@@ -28,6 +28,7 @@ const TONES: Record<TSyncMessageKey, TSyncTone> = {
   signInAgain: "attention",
   tooLarge: "attention",
   unconfirmed: "neutral",
+  driveFull: "attention",
   clockSkew: "attention",
   missingInDrive: "attention",
   driveFolderTrashed: "attention",
@@ -49,6 +50,7 @@ export function syncStatusMessage(
   }
   if (account.needsReauth || status.phase === "reauth") return message("signInAgain");
   if (status.phase === "disabled") return message("thisBrowserOnly");
+  if (status.driveFull) return message("driveFull");
   const skewed = scope
     ? status.clockSkewIds.filter((id) => id === scope.artworkId)
     : status.clockSkewIds;

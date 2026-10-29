@@ -11,7 +11,7 @@
  *   through conditional store calls (same `updatedAt`, state and owner as when it was decided) and
  *   re-check presence right before, so an edit or an editor that appeared mid-download wins.
  * - Offline, reauth and Drive errors abort the pass and never delete or overwrite anything. A push
- *   that fails for one row alone is skipped, so one poisoned row cannot starve the others.
+ *   or a deletion that fails for one row alone is skipped, so one poisoned row cannot starve the others.
  * - A synced row is removed only on positive evidence: Drive's own trash holds a copy at least as new
  *   as the version we synced (`api.status`), however many rows that is. Absence from the list, an
  *   unreadable Drive file and a failing status call keep the row; so does a trashed PixelHB folder
@@ -19,6 +19,8 @@
  *   whose status says Drive has nothing are published in `missingInDriveIds` so the user can delete
  *   them. A pass asks at most `MAX_STATUS_CALLS_PER_PASS` statuses and remembers `absent` answers
  *   for `ABSENT_RECHECK_MS`. A removed row moves to the local removed table for `REMOVED_RETENTION_MS`.
+ * - A pull that would replace unsynced local work with a newer Drive copy first saves the local
+ *   version as a new dirty "(conflict copy)" row, in the same store transaction.
  * - `stop()` aborts a pass still waiting for the cross-tab lock and waits only for work that is
  *   running; every request has a timeout, so a stalled one cannot hold it forever.
  */
@@ -26,10 +28,14 @@ import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import { serializeArtworkFile } from "@/features/shared/artwork/artworkFileFormat";
 import type { IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 import { isThumbnailCurrent } from "@/features/shared/artwork/thumbnailFreshness";
+import { shared } from "@/content/shared";
 import { tombstoneStampToSend } from "@/features/shared/artwork/updatedAtStamp";
+import { DRIVE_FILE_NAME_MAX } from "@/features/shared/drive/galleryApi";
 import type { IGalleryListItem } from "@/features/shared/drive/galleryApi.type";
 import type { IGalleryApiClient, TApiResult } from "@/features/shared/drive/galleryApiClient.type";
 import { pngBase64FromDataUrl, remoteFileToArtwork } from "./logic/remoteArtwork";
+import { conflictCopyTitle, needsConflictCopy } from "./logic/conflictCopy";
+import { nextDriveFull } from "./logic/driveFullState";
 import { isDeletionConfirmed, removalBrake } from "./logic/removalSafety";
 import { ABSENT_RECHECK_MS, planStatusChecks } from "./logic/statusBudget";
 import { decidePull, planPush, planSync, retryDelayMs } from "./logic/syncRules";
@@ -64,6 +70,7 @@ export const INITIAL_SYNC_STATUS: ISyncStatus = {
   missingInDriveIds: [],
   driveFolderTrashed: false,
   clockSkewIds: [],
+  driveFull: false,
 };
 
 /** Failures that belong to one artwork alone: the pass skips it and goes on. */
@@ -128,6 +135,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   const clockSkew = new Set<string>();
   /** Artworks whose last status answer was `absent`: id → when to ask again. */
   const absentUntil = new Map<string, number>();
+  let driveFull = false;
   const rowListeners = new Set<() => void>();
 
   function track(work: Promise<unknown>): void {
@@ -143,6 +151,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   function update(gen: number, patch: Partial<ISyncStatus>): void {
     guard(gen);
     if (patch.phase) phase = patch.phase;
+    if (patch.driveFull !== undefined) driveFull = patch.driveFull;
     deps.setStatus(patch);
   }
 
@@ -178,22 +187,28 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
   /** Reports an API failure, schedules the retry the failure calls for, and unwinds the pass. */
   function fail(gen: number, result: TSyncApiFailure): never {
     guard(gen);
+    // A full Drive only stays reported while it is what stopped the pass.
+    const cleared = nextDriveFull(driveFull, "otherFailure", 0);
     switch (result.kind) {
       case "reauth":
       case "unauthenticated":
         cancelRetry();
-        update(gen, { phase: "reauth" });
+        update(gen, { phase: "reauth", driveFull: cleared });
         break;
       case "offline":
-        update(gen, { phase: "offline" });
+        update(gen, { phase: "offline", driveFull: cleared });
         scheduleRetry(gen, retryDelayMs(attempt++, null));
         break;
       case "retry":
-        update(gen, { phase: "error" });
+        update(gen, { phase: "error", driveFull: cleared });
         scheduleRetry(gen, retryDelayMs(attempt++, result.retryAfterMs));
         break;
+      case "driveFull":
+        update(gen, { phase: "error", driveFull: nextDriveFull(driveFull, "driveFull", 0) });
+        scheduleRetry(gen, retryDelayMs(attempt++, null));
+        break;
       default:
-        update(gen, { phase: "error" });
+        update(gen, { phase: "error", driveFull: cleared });
         scheduleRetry(gen, retryDelayMs(attempt++, null));
     }
     throw new PassAbort();
@@ -264,13 +279,34 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     if (action === "defer") return "deferred";
     if (action !== "download") return "skipped";
     const thumbnail = safeThumbnail(artwork);
-    const written = await store.putFromRemote(owner, { ...artwork, thumbnail }, local ? expectedOf(local) : undefined);
+    const copy = local && needsConflictCopy(toFacts(local), artwork.updatedAt) ? conflictCopyOf(local) : undefined;
+    const written = await store.putFromRemote(
+      owner,
+      { ...artwork, thumbnail },
+      local ? expectedOf(local) : undefined,
+      copy,
+    );
     if (!written) return "skipped";
     tooLarge.delete(id);
     clockSkew.delete(id);
     dropRemoteOnly(gen, id);
     emitRows(gen);
+    // The copy is dirty work Drive does not have yet.
+    if (copy) void request("push");
     return "written";
+  }
+
+  /** The local version as its own artwork: same owner, new id, dirty so it uploads, stamped now. */
+  function conflictCopyOf(local: IStoredArtwork): IStoredArtwork {
+    const now = deps.now();
+    return {
+      ...local,
+      id: deps.newId(),
+      title: conflictCopyTitle(local.title, shared.sync.conflictCopySuffix, DRIVE_FILE_NAME_MAX),
+      createdAt: now,
+      updatedAt: now,
+      sync: { state: "dirty", syncedUpdatedAt: null },
+    };
   }
 
   async function removeOne(ctx: ISyncPassContext, id: string, plannedUpdatedAt: number): Promise<TSyncApplyOutcome> {
@@ -310,6 +346,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     const result = await api.save({ artwork: serializeArtworkFile(row), previewPngBase64 });
     guard(gen);
     if (result.ok) {
+      ctx.uploaded = true;
       await store.markSynced(id, result.value.updatedAt);
       tooLarge.delete(id);
       clockSkew.delete(id);
@@ -419,7 +456,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     await (adoption ?? adopt(owner, gen));
     guard(gen);
     if (!environment.isOnline()) {
-      update(gen, { phase: "offline" });
+      update(gen, { phase: "offline", driveFull: nextDriveFull(driveFull, "otherFailure", 0) });
       return false;
     }
     update(gen, { phase: "syncing" });
@@ -448,6 +485,13 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
         // Edited on another device after the delete: the edit wins, so pull it back.
         await store.dropDeletion(deletion.id);
         if (!remote && (await pullOne(ctx, deletion.id)) === "deferred") ctx.deferredIds.add(deletion.id);
+      } else if (ROW_FAILURE_KINDS.has(result.kind)) {
+        // One poisoned tombstone must not starve the pass. It stays and is retried with backoff;
+        // the Drive copy it targets must not be downloaded back meanwhile.
+        deps.warn("Drive rejected deletion", deletion.id);
+        if (result.kind === "clockSkew") clockSkew.add(deletion.id);
+        ctx.failedIds.add(deletion.id);
+        remote?.delete(deletion.id);
       } else {
         fail(gen, result);
       }
@@ -485,6 +529,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       pendingCount,
       tooLargeIds: [...tooLarge],
       clockSkewIds: [...clockSkew],
+      driveFull: nextDriveFull(driveFull, ctx.uploaded ? "uploaded" : "noUpload", pendingCount),
       ...(removal === null
         ? {}
         : { missingInDriveIds: removal.missingIds, driveFolderTrashed: removal.folderTrashed }),
@@ -510,6 +555,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       signal,
       deferredIds: new Set(),
       failedIds: new Set(),
+      uploaded: false,
       hooks: { isStale: () => false, onFailure: (result) => fail(gen, result) },
     };
     let published = false;
@@ -532,7 +578,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     } catch (error) {
       if (error instanceof PassAbort || gen !== generation) return;
       deps.warn(String(error), owner);
-      update(gen, { phase: "error" });
+      update(gen, { phase: "error", driveFull: nextDriveFull(driveFull, "otherFailure", 0) });
       scheduleRetry(gen, retryDelayMs(attempt++, null));
     }
   }
@@ -574,6 +620,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     tooLarge.clear();
     clockSkew.clear();
     absentUntil.clear();
+    driveFull = false;
     cancelDebounce();
     cancelRetry();
     for (const unsubscribe of unsubscribers) unsubscribe();
@@ -657,6 +704,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
         signal: controller.signal,
         deferredIds: new Set(),
         failedIds: new Set(),
+        uploaded: false,
         hooks: { isStale, onFailure } satisfies ISyncPullHooks,
       },
       id,

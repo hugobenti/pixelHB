@@ -40,7 +40,8 @@ describe("galleryRouteHelpers", () => {
     ["Drive 500", new DriveError(500, null, null), 503, { code: "drive_unavailable" }, "30"],
     ["Drive 403 userRateLimitExceeded", new DriveError(403, "userRateLimitExceeded", null), 503, { code: "drive_unavailable" }, "30"],
     ["network to Google", new DriveError(0, "network", null), 503, { code: "drive_unavailable" }, "30"],
-    ["Drive 403 storageQuotaExceeded", new DriveError(403, "storageQuotaExceeded", null), 502, { code: "drive_error" }, null],
+    ["Drive 403 storageQuotaExceeded", new DriveError(403, "storageQuotaExceeded", null), 507, { code: "drive_full" }, null],
+    ["Drive 403 another reason", new DriveError(403, "insufficientFilePermissions", null), 502, { code: "drive_error" }, null],
     ["Drive 400", new DriveError(400, "badRequest", null), 502, { code: "drive_error" }, null],
   ])("driveErrorToResponse maps %s", async (_label, error, status, body, retryAfter) => {
     const response = driveErrorToResponse(error);

@@ -56,6 +56,7 @@ export type TGalleryErrorCode =
   | "clock_skew"
   | "too_large"
   | "drive_error"
+  | "drive_full"
   | "drive_unavailable";
 
 export interface IGalleryErrorResponse {

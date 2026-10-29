@@ -17,6 +17,7 @@ const idle: ISyncStatus = {
   missingInDriveIds: [],
   driveFolderTrashed: false,
   clockSkewIds: [],
+  driveFull: false,
 };
 
 describe("syncStatusMessage", () => {
@@ -128,7 +129,23 @@ describe("syncStatusMessage", () => {
     );
   });
 
-  describe("clock skew and kept removals", () => {
+  describe("drive full, clock skew and kept removals", () => {
+    it("says the Drive is full, ahead of offline, while the flag is set", () => {
+      expect(syncStatusMessage(signedIn, { ...idle, phase: "error", driveFull: true })).toEqual({
+        key: "driveFull",
+        tone: "attention",
+        count: 0,
+      });
+      expect(syncStatusMessage(signedIn, { ...idle, phase: "syncing", driveFull: true })?.key).toBe("driveFull");
+      expect(syncStatusText({ key: "driveFull", tone: "attention", count: 0 })).toBe(shared.sync.driveFull);
+    });
+
+    it("still asks to sign in again before the Drive-full note, and says nothing of it when the engine is off", () => {
+      expect(syncStatusMessage(signedIn, { ...idle, phase: "reauth", driveFull: true })?.key).toBe("signInAgain");
+      expect(syncStatusMessage(signedIn, { ...idle, phase: "disabled", driveFull: true })?.key).toBe("thisBrowserOnly");
+      expect(syncStatusMessage(signedOut, { ...idle, driveFull: true })?.key).toBe("thisBrowserOnly");
+    });
+
     it("says the clock looks wrong, ahead of offline, counting the artworks that cannot sync", () => {
       const skewed: ISyncStatus = { ...idle, phase: "error", pendingCount: 2, clockSkewIds: ["a", "b"] };
       expect(syncStatusMessage(signedIn, skewed)).toEqual({ key: "clockSkew", tone: "attention", count: 2 });

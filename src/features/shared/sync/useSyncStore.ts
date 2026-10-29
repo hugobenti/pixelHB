@@ -26,6 +26,7 @@ export function useSyncStatus(): ISyncStatus {
       missingInDriveIds: state.missingInDriveIds,
       driveFolderTrashed: state.driveFolderTrashed,
       clockSkewIds: state.clockSkewIds,
+      driveFull: state.driveFull,
     })),
   );
 }

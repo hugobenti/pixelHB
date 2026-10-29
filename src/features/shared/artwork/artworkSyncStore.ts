@@ -84,15 +84,19 @@ function stillMatches(
  * Stores a Drive copy as synced, keeping the remote `updatedAt`, only while the local row is still
  * the one the decision was made on (`expected`; `undefined` = there was no row). The check and the
  * write share one transaction, so an edit that landed during the download is never overwritten.
+ * `conflictCopy` (the local version being replaced, under a new id) is saved by the same transaction.
  * Returns whether it wrote.
  */
 export async function putFromRemote(
   ownerId: string,
   artwork: IArtwork,
   expected: ISyncExpectedRow | undefined,
+  conflictCopy?: IStoredArtwork,
 ): Promise<boolean> {
   return db.transaction("rw", db.artworks, async () => {
     if (!stillMatches(await db.artworks.get(artwork.id), expected)) return false;
+    // The row this write replaces is kept first, in the same transaction: both land or neither does.
+    if (conflictCopy) await db.artworks.put(conflictCopy);
     await db.artworks.put({
       ...artwork,
       layers: artwork.layers.map((layer) => ({

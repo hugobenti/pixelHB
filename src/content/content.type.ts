@@ -78,9 +78,12 @@ export interface ISharedContent {
     signInAgain: string;
     tooLarge: (count: number) => string;
     unconfirmed: (name: string | undefined) => string;
+    driveFull: string;
     clockSkew: (count: number) => string;
     missingInDrive: (count: number) => string;
     driveFolderTrashed: string;
+    /** Appended to a title when a local edit is saved as its own artwork because Drive had a newer copy. */
+    conflictCopySuffix: string;
     openDriveFolder: string;
     /** Screen-reader suffix of a link that opens a new tab. */
     opensInNewTab: string;

@@ -6,6 +6,7 @@ export type TSyncMessageKey =
   | "signInAgain"
   | "tooLarge"
   | "unconfirmed"
+  | "driveFull"
   | "clockSkew"
   | "missingInDrive"
   | "driveFolderTrashed";

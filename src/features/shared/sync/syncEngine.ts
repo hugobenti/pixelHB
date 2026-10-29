@@ -48,6 +48,7 @@ export function getSyncEngine(): ISyncEngine {
       },
     },
     now: Date.now,
+    newId: () => crypto.randomUUID(),
     setStatus: (patch) => useSyncStore.getState().setStatus(patch),
     onArtworkChanged: artworkService.onArtworkChanged,
     renderThumbnail: artworkToPngThumbnail,

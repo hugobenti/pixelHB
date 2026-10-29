@@ -22,6 +22,8 @@ export interface ISyncStatus {
   driveFolderTrashed: boolean;
   /** Artworks the server refused because this device's clock is ahead of it. */
   clockSkewIds: string[];
+  /** The last push was refused because the user's Google Drive has no space left. */
+  driveFull: boolean;
 }
 
 export type TSyncPassKind = "full" | "push";
@@ -41,6 +43,8 @@ export interface ISyncPassContext {
   /** Ids whose push failed for a reason that is theirs alone; the pass goes on without them. */
   failedIds: Set<string>;
   hooks: ISyncPullHooks;
+  /** A push of this pass was accepted by Drive. */
+  uploaded: boolean;
 }
 
 /** What the removal step of a full pass found. */
@@ -82,7 +86,13 @@ export interface ISyncLocalStore {
   /** Only marks the version that was pushed; resolves whether it marked. */
   markTooLarge(id: string, pushedUpdatedAt: number): Promise<boolean>;
   /** Conditional on the local row still matching `expected` (`undefined`: still absent); resolves whether it wrote. */
-  putFromRemote(ownerId: string, artwork: IArtwork, expected: ISyncExpectedRow | undefined): Promise<boolean>;
+  putFromRemote(
+    ownerId: string,
+    artwork: IArtwork,
+    expected: ISyncExpectedRow | undefined,
+    /** Saved in the same transaction, only when the write goes through: the local version the Drive copy replaces. */
+    conflictCopy?: IStoredArtwork,
+  ): Promise<boolean>;
   /** Conditional on the local row still matching `expected`; moves it to the removed table and resolves whether it did. */
   removeLocal(id: string, expected: ISyncExpectedRow, removedAt: number): Promise<boolean>;
   /** Drops rows removed before `cutoff`; resolves with how many. */
@@ -123,6 +133,7 @@ export interface ISyncEngineDeps {
   environment: ISyncEnvironment;
   timers: ISyncTimers;
   now(): number;
+  newId(): string;
   setStatus(patch: Partial<ISyncStatus>): void;
   onArtworkChanged(listener: (id: string) => void): () => void;
   renderThumbnail(artwork: Pick<IArtwork, "width" | "height" | "layers" | "palette">): string;

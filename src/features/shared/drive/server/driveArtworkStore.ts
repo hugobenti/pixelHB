@@ -12,7 +12,7 @@
  */
 import { site } from "@/content/site";
 import { MAX_CANVAS_DIMENSION } from "@/features/shared/artwork/artworkLimits";
-import { ARTWORK_ID_PATTERN, galleryPreviewUrl } from "../galleryApi";
+import { ARTWORK_ID_PATTERN, DRIVE_FILE_NAME_MAX, galleryPreviewUrl } from "../galleryApi";
 import type { IGalleryListItem, IGalleryStatusResponse } from "../galleryApi.type";
 import type {
   IDriveArtworkFiles,
@@ -26,7 +26,6 @@ import type { IDriveFile, IDriveFileMetadata, IDriveRestOptions } from "./driveR
 
 const JSON_SUFFIX = ".pixelhb.json";
 const PNG_SUFFIX = ".png";
-const FILE_NAME_MAX = 100;
 const FORMAT_VERSION = "3";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 const JSON_MIME = "application/json";
@@ -49,7 +48,7 @@ function filesOfArtworkQuery(id: string, trashed = false): string {
 
 export function driveFileBaseName(title: string, id: string): string {
   const cleaned = title.replace(CONTROL_CHARACTERS, " ").replace(WHITESPACE_RUNS, " ").trim();
-  const base = Array.from(cleaned).slice(0, FILE_NAME_MAX).join("").trim();
+  const base = Array.from(cleaned).slice(0, DRIVE_FILE_NAME_MAX).join("").trim();
   return base.length > 0 ? base : id;
 }
 

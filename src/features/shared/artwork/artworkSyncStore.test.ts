@@ -324,3 +324,30 @@ test("wipeSyncedRowsOfOtherOwners also clears other owners' removed rows", async
   await syncStore.wipeSyncedRowsOfOtherOwners("u1");
   expect((await db.removedArtworks.toArray()).map((row) => row.id)).toEqual(["mine"]);
 });
+
+test("putFromRemote saves the conflict copy in the same transaction as the Drive copy", async () => {
+  artworkService.setActiveOwner("u1");
+  at(1000);
+  const art = await artworkService.createArtwork(input);
+  const local = (await syncStore.getStored(art.id))!;
+  const copy = { ...local, id: "copy", title: "Cat (conflict copy)" };
+  expect(
+    await syncStore.putFromRemote("u1", remote(art.id, 5000), { ownerId: "u1", updatedAt: 1000, state: "dirty" }, copy),
+  ).toBe(true);
+  expect(await db.artworks.get(art.id)).toMatchObject({ title: "Remote", updatedAt: 5000, sync: { state: "synced" } });
+  expect(await db.artworks.get("copy")).toMatchObject({ title: "Cat (conflict copy)", sync: { state: "dirty" } });
+});
+
+test("putFromRemote saves no conflict copy when the row changed since it was read", async () => {
+  artworkService.setActiveOwner("u1");
+  at(1000);
+  const art = await artworkService.createArtwork(input);
+  const local = (await syncStore.getStored(art.id))!;
+  at(2000);
+  await artworkService.saveArtwork(art);
+  expect(
+    await syncStore.putFromRemote("u1", remote(art.id, 5000), { ownerId: "u1", updatedAt: 1000, state: "dirty" }, { ...local, id: "copy" }),
+  ).toBe(false);
+  expect(await db.artworks.get("copy")).toBeUndefined();
+  expect((await db.artworks.get(art.id))?.updatedAt).toBe(2000);
+});

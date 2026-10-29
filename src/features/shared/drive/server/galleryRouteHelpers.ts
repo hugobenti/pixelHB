@@ -35,6 +35,8 @@ const DEFAULT_LIMITS: ISaveBodyLimits = {
 const BASE64_PATTERN = /^[A-Za-z0-9+/]+={0,2}$/;
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const RATE_LIMIT_REASONS = new Set(["rateLimitExceeded", "userRateLimitExceeded"]);
+const DRIVE_FULL_REASON = "storageQuotaExceeded";
+const HTTP_INSUFFICIENT_STORAGE = 507;
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 const HTTP_TOO_MANY_REQUESTS = 429;
@@ -55,6 +57,9 @@ export function galleryErrorResponse(
 export function driveErrorToResponse(error: DriveError): Response {
   if (error.status === HTTP_UNAUTHORIZED) {
     return galleryErrorResponse(401, { code: "reauth" });
+  }
+  if (error.status === HTTP_FORBIDDEN && error.reason === DRIVE_FULL_REASON) {
+    return galleryErrorResponse(HTTP_INSUFFICIENT_STORAGE, { code: "drive_full" });
   }
   const unavailable =
     error.status === 0 ||
