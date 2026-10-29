@@ -63,7 +63,7 @@ export const gallery: IGalleryContent = {
     description:
       "The artwork and all its layers are removed from this browser. This can’t be undone.",
     descriptionSignedIn:
-      "The artwork and all its layers are removed from this browser. If it has a copy in your Google Drive, that copy is moved to the Drive trash.",
+      "The artwork and all its layers are removed from this browser and from your other devices. If it has a copy in your Google Drive, that copy is moved to the Drive trash.",
     confirm: "Delete artwork",
   },
 };
