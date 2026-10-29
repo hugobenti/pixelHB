@@ -52,12 +52,13 @@ We optimize memory layout by saving data into a flat, typed array (`Uint8Array`)
 | **Memory impact** | A $1000 \times 1000$ grid using `Uint8Array` takes exactly 1.00MB of raw memory. |
 | **Palette constraint** | `Uint8Array` supports up to 256 colors per document, which is more than sufficient for standard pixel art workflows. |
 
-### IndexedDB Database Schema (via Dexie.js, v4)
+### IndexedDB Database Schema (via Dexie.js, v5)
 
 ```typescript
 // features/shared/db/dexie.config.ts
 artworks: "id, updatedAt, title, ownerId"
 deletions: "id, ownerId"
+removedArtworks: "id, ownerId, removedAt"
 ```
 
 ```typescript
@@ -90,6 +91,10 @@ export interface IArtworkDeletion { // tombstone: deleted locally after it had s
   ownerId: string;
   deletedAt: number;
 }
+
+export interface IRemovedArtwork extends IStoredArtwork { // synced row the engine removed because Drive trashed it
+  removedAt: number;      // kept 30 days, purged when the engine starts
+}
 ```
 
 ### File format (v3)
@@ -103,7 +108,9 @@ Drive sync is behind `NEXT_PUBLIC_DRIVE_SYNC`. `/api/gallery` route handlers are
 - IndexedDB is always the local working copy; the editor never waits on the network.
 - Dirty artworks are pushed to the `PixelHB` Drive folder, oldest first, about ten seconds after the last edit.
 - Pulling lists the Drive folder first, then downloads only artworks that are new or newer.
-- The latest `updatedAt` wins; on a tie, Drive wins.
+- The latest `updatedAt` wins; on a tie, Drive wins. When Drive's newer copy would replace a local row with unsynced work (`dirty` or `tooLarge`), the local version is first saved as a new dirty row titled `<title> (conflict copy)`, in the same transaction.
+- Local stamps are monotonic (`updatedAt = max(now, stored + 1)`); the server answers `400 clock_skew` to an `updatedAt` or `deletedAt` more than 5 minutes ahead of its clock, and the engine reports the artwork instead of retrying forever.
+- A synced row is removed locally only on positive evidence: `GET /api/gallery/<id>/status` says the artwork JSON is `trashed` in Drive (`explicitlyTrashed`, i.e. trashed itself, not only through a trashed parent folder) with an `updatedAt` at least the version last synced; that is enough per row, however many rows. Absence from the list is never enough (a short or lagging list, a lost scope, deleted forever). Files that exist but cannot be read (`unreadableIds`, e.g. a future format version) count as present; formatVersion 3 stays readable forever. The list response carries `rootFolderTrashed` (a trashed `PixelHB` folder and no live one): children inherit `trashed`, so such a pass removes nothing and the gallery says the folder is in the Drive trash. Rows Drive holds no live copy of and no trashed proof for are kept, listed in `missingInDriveIds` and marked "Not in your Drive anymore" so they can be deleted locally. A pass asks at most 25 statuses (newest first) and remembers `absent` answers for 10 minutes. Removal moves the row to `removedArtworks` (restorable through `restoreRemoved`, which marks it dirty so it uploads again; no UI yet).
 - Deleting a synced artwork leaves a tombstone in `deletions` until Drive confirms it; signing out removes that account's rows from the browser (after offering to download unsynced ones). Artworks too large for Drive are marked `tooLarge` and stay local.
 
 ---

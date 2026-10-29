@@ -22,7 +22,7 @@ export const help: IHelpContent = {
         "Signed out: your artworks stay in this browser on this device. Clearing your browsing data deletes them, and they don’t show up in a private window, another browser or another device.",
         "Signed in with Google: your artworks are also saved to a PixelHB folder in your Google Drive, so they appear on every device where you sign in. They pass through PixelHB’s server on the way and are never stored there.",
         "Syncing happens in the background about ten seconds after you stop drawing. Offline, you keep drawing; changes are sent when you’re back online. Very large artworks may be too big to sync. They stay in this browser, so export them to keep a copy.",
-        "If the same artwork is changed on two devices, the most recent change wins and the older one is replaced.",
+        "If the same artwork is changed on two devices, the most recent change wins. If the older version had changes that hadn’t reached Drive, PixelHB keeps them as a separate artwork named “… (conflict copy)”.",
         "When you sign in, any artworks in this browser that aren’t tied to an account are added to your Drive, including when you sign in with a different Google account. On a shared computer, check the gallery before signing in: someone else’s drawings would be uploaded too.",
         "Signing out removes that account’s artworks from this browser; they stay in your Drive. If some changes haven’t reached Drive yet, PixelHB asks first: Download them, Sign out anyway, or Cancel.",
         "To disconnect PixelHB from your Google account, sign out, then remove PixelHB from your Google account’s third-party connections. Your files stay in your Drive.",
