@@ -1,8 +1,9 @@
 import type { IArtworkFileV3 } from "@/features/shared/artwork/artworkFileService.type";
 import type {
-  IGalleryListItem,
+  IGalleryListResponse,
   IGallerySaveRequest,
   IGallerySaveResponse,
+  IGalleryStatusResponse,
 } from "./galleryApi.type";
 
 export type TApiResult<T> =
@@ -20,9 +21,11 @@ export type TApiResult<T> =
   | { ok: false; kind: "failed"; status: number };
 
 export interface IGalleryApiClient {
-  list(): Promise<TApiResult<IGalleryListItem[]>>;
+  list(): Promise<TApiResult<IGalleryListResponse>>;
   get(id: string): Promise<TApiResult<IArtworkFileV3>>;
   /** Gzips the request; resolves `tooLarge` before any fetch when the body is over the cap. */
   save(request: IGallerySaveRequest): Promise<TApiResult<IGallerySaveResponse>>;
   remove(id: string, deletedAt: number): Promise<TApiResult<null>>;
+  /** Where one artwork is in Drive: the positive evidence a local copy needs before it may be removed. */
+  status(id: string): Promise<TApiResult<IGalleryStatusResponse>>;
 }

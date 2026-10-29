@@ -4,6 +4,11 @@ export interface IDriveFile {
   id: string;
   name: string;
   appProperties?: TAppProperties;
+  /**
+   * Drive v3 `explicitlyTrashed`: trashed itself, as opposed to only through a trashed parent
+   * folder. Only list results carry it; a missing value means "not known to be explicit".
+   */
+  explicitlyTrashed?: boolean;
 }
 
 export interface IDriveFileMetadata {

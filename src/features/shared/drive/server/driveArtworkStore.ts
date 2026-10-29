@@ -13,7 +13,7 @@
 import { site } from "@/content/site";
 import { MAX_CANVAS_DIMENSION } from "@/features/shared/artwork/artworkLimits";
 import { ARTWORK_ID_PATTERN, galleryPreviewUrl } from "../galleryApi";
-import type { IGalleryListItem } from "../galleryApi.type";
+import type { IGalleryListItem, IGalleryStatusResponse } from "../galleryApi.type";
 import type {
   IDriveArtworkFiles,
   IDriveArtworkStore,
@@ -32,6 +32,7 @@ const FOLDER_MIME = "application/vnd.google-apps.folder";
 const JSON_MIME = "application/json";
 const PNG_MIME = "image/png";
 const ROOT_QUERY = `appProperties has { key='pixelhb' and value='root' } and mimeType='${FOLDER_MIME}' and trashed=false`;
+const TRASHED_ROOT_QUERY = ROOT_QUERY.replace("trashed=false", "trashed=true");
 const LIST_QUERY = "appProperties has { key='pixelhb' and value='artwork' } and trashed=false";
 const NON_NEGATIVE_INTEGER = /^\d+$/;
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f-\u009f]/g;
@@ -42,8 +43,8 @@ function escapeQueryValue(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
-function filesOfArtworkQuery(id: string): string {
-  return `appProperties has { key='artworkId' and value='${escapeQueryValue(id)}' } and trashed=false`;
+function filesOfArtworkQuery(id: string, trashed = false): string {
+  return `appProperties has { key='artworkId' and value='${escapeQueryValue(id)}' } and trashed=${trashed}`;
 }
 
 export function driveFileBaseName(title: string, id: string): string {
@@ -105,6 +106,14 @@ function toListItem(file: IDriveFile): IGalleryListItem | null {
   };
 }
 
+/** The id of a marked file that `toListItem` refused, when it is one the app could ever have created. */
+function unreadableIdOf(file: IDriveFile): string | null {
+  const id = file.appProperties?.artworkId;
+  return file.appProperties?.pixelhb === "artwork" && typeof id === "string" && ARTWORK_ID_PATTERN.test(id)
+    ? id
+    : null;
+}
+
 export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtworkStore {
   const rest = createDriveRest(options);
   let rootFolder: Promise<string> | null = null;
@@ -135,6 +144,13 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
     return rootFolder;
   }
 
+  /** True only when a trashed PixelHB folder exists and no live one does; the second query only runs after the first found one. */
+  async function isRootFolderTrashed(): Promise<boolean> {
+    const trashed = await rest.listAll({ q: TRASHED_ROOT_QUERY });
+    if (trashed.length === 0) return false;
+    return (await rest.listAll({ q: ROOT_QUERY })).length === 0;
+  }
+
   async function findArtworkFiles(id: string): Promise<IDriveArtworkFiles> {
     const files = await rest.listAll({ q: filesOfArtworkQuery(id) });
     return {
@@ -143,6 +159,31 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
         .sort((a, b) => updatedAtOf(b) - updatedAtOf(a)),
       png: files.filter((file) => file.appProperties?.pixelhb === "preview"),
     };
+  }
+
+  /**
+   * Evidence of a deletion: an artwork JSON that was trashed itself (`explicitlyTrashed === true`).
+   * `trashed=true` alone also matches every child of a trashed folder, which is not the user
+   * deleting that artwork. A missing or false field is not evidence (safe by default: the row stays).
+   * Our own `trash()` PATCHes `trashed: true` on the file, which Drive reports as explicitly trashed.
+   */
+  async function findTrashed(id: string): Promise<{ updatedAt: number } | null> {
+    const files = await rest.listAll({ q: filesOfArtworkQuery(id, true) });
+    const stamps = files
+      .filter((file) => file.appProperties?.pixelhb === "artwork" && file.explicitlyTrashed === true)
+      .map(updatedAtOf)
+      .filter((updatedAt) => updatedAt !== MISSING_UPDATED_AT);
+    return stamps.length > 0 ? { updatedAt: Math.max(...stamps) } : null;
+  }
+
+  async function status(id: string): Promise<IGalleryStatusResponse> {
+    const { json } = await findArtworkFiles(id);
+    if (json[0]) {
+      const updatedAt = updatedAtOf(json[0]);
+      return updatedAt === MISSING_UPDATED_AT ? { state: "present" } : { state: "present", updatedAt };
+    }
+    const trashed = await findTrashed(id);
+    return trashed ? { state: "trashed", updatedAt: trashed.updatedAt } : { state: "absent" };
   }
 
   async function write(
@@ -165,11 +206,15 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
 
     async list() {
       const files = await rest.listAll({ q: LIST_QUERY });
+      const rootFolderTrashed = await isRootFolderTrashed();
       const newest = new Map<string, IGalleryListItem>();
+      const unreadable = new Set<string>();
       for (const file of files) {
         const item = toListItem(file);
         if (!item) {
           console.warn(`Skipping Drive file ${file.id}: unreadable PixelHB properties`);
+          const id = unreadableIdOf(file);
+          if (id !== null) unreadable.add(id);
           continue;
         }
         const current = newest.get(item.id);
@@ -177,8 +222,16 @@ export function createDriveArtworkStore(options: IDriveRestOptions): IDriveArtwo
           newest.set(item.id, item);
         }
       }
-      return [...newest.values()].sort((a, b) => b.updatedAt - a.updatedAt);
+      return {
+        items: [...newest.values()].sort((a, b) => b.updatedAt - a.updatedAt),
+        unreadableIds: [...unreadable].filter((id) => !newest.has(id)),
+        rootFolderTrashed,
+      };
     },
+
+    findTrashed,
+
+    status,
 
     async get(id) {
       const { json } = await findArtworkFiles(id);

@@ -53,6 +53,41 @@ test("upgrading a v3 database keeps every artwork as a signed-out local row", as
     });
   }
   expect(await upgraded.deletions.count()).toBe(0);
-  expect(upgraded.verno).toBe(4);
+  expect(upgraded.verno).toBe(5);
+  upgraded.close();
+});
+
+test("upgrading a v4 database keeps every artwork and tombstone untouched and adds an empty removed table", async () => {
+  const legacy = new Dexie("PixelCraftDB");
+  legacy.version(4).stores({
+    artworks: "id, updatedAt, title, ownerId",
+    deletions: "id, ownerId",
+  });
+  const base = {
+    width: 1,
+    height: 1,
+    createdAt: 1,
+    thumbnail: "",
+    palette: ["#000000"],
+    layers: [{ id: "l", name: "L", visible: true, pixelData: new Uint8Array([0]) }],
+    activeLayerId: "l",
+  };
+  const rows = [
+    { ...base, id: "mine", title: "Mine", updatedAt: 10, ownerId: "u1", sync: { state: "synced", syncedUpdatedAt: 10 } },
+    { ...base, id: "edited", title: "Edited", updatedAt: 20, ownerId: "u1", sync: { state: "dirty", syncedUpdatedAt: 5 } },
+    { ...base, id: "big", title: "Big", updatedAt: 30, ownerId: "u2", sync: { state: "tooLarge", syncedUpdatedAt: null } },
+    { ...base, id: "local", title: "Local", updatedAt: 40, ownerId: null, sync: { state: "local", syncedUpdatedAt: null } },
+  ];
+  const tombstones = [{ id: "gone", ownerId: "u1", deletedAt: 99 }];
+  await legacy.table("artworks").bulkPut(rows);
+  await legacy.table("deletions").bulkPut(tombstones);
+  legacy.close();
+
+  const upgraded = new PixelCraftDB();
+  expect(await upgraded.artworks.toArray()).toHaveLength(rows.length);
+  for (const row of rows) expect(await upgraded.artworks.get(row.id)).toEqual(row);
+  expect(await upgraded.deletions.toArray()).toEqual(tombstones);
+  expect(await upgraded.removedArtworks.count()).toBe(0);
+  expect(upgraded.verno).toBe(5);
   upgraded.close();
 });

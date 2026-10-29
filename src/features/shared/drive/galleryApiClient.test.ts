@@ -66,10 +66,38 @@ describe("galleryApiClient", () => {
     expect(result).toEqual(expected);
   });
 
+  it("list returns the items and the unreadable ids", async () => {
+    const item = { id: ID, title: "Sunset cat", width: 2, height: 2, createdAt: 1000, updatedAt: 2000, previewUrl: `/api/gallery/${ID}/preview?v=2000` };
+    expect(await createGalleryApiClient(fetchReturning(Response.json({ items: [item], unreadableIds: ["x"], rootFolderTrashed: true }))).list())
+      .toEqual({ ok: true, value: { items: [item], unreadableIds: ["x"], rootFolderTrashed: true } });
+  });
+
+  it("list treats a body without unreadableIds as having none", async () => {
+    expect(await createGalleryApiClient(fetchReturning(Response.json({ items: [] }))).list())
+      .toEqual({ ok: true, value: { items: [], unreadableIds: [], rootFolderTrashed: false } });
+  });
+
+  it.each([
+    ["present", { state: "present", updatedAt: 5 }],
+    ["trashed", { state: "trashed", updatedAt: 9 }],
+    ["absent", { state: "absent" }],
+  ])("status GETs /api/gallery/<id>/status and returns %s", async (_label, body) => {
+    const fetchFn = fetchReturning(Response.json(body));
+    expect(await createGalleryApiClient(fetchFn).status(ID)).toEqual({ ok: true, value: body });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe(`/api/gallery/${ID}/status`);
+    expect(init?.cache).toBe("no-store");
+  });
+
+  it("status maps failures like the other calls", async () => {
+    expect(await createGalleryApiClient(fetchReturning(new TypeError("x"))).status(ID)).toEqual({ ok: false, kind: "offline" });
+    expect(await createGalleryApiClient(fetchReturning(Response.json({ code: "reauth" }, { status: 401 }))).status(ID)).toEqual({ ok: false, kind: "reauth" });
+  });
+
   it("list unwraps items; remove sends DELETE with deletedAt and maps 204 to ok null", async () => {
     const item = { id: ID, title: "Sunset cat", width: 2, height: 2, createdAt: 1000, updatedAt: 2000, previewUrl: `/api/gallery/${ID}/preview?v=2000` };
     expect(await createGalleryApiClient(fetchReturning(Response.json({ items: [item] }))).list())
-      .toEqual({ ok: true, value: [item] });
+      .toEqual({ ok: true, value: { items: [item], unreadableIds: [], rootFolderTrashed: false } });
 
     const fetchFn = fetchReturning(new Response(null, { status: 204 }));
     expect(await createGalleryApiClient(fetchFn).remove(ID, 2500)).toEqual({ ok: true, value: null });

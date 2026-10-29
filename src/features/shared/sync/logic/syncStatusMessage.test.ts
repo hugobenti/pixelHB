@@ -14,6 +14,8 @@ const idle: ISyncStatus = {
   remoteOnly: [],
   tooLargeIds: [],
   lastSyncedAt: 1,
+  missingInDriveIds: [],
+  driveFolderTrashed: false,
   clockSkewIds: [],
 };
 
@@ -126,7 +128,7 @@ describe("syncStatusMessage", () => {
     );
   });
 
-  describe("clock skew", () => {
+  describe("clock skew and kept removals", () => {
     it("says the clock looks wrong, ahead of offline, counting the artworks that cannot sync", () => {
       const skewed: ISyncStatus = { ...idle, phase: "error", pendingCount: 2, clockSkewIds: ["a", "b"] };
       expect(syncStatusMessage(signedIn, skewed)).toEqual({ key: "clockSkew", tone: "attention", count: 2 });
@@ -141,6 +143,28 @@ describe("syncStatusMessage", () => {
         tone: "attention",
         count: 1,
       });
+    });
+
+    it("tells how many artworks Drive no longer holds and that they are kept here", () => {
+      const missing: ISyncStatus = { ...idle, missingInDriveIds: ["a", "b", "c", "d"] };
+      expect(syncStatusMessage(signedIn, missing)).toEqual({ key: "missingInDrive", tone: "attention", count: 4 });
+      expect(syncStatusText({ key: "missingInDrive", tone: "attention", count: 4 })).toBe(shared.sync.missingInDrive(4));
+      expect(shared.sync.missingInDrive(4)).toContain("delete them here");
+      expect(shared.sync.missingInDrive(1)).toContain("delete it here");
+    });
+
+    it("says the PixelHB folder is in the Drive trash, ahead of the missing note", () => {
+      const trashed: ISyncStatus = { ...idle, driveFolderTrashed: true, missingInDriveIds: ["a"] };
+      expect(syncStatusMessage(signedIn, trashed)).toEqual({ key: "driveFolderTrashed", tone: "attention", count: 0 });
+      expect(syncStatusText({ key: "driveFolderTrashed", tone: "attention", count: 0 })).toBe(shared.sync.driveFolderTrashed);
+    });
+
+    it("shows these notes only when nothing more urgent applies, and never in an editor scope", () => {
+      const kept: ISyncStatus = { ...idle, missingInDriveIds: ["a"], driveFolderTrashed: true };
+      expect(syncStatusMessage(signedIn, { ...kept, phase: "offline" })?.key).toBe("offline");
+      expect(syncStatusMessage(signedIn, { ...kept, phase: "syncing" })?.key).toBe("syncing");
+      expect(syncStatusMessage(signedIn, { ...kept, pendingCount: 1, tooLargeIds: ["x"] })?.key).toBe("tooLarge");
+      expect(syncStatusMessage(signedIn, kept, { artworkId: "mine" })?.key).toBe("saved");
     });
   });
 });

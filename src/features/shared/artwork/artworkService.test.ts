@@ -12,6 +12,7 @@ beforeEach(async () => {
   artworkService.setActiveOwner(null);
   await db.artworks.clear();
   await db.deletions.clear();
+  await db.removedArtworks.clear();
 });
 afterEach(() => vi.restoreAllMocks());
 
