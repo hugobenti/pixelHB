@@ -5,11 +5,12 @@
 import Dexie, { type Table } from "dexie";
 
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import type { IArtworkDeletion, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
+import type { IArtworkDeletion, IRemovedArtwork, IStoredArtwork } from "@/features/shared/artwork/artworkSync.type";
 
 export class PixelCraftDB extends Dexie {
   artworks!: Table<IStoredArtwork, string>;
   deletions!: Table<IArtworkDeletion, string>;
+  removedArtworks!: Table<IRemovedArtwork, string>;
 
   constructor() {
     super("PixelCraftDB");
@@ -63,6 +64,10 @@ export class PixelCraftDB extends Dexie {
             }
           })
       );
+    // Rows the engine removed after Drive trashed them; nothing existing is rewritten.
+    this.version(5).stores({
+      removedArtworks: "id, ownerId, removedAt",
+    });
   }
 }
 

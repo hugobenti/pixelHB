@@ -23,6 +23,8 @@ export function useSyncStatus(): ISyncStatus {
       remoteOnly: state.remoteOnly,
       tooLargeIds: state.tooLargeIds,
       lastSyncedAt: state.lastSyncedAt,
+      missingInDriveIds: state.missingInDriveIds,
+      driveFolderTrashed: state.driveFolderTrashed,
       clockSkewIds: state.clockSkewIds,
     })),
   );

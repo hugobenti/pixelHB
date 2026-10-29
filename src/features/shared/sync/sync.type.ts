@@ -13,6 +13,13 @@ export interface ISyncStatus {
   remoteOnly: IGalleryListItem[];
   tooLargeIds: string[];
   lastSyncedAt: number | null;
+  /**
+   * Synced rows the last full pass kept on this device because Drive does not hold a live copy and
+   * has no trashed one proving a deletion (gone for good, or an empty answer). The user can delete them here.
+   */
+  missingInDriveIds: string[];
+  /** The PixelHB folder is in the Drive trash: nothing is removed until it is restored. */
+  driveFolderTrashed: boolean;
   /** Artworks the server refused because this device's clock is ahead of it. */
   clockSkewIds: string[];
 }
@@ -34,6 +41,14 @@ export interface ISyncPassContext {
   /** Ids whose push failed for a reason that is theirs alone; the pass goes on without them. */
   failedIds: Set<string>;
   hooks: ISyncPullHooks;
+}
+
+/** What the removal step of a full pass found. */
+export interface IRemovalOutcome {
+  missingIds: string[];
+  folderTrashed: boolean;
+  /** Candidates are left that the status budget did not reach: another pass should follow soon. */
+  incomplete: boolean;
 }
 
 export interface ISyncPullHooks {
@@ -68,8 +83,10 @@ export interface ISyncLocalStore {
   markTooLarge(id: string, pushedUpdatedAt: number): Promise<boolean>;
   /** Conditional on the local row still matching `expected` (`undefined`: still absent); resolves whether it wrote. */
   putFromRemote(ownerId: string, artwork: IArtwork, expected: ISyncExpectedRow | undefined): Promise<boolean>;
-  /** Conditional on the local row still matching `expected`; resolves whether it deleted. */
-  removeLocal(id: string, expected: ISyncExpectedRow): Promise<boolean>;
+  /** Conditional on the local row still matching `expected`; moves it to the removed table and resolves whether it did. */
+  removeLocal(id: string, expected: ISyncExpectedRow, removedAt: number): Promise<boolean>;
+  /** Drops rows removed before `cutoff`; resolves with how many. */
+  purgeRemoved(cutoff: number): Promise<number>;
   listDeletions(ownerId: string): Promise<IArtworkDeletion[]>;
   dropDeletion(id: string): Promise<void>;
   adoptUnowned(ownerId: string): Promise<number>;

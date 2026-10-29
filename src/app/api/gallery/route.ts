@@ -7,7 +7,7 @@ import { withGalleryAccess } from "@/features/shared/drive/server/galleryRouteHe
 
 export async function GET(request: Request): Promise<Response> {
   return withGalleryAccess(request, null, async (store) =>
-    Response.json({ items: await store.list() } satisfies IGalleryListResponse, {
+    Response.json((await store.list()) satisfies IGalleryListResponse, {
       headers: { "Cache-Control": "private, no-store" },
     }),
   );

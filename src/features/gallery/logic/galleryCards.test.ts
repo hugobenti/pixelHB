@@ -95,4 +95,14 @@ describe("galleryCards", () => {
     ).map((c) => c.marker);
     expect(markers).toEqual(["notSynced", "tooLarge", null, null]);
   });
+
+  it("marks a synced artwork Drive no longer holds, and only a synced one", () => {
+    const markers = galleryCards(
+      [local("gone", 4), local("fine", 3), local("edited", 2, "dirty")],
+      [],
+      false,
+      ["gone", "edited", "unknown-id"],
+    ).map((c) => c.marker);
+    expect(markers).toEqual(["missingInDrive", null, "notSynced"]);
+  });
 });

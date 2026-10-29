@@ -29,6 +29,7 @@ export const gallery: IGalleryContent = {
     inDrive: "In your Drive",
     notSynced: "Not synced yet",
     tooLarge: "Too large to sync",
+    missingInDrive: "Not in your Drive anymore",
   },
   create: {
     title: "New artwork",

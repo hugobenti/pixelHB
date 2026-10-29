@@ -20,6 +20,7 @@ const latin1 = (bytes: Uint8Array | null) => new TextDecoder("latin1").decode(by
 
 const ID = "3f1c9a52-0000-4000-8000-000000000001";
 const OTHER = "3f1c9a52-0000-4000-8000-000000000002";
+const READABLE = "3f1c9a52-0000-4000-8000-000000000003";
 const ROOT = { id: "root-1", name: "PixelHB", appProperties: { pixelhb: "root" } };
 const json = (value: unknown) => Response.json(value);
 const props = (updatedAt: number, overrides: Record<string, string | undefined> = {}) =>
@@ -73,9 +74,11 @@ describe("driveArtworkStore", () => {
     const { fetchFn, calls } = recorder([
       json({ files: [jsonFile("f-a", 2000)], nextPageToken: "p2" }),
       json({ files: [moon] }),
+      json({ files: [] }),
     ]);
-    const items = await store(fetchFn).list();
-    expect(calls).toHaveLength(2);
+    const { items, rootFolderTrashed } = await store(fetchFn).list();
+    expect(rootFolderTrashed).toBe(false);
+    expect(calls).toHaveLength(3);
     expect(calls[0].url.searchParams.get("q")).toBe("appProperties has { key='pixelhb' and value='artwork' } and trashed=false");
     expect(calls[1].url.searchParams.get("pageToken")).toBe("p2");
     expect(items).toEqual([
@@ -95,14 +98,65 @@ describe("driveArtworkStore", () => {
       jsonFile("b5", 1, { formatVersion: "2" }),
       jsonFile("b6", 1, { artworkId: "bad id'" }),
     ];
-    const { fetchFn } = recorder([json({ files: [...bad, good] })]);
-    const items = await store(fetchFn).list();
+    const { fetchFn } = recorder([json({ files: [...bad, good] }), json({ files: [] })]);
+    const { items } = await store(fetchFn).list();
     expect(items.map((i) => i.id)).toEqual([ID]);
   });
 
+  it("list reports the id of every marked file it cannot read, so the engine never treats it as absent", async () => {
+    const files = [
+      jsonFile("u1", 1, { formatVersion: "4" }, "Future.pixelhb.json"),
+      jsonFile("u2", 1, { width: "0" }),
+      jsonFile("u3", 1, { artworkId: "bad id'" }),
+      jsonFile("u4", 1, { artworkId: undefined }),
+      jsonFile("u5", 1, { artworkId: OTHER, updatedAt: "soon" }),
+      { id: "u6", name: "foreign.json", appProperties: { pixelhb: "preview", artworkId: "nope" } },
+      jsonFile("ok", 9, { artworkId: READABLE }),
+    ];
+    const { fetchFn } = recorder([json({ files }), json({ files: [] })]);
+    const listing = await store(fetchFn).list();
+    expect(listing.items.map((i) => i.id)).toEqual([READABLE]);
+    expect([...listing.unreadableIds].sort()).toEqual([ID, OTHER].sort());
+  });
+
+  it("list reads formatVersion 3 forever: only another version is unreadable", async () => {
+    const { fetchFn } = recorder([json({ files: [jsonFile("a", 5, { formatVersion: "3" }), jsonFile("b", 5, { formatVersion: "4", artworkId: OTHER })] }), json({ files: [] })]);
+    const listing = await store(fetchFn).list();
+    expect(listing.items.map((i) => i.id)).toEqual([ID]);
+    expect(listing.unreadableIds).toEqual([OTHER]);
+  });
+
   it("list keeps only the newest of duplicate JSON files for one artwork", async () => {
-    const { fetchFn } = recorder([json({ files: [jsonFile("f-1", 2000), jsonFile("f-2", 3000)] })]);
-    expect((await store(fetchFn).list()).map((i) => i.updatedAt)).toEqual([3000]);
+    const { fetchFn } = recorder([json({ files: [jsonFile("f-1", 2000), jsonFile("f-2", 3000)] }), json({ files: [] })]);
+    expect((await store(fetchFn).list()).items.map((i) => i.updatedAt)).toEqual([3000]);
+  });
+
+  describe("rootFolderTrashed", () => {
+    const TRASHED_ROOT = "appProperties has { key='pixelhb' and value='root' } and mimeType='application/vnd.google-apps.folder' and trashed=true";
+    const LIVE_ROOT = TRASHED_ROOT.replace("trashed=true", "trashed=false");
+
+    it("is false without a trashed PixelHB folder, after a single extra query", async () => {
+      const { fetchFn, calls } = recorder([json({ files: [] }), json({ files: [] })]);
+      expect((await store(fetchFn).list()).rootFolderTrashed).toBe(false);
+      expect(calls).toHaveLength(2);
+      expect(calls[1].url.searchParams.get("q")).toBe(TRASHED_ROOT);
+    });
+
+    it("is true when the folder is trashed and no live folder exists", async () => {
+      const { fetchFn, calls } = recorder([json({ files: [] }), json({ files: [ROOT] }), json({ files: [] })]);
+      expect((await store(fetchFn).list()).rootFolderTrashed).toBe(true);
+      expect(calls[2].url.searchParams.get("q")).toBe(LIVE_ROOT);
+    });
+
+    it("is false when a live folder exists next to the trashed one (the app made a new folder)", async () => {
+      const { fetchFn } = recorder([json({ files: [] }), json({ files: [ROOT] }), json({ files: [{ ...ROOT, id: "root-2" }] })]);
+      expect((await store(fetchFn).list()).rootFolderTrashed).toBe(false);
+    });
+
+    it("fails the whole list when the folder query fails, never answering false on doubt", async () => {
+      const { fetchFn } = recorder([json({ files: [] }), new Response(null, { status: 500 })]);
+      await expect(store(fetchFn).list()).rejects.toThrow();
+    });
   });
 
   it("get streams the newest artwork JSON; null when Drive has none", async () => {
@@ -217,5 +271,73 @@ describe("driveArtworkStore", () => {
     await expect(s.ensureRootFolder()).rejects.toMatchObject({ status: 0 });
     expect(await s.ensureRootFolder()).toBe("root-1");
     expect(calls).toHaveLength(2);
+  });
+
+  describe("status and findTrashed", () => {
+    const TRASHED_OF_ID = `appProperties has { key='artworkId' and value='${ID}' } and trashed=true`;
+
+    const explicit = (file: ReturnType<typeof jsonFile>) => ({ ...file, explicitlyTrashed: true });
+
+    it("findTrashed queries trashed files of the artwork id and returns the newest readable updatedAt of explicitly trashed JSONs", async () => {
+      const { fetchFn, calls } = recorder([
+        json({
+          files: [
+            explicit(jsonFile("t1", 1500)),
+            { ...pngFile("tp"), explicitlyTrashed: true },
+            explicit(jsonFile("t2", 2500)),
+            explicit(jsonFile("t3", 1, { updatedAt: "soon" })),
+          ],
+        }),
+      ]);
+      expect(await store(fetchFn).findTrashed(ID)).toEqual({ updatedAt: 2500 });
+      expect(calls).toHaveLength(1);
+      expect(calls[0].url.searchParams.get("q")).toBe(TRASHED_OF_ID);
+    });
+
+    it("findTrashed is null without an explicitly trashed artwork JSON (nothing, only a preview, unreadable stamps)", async () => {
+      expect(await store(recorder([json({ files: [] })]).fetchFn).findTrashed(ID)).toBeNull();
+      expect(await store(recorder([json({ files: [{ ...pngFile("tp"), explicitlyTrashed: true }] })]).fetchFn).findTrashed(ID)).toBeNull();
+      expect(await store(recorder([json({ files: [explicit(jsonFile("t", 1, { updatedAt: "x" }))] })]).fetchFn).findTrashed(ID)).toBeNull();
+    });
+
+    it("findTrashed does not count a child trashed only through its folder: explicitlyTrashed false or missing is not evidence", async () => {
+      const viaFolder = { ...jsonFile("t", 3000), explicitlyTrashed: false };
+      expect(await store(recorder([json({ files: [viaFolder] })]).fetchFn).findTrashed(ID)).toBeNull();
+      expect(await store(recorder([json({ files: [jsonFile("t", 3000)] })]).fetchFn).findTrashed(ID)).toBeNull();
+    });
+
+    it("status is present when a live JSON exists, without looking at the trash", async () => {
+      const { fetchFn, calls } = recorder([json({ files: [jsonFile("f", 2000)] })]);
+      expect(await store(fetchFn).status(ID)).toEqual({ state: "present", updatedAt: 2000 });
+      expect(calls).toHaveLength(1);
+    });
+
+    it("status counts an unreadable live JSON as present (no updatedAt)", async () => {
+      const { fetchFn } = recorder([json({ files: [jsonFile("f", 1, { formatVersion: "4", updatedAt: "x" })] })]);
+      expect(await store(fetchFn).status(ID)).toEqual({ state: "present" });
+    });
+
+    it("status is trashed with the trashed copy's updatedAt when only the trash has it", async () => {
+      const { fetchFn, calls } = recorder([json({ files: [] }), json({ files: [explicit(jsonFile("t", 3000))] })]);
+      expect(await store(fetchFn).status(ID)).toEqual({ state: "trashed", updatedAt: 3000 });
+      expect(calls[1].url.searchParams.get("q")).toBe(TRASHED_OF_ID);
+    });
+
+    it("status and findTrashed work detached from the store object", async () => {
+      const { status, findTrashed } = store(recorder([json({ files: [] }), json({ files: [] }), json({ files: [] })]).fetchFn);
+      expect(await status(ID)).toEqual({ state: "absent" });
+      expect(await findTrashed(ID)).toBeNull();
+    });
+
+    it("status is absent, not trashed, for an artwork whose files are trashed only through their folder", async () => {
+      const viaFolder = { ...jsonFile("t", 3000), explicitlyTrashed: false };
+      const { fetchFn } = recorder([json({ files: [] }), json({ files: [viaFolder] })]);
+      expect(await store(fetchFn).status(ID)).toEqual({ state: "absent" });
+    });
+
+    it("status is absent when neither the live nor the trashed set has the artwork", async () => {
+      const { fetchFn } = recorder([json({ files: [] }), json({ files: [] })]);
+      expect(await store(fetchFn).status(ID)).toEqual({ state: "absent" });
+    });
   });
 });

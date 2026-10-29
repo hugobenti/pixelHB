@@ -1,4 +1,4 @@
-export type TGalleryCardMarker = "downloading" | "inDrive" | "notSynced" | "tooLarge";
+export type TGalleryCardMarker = "downloading" | "inDrive" | "notSynced" | "tooLarge" | "missingInDrive";
 
 /** One gallery card: a local artwork, or one that so far exists only in Drive. */
 export interface IGalleryCard {

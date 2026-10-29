@@ -4,8 +4,8 @@
  * editor bar, account panel), and looks its copy up.
  *
  * Notes:
- * Order: unconfirmed (provisional account), reauth, clock skew, offline, syncing, too large, saved.
- * Engine phase `error` reads as offline (Drive could not be reached and the local copy is
+ * Order: unconfirmed (provisional account), reauth, clock skew, offline, syncing, too large, Drive folder in the trash, artworks missing
+ * in Drive, saved. Engine phase `error` reads as offline (Drive could not be reached and the local copy is
  * what is shown) unless a more specific cause is known (wrong clock); phase `disabled` while signed in means
  * the engine is not running (e.g. no Web Locks), so work stays in this browser. Idle with more pending changes than too-large ones means a push is still
  * debounced, so it is not "saved" yet. `null` while the account is loading.
@@ -29,6 +29,8 @@ const TONES: Record<TSyncMessageKey, TSyncTone> = {
   tooLarge: "attention",
   unconfirmed: "neutral",
   clockSkew: "attention",
+  missingInDrive: "attention",
+  driveFolderTrashed: "attention",
 };
 
 function message(key: TSyncMessageKey, count = 0): ISyncStatusMessage {
@@ -58,12 +60,17 @@ export function syncStatusMessage(
   const tooLarge = scope
     ? status.tooLargeIds.filter((id) => id === scope.artworkId)
     : status.tooLargeIds;
-  return tooLarge.length > 0 ? message("tooLarge", tooLarge.length) : message("saved");
+  if (tooLarge.length > 0) return message("tooLarge", tooLarge.length);
+  if (scope) return message("saved");
+  if (status.driveFolderTrashed) return message("driveFolderTrashed");
+  if (status.missingInDriveIds.length > 0) return message("missingInDrive", status.missingInDriveIds.length);
+  return message("saved");
 }
 
 export function syncStatusText(status: ISyncStatusMessage): string {
   if (status.key === "tooLarge") return shared.sync.tooLarge(status.count);
   if (status.key === "unconfirmed") return shared.sync.unconfirmed(status.name);
   if (status.key === "clockSkew") return shared.sync.clockSkew(status.count);
+  if (status.key === "missingInDrive") return shared.sync.missingInDrive(status.count);
   return shared.sync[status.key];
 }

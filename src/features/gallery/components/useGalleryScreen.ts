@@ -42,12 +42,13 @@ export function useGalleryScreen() {
   const account = useAccount();
   const remoteOnly = useSyncStore((state) => state.remoteOnly);
   const phase = useSyncStore((state) => state.phase);
+  const missingInDriveIds = useSyncStore((state) => state.missingInDriveIds);
   const firstListPending = useSyncStore((state) => state.lastSyncedAt === null);
   const message = useSyncMessage();
   const driveOnly = useHeldRemoteOnly(remoteOnly, artworks, phase, loadArtworks);
   const cards = useMemo(
-    () => galleryCards(artworks, driveOnly, phase === "syncing"),
-    [artworks, driveOnly, phase],
+    () => galleryCards(artworks, driveOnly, phase === "syncing", missingInDriveIds),
+    [artworks, driveOnly, phase, missingInDriveIds],
   );
   /** Signed in with nothing local while the first Drive list is still coming: not empty yet. */
   const awaitingDrive =

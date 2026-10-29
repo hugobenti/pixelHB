@@ -27,3 +27,8 @@ export interface ISyncExpectedRow {
   updatedAt: number;
   state: TArtworkSyncState;
 }
+
+/** A synced row the engine removed because Drive trashed it; kept locally for a while so it can be restored. */
+export interface IRemovedArtwork extends IStoredArtwork {
+  removedAt: number;
+}

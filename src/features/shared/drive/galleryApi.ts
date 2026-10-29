@@ -16,6 +16,10 @@ export function galleryArtworkUrl(id: string): string {
   return `/api/gallery/${encodeURIComponent(id)}`;
 }
 
+export function galleryStatusUrl(id: string): string {
+  return `${galleryArtworkUrl(id)}/status`;
+}
+
 export function galleryPreviewUrl(id: string, updatedAt: number): string {
   return `${galleryArtworkUrl(id)}/preview?v=${updatedAt}`;
 }

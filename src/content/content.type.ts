@@ -79,6 +79,8 @@ export interface ISharedContent {
     tooLarge: (count: number) => string;
     unconfirmed: (name: string | undefined) => string;
     clockSkew: (count: number) => string;
+    missingInDrive: (count: number) => string;
+    driveFolderTrashed: string;
     openDriveFolder: string;
     /** Screen-reader suffix of a link that opens a new tab. */
     opensInNewTab: string;
@@ -196,6 +198,8 @@ export interface IGalleryContent {
     inDrive: string;
     notSynced: string;
     tooLarge: string;
+    /** A synced artwork Drive no longer holds; it stays on this device until deleted here. */
+    missingInDrive: string;
   };
   create: {
     title: string;

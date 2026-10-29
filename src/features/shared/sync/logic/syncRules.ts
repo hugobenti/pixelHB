@@ -12,9 +12,14 @@ import type { ILocalSyncFacts, IRemoteSyncFacts, ISyncPlan } from "./syncRules.t
 
 export const MAX_BACKOFF_MS = 300_000;
 
-function baseAction(local: ILocalSyncFacts, remote: IRemoteSyncFacts | undefined): TPullAction {
+function baseAction(
+  local: ILocalSyncFacts,
+  remote: IRemoteSyncFacts | undefined,
+  remoteUnreadable: boolean,
+): TPullAction {
   if (!remote) {
-    if (local.state === "synced") return "removeLocal";
+    // Drive has a file for it that we cannot read: it exists, so its absence from the list means nothing.
+    if (local.state === "synced") return remoteUnreadable ? "none" : "removeLocal";
     return local.state === "tooLarge" ? "none" : "upload";
   }
   if (remote.updatedAt > local.updatedAt) return "download";
@@ -28,9 +33,10 @@ export function decidePull(
   local: ILocalSyncFacts | undefined,
   remote: IRemoteSyncFacts | undefined,
   isOpen: boolean,
+  remoteUnreadable = false,
 ): TPullAction {
   if (!local) return remote ? "download" : "none";
-  const action = baseAction(local, remote);
+  const action = baseAction(local, remote, remoteUnreadable);
   return isOpen && (action === "removeLocal" || action === "download") ? "defer" : action;
 }
 
@@ -40,6 +46,7 @@ export function planSync(
   locals: readonly ILocalSyncFacts[],
   remotes: readonly IRemoteSyncFacts[],
   openIds: ReadonlySet<string>,
+  unreadableIds: ReadonlySet<string> = new Set(),
 ): ISyncPlan {
   const localById = new Map(locals.map((l) => [l.id, l]));
   const remoteById = new Map(remotes.map((r) => [r.id, r]));
@@ -51,7 +58,7 @@ export function planSync(
   for (const id of ids) {
     const local = localById.get(id);
     const remote = remoteById.get(id);
-    const action = decidePull(local, remote, openIds.has(id));
+    const action = decidePull(local, remote, openIds.has(id), unreadableIds.has(id));
     if (action === "download" && remote) downloads.push(remote);
     else if (action === "upload" && local) uploads.push(local);
     else if (action === "removeLocal") removals.push(id);
