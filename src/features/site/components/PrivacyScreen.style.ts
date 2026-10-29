@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Classes for PrivacyScreen: the same reading layout as the About page.
+ * Classes for PrivacyScreen (TermsScreen uses them too): the same reading layout as the About page.
  */
 
 import { aboutScreen } from "./AboutScreen.style";
