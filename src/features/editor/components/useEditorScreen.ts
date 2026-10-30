@@ -11,6 +11,7 @@ import { editor } from "@/content/editor";
 import { shouldReloadEditorArtwork } from "@/features/editor/logic/editorReload";
 import type { IEditorLoaded } from "@/features/editor/logic/editorReload.type";
 import { loadEditorArtwork } from "@/features/editor/logic/editorLoad";
+import { capture } from "@/features/shared/analytics/analytics";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import * as artworkService from "@/features/shared/artwork/artworkService";
 import { useAccount } from "@/features/shared/auth/useAccount";
@@ -57,6 +58,7 @@ export function useEditorScreen(artworkId: string) {
         setLoadError(null);
         setArtwork(result.artwork);
         loadedRef.current = { artworkId, signedIn, ownerId };
+        capture("artwork_opened");
         return;
       }
       loadedRef.current = null;

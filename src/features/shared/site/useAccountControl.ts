@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from "react";
 
 import { shell } from "@/content/shell";
+import { capture } from "@/features/shared/analytics/analytics";
 import { useAccount } from "@/features/shared/auth/useAccount";
 import { syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
 import { isSyncSupported } from "@/features/shared/sync/syncSupport";
@@ -97,7 +98,10 @@ export function useAccountControl() {
       setOpenedOn(null);
       document.getElementById(triggerId)?.focus();
     },
-    requestSignIn: () => void signIn("google"),
+    requestSignIn: () => {
+      capture("sign_in_started");
+      void signIn("google");
+    },
     requestSignOut: signOutFlow.start,
     signOutDisabled,
     signOutLabel,

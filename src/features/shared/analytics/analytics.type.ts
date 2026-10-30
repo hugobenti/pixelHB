@@ -1,17 +1,7 @@
+import type { TSyncErrorKind } from "@/features/shared/sync/sync.type";
+
 /** The visitor's stored analytics choice; `null` until they pick one. */
 export type TAnalyticsConsent = "granted" | "denied" | null;
-
-/** Why a sync pass stopped with an error: an API failure kind or a short engine code. Never message text. */
-export type TSyncErrorKind =
-  | "retry"
-  | "driveFull"
-  | "conflict"
-  | "tooLarge"
-  | "clockSkew"
-  | "notFound"
-  | "failed"
-  | "itemRejected"
-  | "unexpected";
 
 /**
  * Every product event and its properties. Properties never carry artwork names, pixel data,

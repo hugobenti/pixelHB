@@ -201,14 +201,17 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
         break;
       case "retry":
         update(gen, { phase: "error", driveFull: cleared });
+        deps.reportError(result.kind);
         scheduleRetry(gen, retryDelayMs(attempt++, result.retryAfterMs));
         break;
       case "driveFull":
         update(gen, { phase: "error", driveFull: nextDriveFull(driveFull, "driveFull", 0) });
+        deps.reportError(result.kind);
         scheduleRetry(gen, retryDelayMs(attempt++, null));
         break;
       default:
         update(gen, { phase: "error", driveFull: cleared });
+        deps.reportError(result.kind);
         scheduleRetry(gen, retryDelayMs(attempt++, null));
     }
     throw new PassAbort();
@@ -536,6 +539,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
     };
     if (ctx.failedIds.size > 0) {
       update(gen, { ...summary, phase: "error" });
+      deps.reportError("itemRejected");
       scheduleRetry(gen, retryDelayMs(attempt++, null));
       return true;
     }
@@ -579,6 +583,7 @@ export function createSyncEngine(deps: ISyncEngineDeps): ISyncEngine {
       if (error instanceof PassAbort || gen !== generation) return;
       deps.warn(String(error), owner);
       update(gen, { phase: "error", driveFull: nextDriveFull(driveFull, "otherFailure", 0) });
+      deps.reportError("unexpected");
       scheduleRetry(gen, retryDelayMs(attempt++, null));
     }
   }

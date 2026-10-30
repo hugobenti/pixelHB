@@ -15,6 +15,7 @@ import { editorPath } from "@/features/gallery/logic/artworkLinks";
 import { galleryCards } from "@/features/gallery/logic/galleryCards";
 import { useGalleryStore } from "@/features/gallery/store/useGalleryStore";
 import { gallery } from "@/content/gallery";
+import { capture } from "@/features/shared/analytics/analytics";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 import { useAccount } from "@/features/shared/auth/useAccount";
 import { syncStatusText } from "@/features/shared/sync/logic/syncStatusMessage";
@@ -100,6 +101,7 @@ export function useGalleryScreen() {
     if (!artwork) {
       return createError;
     }
+    capture("artwork_created", { width: artwork.width, height: artwork.height });
     setModalOpen(false);
     router.push(editorPath(artwork.id));
     return null;

@@ -2,6 +2,7 @@
  * Purpose:
  * The browser's sync engine singleton, wired to fetch, Dexie, Web Locks and the window events.
  */
+import { capture } from "@/features/shared/analytics/analytics";
 import * as artworkService from "@/features/shared/artwork/artworkService";
 import * as artworkSyncStore from "@/features/shared/artwork/artworkSyncStore";
 import { artworkToPngThumbnail } from "@/features/shared/artwork/thumbnail";
@@ -46,6 +47,7 @@ export function getSyncEngine(): ISyncEngine {
     onArtworkChanged: artworkService.onArtworkChanged,
     renderThumbnail: artworkToPngThumbnail,
     warn: (message, id) => console.warn(message, id),
+    reportError: (kind) => capture("sync_error", { kind }),
   });
   return engine;
 }
