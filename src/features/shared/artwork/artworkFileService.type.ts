@@ -78,7 +78,7 @@ export interface IImportedArtworkData {
 
 export interface IExportPngOptions {
   scale: TExportScale;
-  /** Whether to draw the credit strip; not drawn yet, so results always report `false`. */
+  /** Whether to draw the credit strip (skipped when the export is too narrow for one). */
   credit: boolean;
 }
 

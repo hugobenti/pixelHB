@@ -110,6 +110,11 @@ export const editor: IEditorContent = {
       scaleLabel: "Size",
       scaleOption: (scale, width, height) => `×${scale} · ${width} × ${height}`,
       scaleTooLarge: "Too large to export",
+      credit: {
+        label: "Add “Made with PixelHB”",
+        hint: "A small strip with the PixelHB logo and link, below your art.",
+        tooNarrow: "Pick a larger size to add the strip (needs 256 px width).",
+      },
     },
   },
   layers: {

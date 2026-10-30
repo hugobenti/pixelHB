@@ -13,6 +13,7 @@ export const editorSettingsImportExportPanel = {
   scaleLabel: "mt-3 text-xs font-medium text-muted",
   scaleGroup: "mt-1.5 flex-wrap",
   scaleOption: "min-h-10 px-2.5 text-xs sm:min-h-9",
+  creditRow: "mt-3",
   srOnly: "sr-only",
   actions: "mt-3 flex flex-wrap gap-2",
   button: settingsPanel.actionButton,

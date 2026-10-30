@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  EXPORT_CREDIT_KEY,
   EXPORT_SCALE_KEY,
   parseExportScale,
+  readStoredExportCredit,
   readStoredExportScale,
+  writeStoredExportCredit,
   writeStoredExportScale,
 } from "./exportPreferences";
 
@@ -51,5 +54,48 @@ describe("stored export scale", () => {
     writeStoredExportScale(() => storage, 16);
     expect(values.get(EXPORT_SCALE_KEY)).toBe("16");
     expect(readStoredExportScale(() => storage)).toBe(16);
+  });
+});
+
+describe("stored export credit", () => {
+  const throwing = {
+    getItem: () => {
+      throw new Error("denied");
+    },
+    setItem: () => {
+      throw new Error("denied");
+    },
+  };
+
+  it("defaults to on when storage throws or is unreachable", () => {
+    expect(readStoredExportCredit(() => throwing)).toBe(true);
+    expect(
+      readStoredExportCredit(() => {
+        throw new Error("SecurityError");
+      }),
+    ).toBe(true);
+  });
+
+  it("does not throw when writing to throwing storage", () => {
+    expect(() => writeStoredExportCredit(() => throwing, false)).not.toThrow();
+    expect(() =>
+      writeStoredExportCredit(() => {
+        throw new Error("SecurityError");
+      }, true),
+    ).not.toThrow();
+  });
+
+  it("round-trips through working storage", () => {
+    const values = new Map<string, string>();
+    const storage = {
+      getItem: (key: string) => values.get(key) ?? null,
+      setItem: (key: string, value: string) => void values.set(key, value),
+    };
+    expect(readStoredExportCredit(() => storage)).toBe(true);
+    writeStoredExportCredit(() => storage, false);
+    expect(values.get(EXPORT_CREDIT_KEY)).toBe("off");
+    expect(readStoredExportCredit(() => storage)).toBe(false);
+    writeStoredExportCredit(() => storage, true);
+    expect(readStoredExportCredit(() => storage)).toBe(true);
   });
 });

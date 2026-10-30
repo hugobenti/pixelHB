@@ -7,12 +7,16 @@
 import { editor } from "@/content/editor";
 import { Button } from "@/features/shared/components/Button";
 import { ButtonGroup } from "@/features/shared/components/ButtonGroup";
+import { Switch } from "@/features/shared/components/Switch";
 import { editorSettingsImportExportPanel } from "./EditorSettingsImportExportPanel.style";
 import type { IEditorSettingsImportExportPanelProps } from "./EditorSettingsImportExportPanel.type";
 
 export function EditorSettingsImportExportPanel({
   scaleOptions,
   onSelectScale,
+  credit,
+  creditHint,
+  onCreditChange,
   onExportPng,
   onExportJson,
 }: IEditorSettingsImportExportPanelProps) {
@@ -55,6 +59,13 @@ export function EditorSettingsImportExportPanel({
             </span>
           ))}
         </ButtonGroup>
+        <Switch
+          checked={credit}
+          onCheckedChange={onCreditChange}
+          label={editor.settings.export.credit.label}
+          hint={creditHint ?? editor.settings.export.credit.hint}
+          className={editorSettingsImportExportPanel.creditRow}
+        />
         <div className={editorSettingsImportExportPanel.actions}>
           <Button
             type="button"

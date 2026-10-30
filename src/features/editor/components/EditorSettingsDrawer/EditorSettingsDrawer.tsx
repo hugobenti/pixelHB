@@ -63,8 +63,11 @@ export function EditorSettingsDrawer(props: IEditorSettingsDrawerProps) {
     shrinkDialog,
     exportJson,
     exportPng,
+    credit,
+    creditHint,
     scaleOptions,
     selectScale,
+    setCredit,
   } = useEditorSettingsDrawer(props);
   const { menu } = editor.settings;
 
@@ -206,6 +209,9 @@ export function EditorSettingsDrawer(props: IEditorSettingsDrawerProps) {
           <EditorSettingsImportExportPanel
             scaleOptions={scaleOptions}
             onSelectScale={selectScale}
+            credit={credit}
+            creditHint={creditHint}
+            onCreditChange={setCredit}
             onExportPng={exportPng}
             onExportJson={exportJson}
           />

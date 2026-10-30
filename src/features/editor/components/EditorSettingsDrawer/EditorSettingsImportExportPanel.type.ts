@@ -4,6 +4,10 @@ import type { IExportScaleOption } from "./hooks/useImportExportPanel.type";
 export interface IEditorSettingsImportExportPanelProps {
   scaleOptions: IExportScaleOption[];
   onSelectScale: (scale: TExportScale) => void;
+  credit: boolean;
+  /** Shown instead of the usual hint when the chosen size is too narrow for the strip. */
+  creditHint: string | null;
+  onCreditChange: (on: boolean) => void;
   onExportPng: () => void;
   onExportJson: () => void;
 }
