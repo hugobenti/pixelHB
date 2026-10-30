@@ -1,3 +1,4 @@
+import type { TExportScale } from "@/features/shared/artwork/exportScale.type";
 import type { IArtworkLayer } from "@/features/shared/artwork/artwork.type";
 
 export interface IArtworkFileV1 {
@@ -73,4 +74,17 @@ export interface IImportedArtworkData {
   layers: IArtworkLayer[];
   activeLayerId: string;
   referenceImageDataUrl?: string;
+}
+
+export interface IExportPngOptions {
+  scale: TExportScale;
+  /** Whether to draw the credit strip; not drawn yet, so results always report `false`. */
+  credit: boolean;
+}
+
+export interface IRenderedPng {
+  blob: Blob;
+  /** True when a credit strip was drawn. */
+  credit: boolean;
+  fileName: string;
 }

@@ -360,6 +360,9 @@ export interface IEditorContent {
       jsonDone: string;
       pngDone: string;
       pngFailed: string;
+      scaleLabel: string;
+      scaleOption: (scale: number, width: number, height: number) => string;
+      scaleTooLarge: string;
     };
   };
   layers: {

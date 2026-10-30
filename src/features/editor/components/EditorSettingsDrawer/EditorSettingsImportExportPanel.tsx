@@ -6,10 +6,13 @@
 
 import { editor } from "@/content/editor";
 import { Button } from "@/features/shared/components/Button";
+import { ButtonGroup } from "@/features/shared/components/ButtonGroup";
 import { editorSettingsImportExportPanel } from "./EditorSettingsImportExportPanel.style";
 import type { IEditorSettingsImportExportPanelProps } from "./EditorSettingsImportExportPanel.type";
 
 export function EditorSettingsImportExportPanel({
+  scaleOptions,
+  onSelectScale,
   onExportPng,
   onExportJson,
 }: IEditorSettingsImportExportPanelProps) {
@@ -24,6 +27,34 @@ export function EditorSettingsImportExportPanel({
         <h3 className={editorSettingsImportExportPanel.sectionTitle}>
           {editor.settings.export.title}
         </h3>
+        <p className={editorSettingsImportExportPanel.scaleLabel}>
+          {editor.settings.export.scaleLabel}
+        </p>
+        <ButtonGroup
+          className={editorSettingsImportExportPanel.scaleGroup}
+          aria-label={editor.settings.export.scaleLabel}
+        >
+          {scaleOptions.map((option) => (
+            <span key={option.scale}>
+              <Button
+                type="button"
+                variant={option.pressed ? "primary" : "ghost"}
+                className={editorSettingsImportExportPanel.scaleOption}
+                aria-pressed={option.pressed}
+                aria-describedby={option.description ? option.descriptionId : undefined}
+                disabled={option.disabled}
+                onClick={() => onSelectScale(option.scale)}
+              >
+                {option.label}
+              </Button>
+              {option.description ? (
+                <span id={option.descriptionId} className={editorSettingsImportExportPanel.srOnly}>
+                  {option.description}
+                </span>
+              ) : null}
+            </span>
+          ))}
+        </ButtonGroup>
         <div className={editorSettingsImportExportPanel.actions}>
           <Button
             type="button"
