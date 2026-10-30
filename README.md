@@ -170,6 +170,7 @@ The art belongs to the artist. PixelHB stores no artwork.
 
 - **Signed out:** artworks live only in the browser's IndexedDB. Nothing is sent to the artwork API. Clearing site data or switching browsers or devices loses them, so use **Export JSON** from the editor settings to keep a backup. You can re-import that file from the gallery.
 - **Signed in with Google (optional):** IndexedDB stays as the local working copy, and artworks are also saved to a `PixelHB` folder in the user's own Google Drive, using the `drive.file` scope (PixelHB can only see files it created). The route handlers in `src/app/api/gallery` are stateless proxies: artwork passes through them on its way to and from Drive and is never stored or logged. Tokens live in an encrypted Auth.js cookie. PixelHB has no database. Deletions propagate both ways: deleting in PixelHB trashes the Drive file, and a file trashed in Drive is removed from every signed-in device at its next sync (kept in a local "removed" table for 30 days); restoring it from the Drive trash brings it back.
+- **Analytics:** Vercel Web Analytics counts page visits (no cookies). PostHog product analytics (events, heatmaps, session replay) runs only after the visitor accepts the consent banner, and can be withdrawn on `/privacy`. Code: `src/features/shared/analytics/`. It sends no artwork: replay blocks every `<canvas>` and `data:`/`blob:` image, never records canvas frames, masks inputs and the document title (which holds the artwork name); events carry no names, pixels, palettes or error text; nobody is identified. Traffic goes through `/ingest` (`src/app/ingest/[...path]/route.ts`), which forwards to PostHog EU Cloud without cookies or credentials.
 
 The user-facing explanation is the [`/privacy`](src/content/privacy.ts) page.
 
@@ -181,6 +182,7 @@ Sign-in and Drive sync are always on; there is no feature flag.
 2. **Vercel → Settings → Environment Variables**, for **Production and Preview**: `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` (the production client) and `AUTH_REDIRECT_PROXY_URL=https://pixelhb.vercel.app/api/auth`, so previews sign in through production. `AUTH_URL` is not needed. The build needs none of them (CI builds without).
 3. **Vercel → Settings → Deployment Protection:** protect Preview deployments (Vercel Authentication), since previews hold `AUTH_SECRET` and the production Google secret.
 4. Optional: a **Vercel Firewall** rate-limit rule on `/api/gallery/*` (per IP), so one client cannot burn the project's Drive quota.
+5. Optional, **PostHog analytics:** set `NEXT_PUBLIC_POSTHOG_KEY` (the PostHog **EU Cloud** project token, `phc_…`; public) for **Production and Preview**. It is read at build time, so redeploy after changing it; unset or empty turns analytics off entirely (no banner, no PostHog script, every capture a no-op). In the PostHog project settings, turn on **Discard client IP data** (the IP is only used for the country lookup) and leave canvas recording off. Each request under `/ingest` is one Vercel function invocation; the Hobby plan has enough headroom for this traffic.
 
 **After each deploy that touches auth or sync, check production:**
 
