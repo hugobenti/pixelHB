@@ -68,6 +68,9 @@ export function EditorSettingsDrawer(props: IEditorSettingsDrawerProps) {
     scaleOptions,
     selectScale,
     setCredit,
+    share,
+    shareDisabled,
+    shareLabel,
   } = useEditorSettingsDrawer(props);
   const { menu } = editor.settings;
 
@@ -212,6 +215,9 @@ export function EditorSettingsDrawer(props: IEditorSettingsDrawerProps) {
             credit={credit}
             creditHint={creditHint}
             onCreditChange={setCredit}
+            onShare={share}
+            shareDisabled={shareDisabled}
+            shareLabel={shareLabel}
             onExportPng={exportPng}
             onExportJson={exportJson}
           />

@@ -8,6 +8,9 @@ export interface IEditorSettingsImportExportPanelProps {
   /** Shown instead of the usual hint when the chosen size is too narrow for the strip. */
   creditHint: string | null;
   onCreditChange: (on: boolean) => void;
+  onShare: () => void;
+  shareDisabled: boolean;
+  shareLabel: string;
   onExportPng: () => void;
   onExportJson: () => void;
 }

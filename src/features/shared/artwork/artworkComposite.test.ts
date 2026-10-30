@@ -34,6 +34,16 @@ describe("composeArtworkRgba", () => {
     expect(Array.from(rgba)).toEqual([0, 0, 0, 0]);
   });
 
+  it("upper layer out-of-range shows the lower layer's colour", () => {
+    const rgba = composeArtworkRgba({
+      width: 1,
+      height: 1,
+      palette,
+      layers: [layer([9]), layer([2])],
+    });
+    expect(Array.from(rgba)).toEqual([0, 255, 0, 255]);
+  });
+
   it("all layers hidden gives a fully transparent buffer of w*h*4", () => {
     const rgba = composeArtworkRgba({
       width: 3,

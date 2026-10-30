@@ -17,6 +17,9 @@ export function EditorSettingsImportExportPanel({
   credit,
   creditHint,
   onCreditChange,
+  onShare,
+  shareDisabled,
+  shareLabel,
   onExportPng,
   onExportJson,
 }: IEditorSettingsImportExportPanelProps) {
@@ -67,6 +70,15 @@ export function EditorSettingsImportExportPanel({
           className={editorSettingsImportExportPanel.creditRow}
         />
         <div className={editorSettingsImportExportPanel.actions}>
+          <Button
+            type="button"
+            variant="primary"
+            className={editorSettingsImportExportPanel.button}
+            disabled={shareDisabled}
+            onClick={onShare}
+          >
+            {shareLabel}
+          </Button>
           <Button
             type="button"
             variant="outline"

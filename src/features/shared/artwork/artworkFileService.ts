@@ -16,6 +16,7 @@ import { creditStripHeight, creditStripLayout } from "./creditStrip";
 import { drawCreditStrip } from "./creditStripRender";
 import { exportSize, noStrip } from "./exportScale";
 import type { TExportScale } from "./exportScale.type";
+import { pngBlobFromDataUrl } from "./pngPayload";
 import { parseArtworkFile, serializeArtworkFile } from "./artworkFileFormat";
 import type {
   IExportPngOptions,
@@ -28,7 +29,7 @@ const errors = shared.artworkFile.errors;
 const JSON_MIME = "application/json";
 const PNG_MIME = "image/png";
 
-function triggerFileDownload(blob: Blob, fileName: string): void {
+export function triggerFileDownload(blob: Blob, fileName: string): void {
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = objectUrl;
@@ -46,37 +47,49 @@ export function exportArtworkAsJson(artwork: IArtwork): void {
   triggerFileDownload(blob, fileName);
 }
 
+function releaseCanvas(canvas: HTMLCanvasElement): void {
+  canvas.width = 0;
+  canvas.height = 0;
+}
+
 async function renderArtworkCanvas(
   artwork: IArtwork,
   scale: TExportScale,
   credit: boolean,
 ): Promise<{ canvas: HTMLCanvasElement; credit: boolean }> {
   const source = document.createElement("canvas");
-  source.width = artwork.width;
-  source.height = artwork.height;
-  const sourceCtx = source.getContext("2d");
-  if (!sourceCtx) {
-    throw new Error(errors.canvasUnavailable);
-  }
-  const pixels = composeArtworkRgba(artwork);
-  sourceCtx.putImageData(new ImageData(pixels, artwork.width, artwork.height), 0, 0);
-
-  const size = exportSize(artwork, scale, credit ? creditStripHeight : noStrip);
   const canvas = document.createElement("canvas");
-  canvas.width = size.width;
-  canvas.height = size.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) {
-    throw new Error(errors.canvasUnavailable);
+  try {
+    source.width = artwork.width;
+    source.height = artwork.height;
+    const sourceCtx = source.getContext("2d");
+    if (!sourceCtx) {
+      throw new Error(errors.canvasUnavailable);
+    }
+    const pixels = composeArtworkRgba(artwork);
+    sourceCtx.putImageData(new ImageData(pixels, artwork.width, artwork.height), 0, 0);
+
+    const size = exportSize(artwork, scale, credit ? creditStripHeight : noStrip);
+    canvas.width = size.width;
+    canvas.height = size.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      throw new Error(errors.canvasUnavailable);
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(source, 0, 0, size.width, size.artHeight);
+    const layout = creditStripLayout(size.width);
+    const drawn = credit && layout.height > 0;
+    if (drawn) {
+      await drawCreditStrip(ctx, size.artHeight, layout, new URL(site.url).host);
+    }
+    return { canvas, credit: drawn };
+  } catch (error) {
+    releaseCanvas(canvas);
+    throw error;
+  } finally {
+    releaseCanvas(source);
   }
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(source, 0, 0, size.width, size.artHeight);
-  const layout = creditStripLayout(size.width);
-  const drawn = credit && layout.height > 0;
-  if (drawn) {
-    await drawCreditStrip(ctx, size.artHeight, layout, new URL(site.url).host);
-  }
-  return { canvas, credit: drawn };
 }
 
 /** Renders the artwork to a PNG at `scale`, without downloading it. */
@@ -85,16 +98,18 @@ export async function renderArtworkPng(
   options: IExportPngOptions,
 ): Promise<IRenderedPng> {
   const { canvas, credit } = await renderArtworkCanvas(artwork, options.scale, options.credit);
-  const fileName = exportFileName(artwork.title, options.scale);
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(resolve, PNG_MIME);
-  });
-  if (blob) {
-    return { blob, credit, fileName };
+  try {
+    const fileName = exportFileName(artwork.title, options.scale);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob(resolve, PNG_MIME);
+    });
+    if (blob) {
+      return { blob, credit, fileName };
+    }
+    return { blob: pngBlobFromDataUrl(canvas.toDataURL(PNG_MIME)), credit, fileName };
+  } finally {
+    releaseCanvas(canvas);
   }
-  const binary = atob(canvas.toDataURL(PNG_MIME).split(",")[1]);
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return { blob: new Blob([bytes], { type: PNG_MIME }), credit, fileName };
 }
 
 export async function exportArtworkAsPng(

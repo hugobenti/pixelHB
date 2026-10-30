@@ -99,6 +99,7 @@ export const shared: ISharedContent = {
       invalidFormat: "Invalid file format.",
       canvasUnavailable: "Unable to initialize canvas context.",
       invalidJson: "File is not valid JSON.",
+      pngFailed: "Failed to export PNG.",
     },
   },
 };

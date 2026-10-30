@@ -83,7 +83,7 @@ export const editor: IEditorContent = {
       },
       loadImage: { label: "Load image", hint: "Pick file" },
       canvasSize: { label: "Canvas size", hint: (width, height) => `${width} × ${height}` },
-      export: { label: "Export", hint: "Download files" },
+      export: { label: "Export & share", hint: "Download or share" },
       imageDetail: { label: "Image detail", hint: "Visible area" },
     },
     canvasSize: {
@@ -107,6 +107,9 @@ export const editor: IEditorContent = {
       jsonDone: "JSON file exported.",
       pngDone: "PNG file exported.",
       pngFailed: "Failed to export PNG.",
+      share: "Share image",
+      preparing: "Preparing…",
+      copied: "Image copied. Paste it into your post.",
       scaleLabel: "Size",
       scaleOption: (scale, width, height) => `×${scale} · ${width} × ${height}`,
       scaleTooLarge: "Too large to export",
