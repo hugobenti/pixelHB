@@ -69,6 +69,13 @@ export interface IIconControl {
 
 export interface ISharedContent {
   loading: string;
+  /** Sharing a rendered PNG; used by the editor's Export panel and the gallery card menu. */
+  share: {
+    label: string;
+    preparing: string;
+    copied: string;
+    downloaded: string;
+  };
   /** Drive sync status, one set for the gallery note, the editor bar and the account panel. */
   sync: {
     thisBrowserOnly: string;
@@ -361,9 +368,6 @@ export interface IEditorContent {
       jsonDone: string;
       pngDone: string;
       pngFailed: string;
-      share: string;
-      preparing: string;
-      copied: string;
       scaleLabel: string;
       scaleOption: (scale: number, width: number, height: number) => string;
       scaleTooLarge: string;

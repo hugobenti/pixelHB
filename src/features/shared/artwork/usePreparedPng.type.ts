@@ -2,10 +2,11 @@ import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import type { TExportScale } from "@/features/shared/artwork/exportScale.type";
 
 export interface IUsePreparedPngParams {
-  artwork: IArtwork;
+  /** `null` while it is still loading; nothing renders until it is set. */
+  artwork: IArtwork | null;
   scale: TExportScale;
   credit: boolean;
-  /** Renders only while true (the Export panel is open). */
+  /** Renders only while true (the Export panel or card menu is open). */
   active: boolean;
   /** Called once per failed render. */
   onError?: (error: unknown) => void;

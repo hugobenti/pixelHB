@@ -7,6 +7,7 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { editor } from "@/content/editor";
+import { shared } from "@/content/shared";
 import { capture } from "@/features/shared/analytics/analytics";
 import {
   exportArtworkAsJson,
@@ -28,10 +29,9 @@ import {
   resolveExportScale,
 } from "@/features/shared/artwork/exportScale";
 import type { TExportScale } from "@/features/shared/artwork/exportScale.type";
-import { shareImage } from "@/features/shared/artwork/shareImage";
-import type { IShareEnv } from "@/features/shared/artwork/shareImage.type";
+import { usePreparedPng } from "@/features/shared/artwork/usePreparedPng";
+import { useShareImage } from "@/features/shared/artwork/useShareImage";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
-import { usePreparedPng } from "./usePreparedPng";
 import type { IExportScaleOption, IUseImportExportPanelParams } from "./useImportExportPanel.type";
 
 export function useImportExportPanel({ artwork, active }: IUseImportExportPanelParams) {
@@ -74,7 +74,7 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     writeStoredExportCredit(() => localStorage, on);
   }, []);
 
-  const [sharing, setSharing] = useState(false);
+  const { share: shareImage, sharing } = useShareImage({ from: "editor" });
   const { png, failed } = usePreparedPng({
     artwork,
     scale,
@@ -86,40 +86,11 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     },
   });
 
-  const share = useCallback(async () => {
-    if (!png || sharing) {
-      return;
+  const share = useCallback(() => {
+    if (png) {
+      void shareImage(png, { scale });
     }
-    const env: IShareEnv = {
-      download: () => triggerFileDownload(png.blob, png.fileName),
-    };
-    if (typeof navigator.share === "function") {
-      env.share = (data) => navigator.share(data);
-    }
-    if (typeof navigator.canShare === "function") {
-      env.canShare = (data) => navigator.canShare(data);
-    }
-    if (typeof navigator.clipboard?.write === "function" && typeof ClipboardItem !== "undefined") {
-      env.writeImage = (blob) =>
-        navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-    }
-    setSharing(true);
-    let method: Awaited<ReturnType<typeof shareImage>>;
-    try {
-      method = await shareImage(png, env);
-    } finally {
-      setSharing(false);
-    }
-    if (method === "cancelled") {
-      return;
-    }
-    capture("share", { method, scale, credit: png.credit });
-    if (method === "clipboard") {
-      showToast({ message: editor.settings.export.copied, tone: "success" });
-    } else if (method === "download") {
-      showToast({ message: editor.settings.export.pngDone, tone: "success" });
-    }
-  }, [png, scale, sharing, showToast]);
+  }, [png, scale, shareImage]);
 
   const exportJson = useCallback(() => {
     exportArtworkAsJson(artwork);
@@ -157,7 +128,7 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     shareLabel: failed
       ? editor.settings.export.pngFailed
       : png
-        ? editor.settings.export.share
-        : editor.settings.export.preparing,
+        ? shared.share.label
+        : shared.share.preparing,
   };
 }

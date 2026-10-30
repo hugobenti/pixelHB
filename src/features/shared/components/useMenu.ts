@@ -21,8 +21,10 @@ import type { IMenuItem, IMenuProps } from "./Menu.type";
 
 const PLACEMENT_GAP = 4;
 
-export function useMenu({ items }: IMenuProps) {
+export function useMenu({ items, onOpenChange }: IMenuProps) {
   const [open, setOpen] = useState(false);
+  const onOpenChangeRef = useRef(onOpenChange);
+  const lastOpen = useRef(false);
   const [placement, setPlacement] = useState<TMenuPlacement | null>(null);
   const sheet = useMediaQuery(MENU_SHEET_QUERY);
   const triggerId = useId();
@@ -30,6 +32,27 @@ export function useMenu({ items }: IMenuProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const focusIndexAfterOpen = useRef<number | null>(null);
+
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  });
+
+  useEffect(() => {
+    if (lastOpen.current === open) return;
+    lastOpen.current = open;
+    onOpenChangeRef.current?.(open);
+  }, [open]);
+
+  // Unmounting while open (e.g. Rename replaces the menu) must still report the close.
+  useEffect(
+    () => () => {
+      if (lastOpen.current) {
+        lastOpen.current = false;
+        onOpenChangeRef.current?.(false);
+      }
+    },
+    [],
+  );
 
   const openAt = useCallback(
     (key: "ArrowDown" | "ArrowUp") => {
