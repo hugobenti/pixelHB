@@ -7,8 +7,9 @@
  * Artwork must not leave the device. Replay blocks every <canvas> and every data:/blob: image (the
  * gallery thumbnails and the reference image) and never records canvas frames, whatever the project
  * settings say. The editor puts the artwork name in the document title, so the <title> text is
- * masked in replays and the `title` property is dropped from events. Autocapture is off (it would
- * send clicked element text such as artwork names); heatmaps collect click positions only.
+ * masked in replays and the `title` property is dropped from events. Autocapture, dead clicks and
+ * rage clicks are off (they send clicked element text such as artwork names); heatmaps collect
+ * click positions only.
  */
 import type { BeforeSendFn, PostHogConfig } from "posthog-js";
 
@@ -27,8 +28,10 @@ export const POSTHOG_OPTIONS: Partial<PostHogConfig> = {
   capture_pageview: "history_change",
   persistence: "localStorage",
   autocapture: false,
+  // Both record the clicked element, text included (an artwork card's name).
+  capture_dead_clicks: false,
+  rageclick: false,
   enable_heatmaps: true,
-  disable_surveys: true,
   session_recording: {
     maskAllInputs: true,
     maskTextSelector: "title",

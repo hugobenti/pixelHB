@@ -9,5 +9,5 @@ import { aboutScreen } from "./AboutScreen.style";
 export const privacyScreen = {
   ...aboutScreen,
   updated: "text-sm text-muted",
-  analyticsSwitch: "max-w-prose rounded-lg border border-line px-3",
+  analyticsSwitch: "max-w-prose rounded-lg border border-line px-3 py-2",
 };

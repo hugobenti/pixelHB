@@ -18,5 +18,7 @@ test("replay masks typing and never records the canvas or artwork images", () =>
   expect(replay?.blockSelector).toContain("canvas");
   expect(replay?.blockSelector).toContain("img[src^='data:']");
   expect(POSTHOG_OPTIONS.autocapture).toBe(false);
+  expect(POSTHOG_OPTIONS.capture_dead_clicks).toBe(false);
+  expect(POSTHOG_OPTIONS.rageclick).toBe(false);
   expect(POSTHOG_OPTIONS.person_profiles).toBe("identified_only");
 });

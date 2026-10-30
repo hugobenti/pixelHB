@@ -47,7 +47,7 @@ export const privacy: IPrivacyContent = {
         "If you accept on the analytics banner, PixelHB also uses PostHog to learn how the app is used and where it gets in the way. The data is sent through PixelHB’s own server, which passes on none of your cookies, and is stored on PostHog’s EU servers.",
         "What is collected: anonymous usage events (which pages you open, and actions such as creating, opening, exporting or importing an artwork, starting to sign in, or a sync error code), with your browser, device type and screen size; heatmaps of where you click and how far you scroll; and session replays, a recording of how the page changes as you use it.",
         "What is not: your artworks. The canvas, thumbnails and reference images are left out of replays, and events never include artwork names, pixels or palettes. What you type is hidden in replays; the rest of the page shows as you saw it, artwork names included. Your IP address is used only to estimate your country and is then discarded. PixelHB never links this data to your Google account, your name or your email.",
-        "Nothing is collected unless you accept, and declining loads nothing from PostHog. You can change your mind at any time with the switch below: turning it off stops the recording, resets PostHog’s random ID and sends nothing more.",
+        "Nothing is collected unless you accept, and declining loads nothing from PostHog. You can change your mind at any time with the switch below: turning it off stops the recording, resets PostHog’s random ID and sends no more events.",
       ],
     },
     {

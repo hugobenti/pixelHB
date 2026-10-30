@@ -19,10 +19,6 @@ export function useAnalyticsStart(): void {
 }
 
 export function useAnalyticsConsent() {
-  const consent = useSyncExternalStore(
-    analytics.subscribe,
-    analytics.getConsent,
-    () => undefined,
-  );
+  const consent = useSyncExternalStore(analytics.subscribe, analytics.getConsent, () => undefined);
   return { enabled: analytics.enabled, consent, setConsent: analytics.setConsent };
 }
