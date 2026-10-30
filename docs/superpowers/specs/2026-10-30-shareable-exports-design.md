@@ -14,13 +14,16 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 
 1. Export PNG at a chosen scale (×1, ×4, ×8, ×16, ×32), nearest-neighbour, so pixels stay sharp.
 2. A "Made with PixelHB" credit strip added to exported and shared images, **on by default**, with a switch to turn it off (Hugo's decision).
-3. A Share action: the system share sheet wherever the browser can share files (phones, and desktop Safari/Chrome that support it), otherwise the clipboard, otherwise a download.
+3. Sharing to social media:
+   - **Phones:** the system share sheet, which hands the image file to Instagram, WhatsApp, X, Discord, TikTok and others.
+   - **Desktop:** one button per network (X, Bluesky, Threads, Reddit, Discord). Each copies the image and opens that network's new-post screen with the text pre-filled, so the user only pastes (⌘/Ctrl+V). This is Hugo's decision.
 4. Analytics that show which scale, credit setting and share method people use.
 
 ## Non-goals
 
 - Animation, frames, GIF export. These need a new data model, a timeline UI and a file-format change: a separate project.
-- Public share links or galleries. They need server storage, which PixelHB deliberately doesn't have.
+- Public share links or galleries. They need server storage, which PixelHB deliberately doesn't have. This is also why desktop networks get the image by paste rather than by link.
+- Posting to social accounts through their APIs (OAuth per network, paid X API, server required).
 - Watermarks drawn over the artwork.
 
 ## Anti-goals (a failure even if it works)
@@ -49,6 +52,7 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 
 - Credit **on by default**.
 - Work split into separate PRs.
+- Social media sharing: the share sheet on phones, copy-and-paste into each network's composer on desktop.
 
 ### My calls (correct me)
 
@@ -74,14 +78,31 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 - The choice is stored on the device (`pixelhb.`-prefixed localStorage key, like the theme and consent choices).
 - It applies to both Export PNG and Share.
 
-**Share.**
-- Uses the same scale and credit choices as Export PNG.
-- **Order of attempts:**
-  1. `navigator.share({ files: [png] })`, when `navigator.canShare({ files })` allows it. Files only, no `text`/`url`: some iOS apps drop the image or turn the post into a link when they are attached. The strip already carries the URL.
-  2. Otherwise, copy the PNG to the clipboard (`ClipboardItem`) and show a toast.
-  3. Otherwise, download it.
-- The share sheet's title is the file name; nothing else is attached.
-- A user cancelling the share sheet (`AbortError`) is not an error: no toast, no event.
+**Share: phones (share sheet).**
+- Shown when `navigator.canShare({ files })` is true and the device has no fine pointer (`(pointer: fine)` does not match).
+- Calls `navigator.share({ files: [png] })` with files only, no `text`/`url`: some iOS apps drop the image or turn the post into a link when they are attached. The strip already carries the URL.
+- `AbortError` (the user cancelled) → no toast, no event.
+- `NotAllowedError` (the render took too long and the tap no longer counts) → download instead.
+
+**Share: desktop (social buttons).**
+- Shown when `(pointer: fine)` matches and the browser can write images to the clipboard (`ClipboardItem`). Otherwise the row is hidden and Export PNG remains.
+- **Networks and composer links:**
+  - X: `https://x.com/intent/tweet?text=…`
+  - Bluesky: `https://bsky.app/intent/compose?text=…`
+  - Threads: `https://www.threads.net/intent/post?text=…`
+  - Reddit: `https://www.reddit.com/submit?title=…`
+  - Discord: no composer link; the button only copies the image.
+- **One click, both steps synchronous inside the click handler,** so popup blockers allow the tab and the page still has focus for the clipboard:
+  1. Write a `ClipboardItem` holding the **already rendered** PNG.
+  2. Then open the composer in a new tab (`window.open`, `noopener`). Opening first would move focus away, and the clipboard write would fail.
+- **Pre-filled text:** "Made with PixelHB #pixelart <site.url>" when the strip was drawn, otherwise just "#pixelart". The user can edit it in the composer. Reddit's title uses the same text without the URL.
+- A line under the row explains the paste step: "Copies your image and opens a new post. Paste it with ⌘V / Ctrl+V."
+- If the clipboard write fails, download the image and show a toast telling the user to attach the downloaded file.
+- Network icons are monochrome SVGs in `public/icons`, drawn with the existing `PublicMaskIcon`, so they follow the theme. Each button's accessible name is "Share on X" and so on.
+
+**Both share paths** use the same scale and credit choices as Export PNG.
+
+**Pre-render.** While the Export panel is open, the PNG is rendered ahead of time: when the panel opens, and again (debounced) when the scale or credit choice changes. The share buttons use that ready image, so a click never waits on rendering. Waiting would break the share sheet (the tap stops counting) and the clipboard (focus moves). The buttons show a short "Preparing…" state until the image is ready.
 
 **Placement.**
 - Share goes next to Export PNG in the editor's Export panel (settings → Export). That menu entry becomes "Export & share".
@@ -89,7 +110,7 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 
 **Analytics.**
 - `export_png` gains `{ scale, credit }`.
-- New event: `share` `{ method: "native" | "clipboard" | "download", scale, credit }`.
+- New event: `share` `{ method: "native" | "clipboard" | "download", network: "x" | "bluesky" | "threads" | "reddit" | "discord" | null, scale, credit }`. `network` is `null` for the share sheet.
 
 **File names.** Unchanged except for a scale suffix at ×2 and above: `my-art@8x.png`.
 
@@ -97,7 +118,8 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 
 1. **Scaled PNG export.** New renderer, scale picker, size cap, remembered scale, `export_png { scale }`.
 2. **Credit strip.** Strip renderer, switch, remembered choice, `export_png { credit }`.
-3. **Share.** Share action with its three fallbacks, the "Export & share" rename, the `share` event, copy, and README/privacy wording if needed.
+3. **Phone share sheet.** Pre-rendered PNG, the share sheet, the "Export & share" rename, the `share` event.
+4. **Desktop social buttons.** X, Bluesky, Threads, Reddit and Discord buttons (copy + open composer), icons, copy, README.
 
 Each PR updates `README.md` (Features) where the behaviour changes.
 
