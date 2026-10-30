@@ -71,6 +71,9 @@ export function usePreparedPng({ artwork, scale, credit, active, onError }: IUse
     return () => {
       stale = true;
       clearTimeout(timer);
+      // Inputs changed or the menu closed: the old result can no longer match, so release it.
+      setEntry(null);
+      setFailedKey(null);
     };
   }, [live, key, scale, credit]);
 

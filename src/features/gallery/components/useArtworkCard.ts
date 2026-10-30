@@ -46,6 +46,7 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
 
   const artworkId = artwork.id;
   const openable = artwork.openable;
+  const updatedAt = artwork.updatedAt;
   useEffect(() => {
     if (!menuOpen || !openable) return;
     let stale = false;
@@ -62,7 +63,7 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
     return () => {
       stale = true;
     };
-  }, [menuOpen, openable, artworkId]);
+  }, [menuOpen, openable, artworkId, updatedAt]);
 
   const onMenuOpenChange = useCallback((open: boolean) => {
     setMenuOpen(open);

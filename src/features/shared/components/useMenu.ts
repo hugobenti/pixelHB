@@ -43,6 +43,17 @@ export function useMenu({ items, onOpenChange }: IMenuProps) {
     onOpenChangeRef.current?.(open);
   }, [open]);
 
+  // Unmounting while open (e.g. Rename replaces the menu) must still report the close.
+  useEffect(
+    () => () => {
+      if (lastOpen.current) {
+        lastOpen.current = false;
+        onOpenChangeRef.current?.(false);
+      }
+    },
+    [],
+  );
+
   const openAt = useCallback(
     (key: "ArrowDown" | "ArrowUp") => {
       focusIndexAfterOpen.current = menuFocusIndex(-1, key, items);

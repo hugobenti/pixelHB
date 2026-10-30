@@ -49,6 +49,11 @@ export function useShareImage({ from }: IUseShareImageParams) {
       let method: Awaited<ReturnType<typeof shareImage>>;
       try {
         method = await shareImage(png, env);
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : shared.artworkFile.errors.pngFailed;
+        showToast({ message, tone: "error" });
+        return;
       } finally {
         setSharing(false);
       }
