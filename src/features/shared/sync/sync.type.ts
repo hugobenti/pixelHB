@@ -126,6 +126,14 @@ export interface ISyncTimers {
   after(ms: number, callback: () => void): () => void;
 }
 
+/** Why a pass ended in the "error" phase: the API failure kind, or an engine code. */
+export type TSyncErrorKind =
+  | Exclude<TSyncApiFailure["kind"], "offline" | "reauth" | "unauthenticated">
+  /** Drive refused one or more artworks while the rest of the pass went through. */
+  | "itemRejected"
+  /** An unexpected exception ended the pass. */
+  | "unexpected";
+
 export interface ISyncEngineDeps {
   api: IGalleryApiClient;
   store: ISyncLocalStore;
@@ -138,6 +146,8 @@ export interface ISyncEngineDeps {
   onArtworkChanged(listener: (id: string) => void): () => void;
   renderThumbnail(artwork: Pick<IArtwork, "width" | "height" | "layers" | "palette">): string;
   warn(message: string, id: string): void;
+  /** A pass ended in the "error" phase; `kind` is a short code, never message text. */
+  reportError(kind: TSyncErrorKind): void;
 }
 
 export interface ISyncStoreState extends ISyncStatus {

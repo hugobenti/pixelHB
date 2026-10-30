@@ -119,8 +119,9 @@ function setup(seed: ISetupSeed = {}) {
   let lockBlocked = false;
   let rendered = PNG;
   let idCounter = 0;
+  const reportError = vi.fn();
   const engine = createSyncEngine({
-    api, store, warn, now: () => now, renderThumbnail: () => rendered, newId: () => `new-${++idCounter}`,
+    api, store, warn, reportError, now: () => now, renderThumbnail: () => rendered, newId: () => `new-${++idCounter}`,
     presence: {
       openIds: async () => new Set(open),
       waitForRelease: (id) => new Promise<void>((resolve) => releaseWaiters.set(id, resolve)),
@@ -136,7 +137,7 @@ function setup(seed: ISetupSeed = {}) {
     onArtworkChanged: (l) => { onChange.add(l); return () => onChange.delete(l); },
   });
   return {
-    engine, api, store, rows, removed, trash, unreadable, drive, deletions, open, warn,
+    engine, api, store, rows, removed, trash, unreadable, drive, deletions, open, warn, reportError,
     status: () => status,
     blockLock: () => { lockBlocked = true; },
     setRender: (value: string) => { rendered = value; },
@@ -924,6 +925,7 @@ describe("sync engine", () => {
       h.api.remove.mockResolvedValueOnce({ ok: false, kind: "offline" });
       await h.engine.start(OWNER);
       expect(h.status().phase).toBe("offline");
+      expect(h.reportError).not.toHaveBeenCalled();
       expect(h.api.save).not.toHaveBeenCalled();
     });
 
@@ -934,6 +936,7 @@ describe("sync engine", () => {
       expect(h.api.save).toHaveBeenCalledTimes(1);
       expect(h.status()).toMatchObject({ phase: "error", driveFull: true, pendingCount: 2 });
       expect(h.pendingDelays()).toEqual([1_000]);
+      expect(h.reportError).toHaveBeenCalledExactlyOnceWith("driveFull");
     });
 
     it("clears the Drive-full flag once a pass completes", async () => {

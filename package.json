@@ -21,6 +21,7 @@
     "dexie": "^4.4.7",
     "next": "16.4.3",
     "next-auth": "5.0.0-beta.32",
+    "posthog-js": "^1.443.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "server-only": "0.0.1",

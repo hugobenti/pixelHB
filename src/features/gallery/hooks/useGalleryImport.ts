@@ -7,6 +7,7 @@
 import { useCallback, useRef } from "react";
 
 import { gallery } from "@/content/gallery";
+import { capture } from "@/features/shared/analytics/analytics";
 import { importArtworkFromJsonFile } from "@/features/shared/artwork/artworkFileService";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 import type { IUseGalleryImportParams } from "./useGalleryImport.type";
@@ -30,6 +31,7 @@ export function useGalleryImport({ importArtwork, onImported }: IUseGalleryImpor
         if (!created) {
           return;
         }
+        capture("import_json");
         showToast({ message: gallery.import.success, tone: "success" });
         onImported(created);
       } catch {

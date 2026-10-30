@@ -65,6 +65,17 @@ export const shared: ISharedContent = {
     label: "Theme",
     options: { light: "Light", dark: "Dark" },
   },
+  analytics: {
+    bannerLabel: "Analytics choice",
+    bannerText:
+      "Help improve PixelHB? With your OK, it collects anonymous usage events, heatmaps and session replays, with typing and your canvas hidden. Stored in the EU.",
+    privacyLink: "Privacy details",
+    accept: "Accept",
+    decline: "Decline",
+    switchLabel: "Usage analytics",
+    switchHint:
+      "Anonymous usage events, heatmaps and session replays, with typing and your canvas hidden. Stored in the EU.",
+  },
   colorSwatch: {
     compactTitle: (position) => `Color ${position}`,
     comfortableTitle: (position) => `Palette ${position}`,

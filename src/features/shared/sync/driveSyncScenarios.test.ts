@@ -225,6 +225,7 @@ function makeDevice(routes: IRoutes) {
     onArtworkChanged: artworkService.onArtworkChanged,
     renderThumbnail: () => PNG,
     warn: () => {},
+    reportError: () => {},
   });
   return {
     engine,

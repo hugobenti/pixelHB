@@ -1,12 +1,13 @@
 /**
  * Purpose:
- * Privacy page: where artworks are stored, what PixelHB can access in Google Drive and how to
- * disconnect it.
+ * Privacy page: where artworks are stored, what PixelHB can access in Google Drive, the analytics
+ * it collects (with the switch to change that choice) and how to disconnect it.
  */
 
 import Link from "next/link";
 
 import { privacy } from "@/content/privacy";
+import { AnalyticsPreference } from "@/features/shared/analytics/AnalyticsPreference";
 import { privacyScreen } from "./PrivacyScreen.style";
 
 export function PrivacyScreen() {
@@ -26,6 +27,9 @@ export function PrivacyScreen() {
               {paragraph}
             </p>
           ))}
+          {section.id === "analytics" && (
+            <AnalyticsPreference className={privacyScreen.analyticsSwitch} />
+          )}
           {section.id === "revoke" && (
             <p className={privacyScreen.prose}>
               <a href={privacy.revokeLink.href} className={privacyScreen.link}>

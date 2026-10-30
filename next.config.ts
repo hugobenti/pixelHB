@@ -34,6 +34,10 @@ const nextConfig: NextConfig = {
   // Isolated production builds (e.g. an agent verifying a change while `next dev` or another
   // build uses .next): `NEXT_DIST_DIR=.next-verify npm run build && NEXT_DIST_DIR=.next-verify npm start`.
   distDir: process.env.NEXT_DIST_DIR ?? ".next",
+  // PostHog's API paths end in a slash (`/ingest/e/`, `/ingest/flags/`); without this each one would
+  // answer 308 first. /ingest is a route handler (src/app/ingest), not a rewrite, so no cookie is
+  // forwarded to PostHog.
+  skipTrailingSlashRedirect: true,
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },

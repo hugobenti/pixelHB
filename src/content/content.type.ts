@@ -132,6 +132,18 @@ export interface ISharedContent {
     /** One label per theme the control offers (THEME_OPTIONS). */
     options: { light: string; dark: string };
   };
+  /** Analytics consent: the banner on first visit and the switch on the Privacy page. */
+  analytics: {
+    /** Accessible name of the banner region. */
+    bannerLabel: string;
+    bannerText: string;
+    /** Link to /privacy after the banner text. */
+    privacyLink: string;
+    accept: string;
+    decline: string;
+    switchLabel: string;
+    switchHint: string;
+  };
   colorSwatch: {
     compactTitle: (position: number) => string;
     comfortableTitle: (position: number) => string;
