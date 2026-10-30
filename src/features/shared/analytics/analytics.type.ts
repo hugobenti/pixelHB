@@ -1,4 +1,5 @@
 import type { TExportScale } from "@/features/shared/artwork/exportScale.type";
+import type { TShareMethod } from "@/features/shared/artwork/shareImage.type";
 import type { TSyncErrorKind } from "@/features/shared/sync/sync.type";
 
 /** The visitor's stored analytics choice; `null` until they pick one. */
@@ -12,6 +13,7 @@ export interface IAnalyticsEvents {
   artwork_created: { width: number; height: number };
   artwork_opened: Record<string, never>;
   export_png: { scale: TExportScale; credit: boolean };
+  share: { method: TShareMethod; scale: TExportScale; credit: boolean };
   export_json: Record<string, never>;
   import_json: Record<string, never>;
   sign_in_started: Record<string, never>;

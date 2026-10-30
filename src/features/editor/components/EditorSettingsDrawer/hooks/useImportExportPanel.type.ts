@@ -3,6 +3,8 @@ import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 
 export interface IUseImportExportPanelParams {
   artwork: IArtwork;
+  /** True while the Export panel is open; the PNG is only pre-rendered then. */
+  active: boolean;
 }
 
 export interface IExportScaleOption {

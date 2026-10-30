@@ -25,8 +25,18 @@ export function useEditorSettingsDrawer({
 }: IEditorSettingsDrawerProps) {
   const canvasSize = useCanvasSizePanel({ artwork, onApplyResized: onApplyCanvasSize });
   const { settingsView, backToMenu } = canvasSize;
-  const { credit, creditHint, exportJson, exportPng, scaleOptions, selectScale, setCredit } =
-    useImportExportPanel({ artwork });
+  const {
+    credit,
+    creditHint,
+    exportJson,
+    exportPng,
+    scaleOptions,
+    selectScale,
+    setCredit,
+    share,
+    shareDisabled,
+    shareLabel,
+  } = useImportExportPanel({ artwork, active: settingsView === "importExport" });
   const { panelEntered, handleClose } = useLayersDrawerPanel({ onClose });
 
   const inDrillIn = settingsView !== "menu";
@@ -74,6 +84,11 @@ export function useEditorSettingsDrawer({
     scaleOptions,
     selectScale,
     setCredit,
+    shareDisabled,
+    shareLabel,
+    share: () => {
+      void share();
+    },
     exportPng: () => {
       void exportPng();
     },

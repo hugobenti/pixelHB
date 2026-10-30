@@ -16,6 +16,7 @@ import { creditStripHeight, creditStripLayout } from "./creditStrip";
 import { drawCreditStrip } from "./creditStripRender";
 import { exportSize, noStrip } from "./exportScale";
 import type { TExportScale } from "./exportScale.type";
+import { pngBlobFromDataUrl } from "./pngPayload";
 import { parseArtworkFile, serializeArtworkFile } from "./artworkFileFormat";
 import type {
   IExportPngOptions,
@@ -28,7 +29,7 @@ const errors = shared.artworkFile.errors;
 const JSON_MIME = "application/json";
 const PNG_MIME = "image/png";
 
-function triggerFileDownload(blob: Blob, fileName: string): void {
+export function triggerFileDownload(blob: Blob, fileName: string): void {
   const objectUrl = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = objectUrl;
@@ -92,9 +93,7 @@ export async function renderArtworkPng(
   if (blob) {
     return { blob, credit, fileName };
   }
-  const binary = atob(canvas.toDataURL(PNG_MIME).split(",")[1]);
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return { blob: new Blob([bytes], { type: PNG_MIME }), credit, fileName };
+  return { blob: pngBlobFromDataUrl(canvas.toDataURL(PNG_MIME)), credit, fileName };
 }
 
 export async function exportArtworkAsPng(

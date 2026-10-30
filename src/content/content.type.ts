@@ -174,6 +174,7 @@ export interface ISharedContent {
       invalidFormat: string;
       canvasUnavailable: string;
       invalidJson: string;
+      pngFailed: string;
     };
   };
 }
@@ -360,6 +361,9 @@ export interface IEditorContent {
       jsonDone: string;
       pngDone: string;
       pngFailed: string;
+      share: string;
+      preparing: string;
+      copied: string;
       scaleLabel: string;
       scaleOption: (scale: number, width: number, height: number) => string;
       scaleTooLarge: string;
