@@ -83,7 +83,7 @@ export const editor: IEditorContent = {
       },
       loadImage: { label: "Load image", hint: "Pick file" },
       canvasSize: { label: "Canvas size", hint: (width, height) => `${width} × ${height}` },
-      export: { label: "Export & share", hint: "Download files" },
+      export: { label: "Export & share", hint: "Download or share" },
       imageDetail: { label: "Image detail", hint: "Visible area" },
     },
     canvasSize: {

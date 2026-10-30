@@ -13,12 +13,21 @@ function isAbort(error: unknown): boolean {
   return error instanceof Error && error.name === "AbortError";
 }
 
+/** A throwing `canShare` counts as "cannot share", so the clipboard is tried next. */
+function canShareFiles(env: IShareEnv, data: ShareData): boolean {
+  try {
+    return env.canShare?.(data) === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function shareImage(
   png: IShareablePng,
   env: IShareEnv,
 ): Promise<TShareMethod | "cancelled"> {
   const data: ShareData = { files: [png.file] };
-  if (env.share && env.canShare?.(data)) {
+  if (env.share && canShareFiles(env, data)) {
     try {
       await env.share(data);
       return "native";

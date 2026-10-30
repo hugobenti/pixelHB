@@ -17,6 +17,7 @@ const RERENDER_DELAY_MS = 300;
 
 export function usePreparedPng({ artwork, scale, credit, active, onError }: IUsePreparedPngParams) {
   const [entry, setEntry] = useState<IPreparedPngEntry | null>(null);
+  const [failedKey, setFailedKey] = useState<string | null>(null);
   const artworkRef = useRef(artwork);
   const onErrorRef = useRef(onError);
   const renderedOnce = useRef(false);
@@ -54,6 +55,7 @@ export function usePreparedPng({ artwork, scale, credit, active, onError }: IUse
           },
           (error: unknown) => {
             if (!stale) {
+              setFailedKey(key);
               onErrorRef.current?.(error);
             }
           },
@@ -67,5 +69,10 @@ export function usePreparedPng({ artwork, scale, credit, active, onError }: IUse
     };
   }, [active, key, scale, credit]);
 
-  return { png: active && entry?.key === key ? entry.png : null };
+  const ready = active && entry?.key === key;
+  return {
+    png: ready ? entry.png : null,
+    /** True while the latest render for the current inputs has failed. */
+    failed: active && !ready && failedKey === key,
+  };
 }

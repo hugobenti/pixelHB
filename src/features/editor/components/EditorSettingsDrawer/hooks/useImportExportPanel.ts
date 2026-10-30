@@ -74,7 +74,8 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     writeStoredExportCredit(() => localStorage, on);
   }, []);
 
-  const { png } = usePreparedPng({
+  const [sharing, setSharing] = useState(false);
+  const { png, failed } = usePreparedPng({
     artwork,
     scale,
     credit,
@@ -86,7 +87,7 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
   });
 
   const share = useCallback(async () => {
-    if (!png) {
+    if (!png || sharing) {
       return;
     }
     const env: IShareEnv = {
@@ -102,7 +103,13 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
       env.writeImage = (blob) =>
         navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
     }
-    const method = await shareImage(png, env);
+    setSharing(true);
+    let method: Awaited<ReturnType<typeof shareImage>>;
+    try {
+      method = await shareImage(png, env);
+    } finally {
+      setSharing(false);
+    }
     if (method === "cancelled") {
       return;
     }
@@ -112,7 +119,7 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     } else if (method === "download") {
       showToast({ message: editor.settings.export.pngDone, tone: "success" });
     }
-  }, [png, scale, showToast]);
+  }, [png, scale, sharing, showToast]);
 
   const exportJson = useCallback(() => {
     exportArtworkAsJson(artwork);
@@ -122,14 +129,19 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
 
   const exportPng = useCallback(async () => {
     try {
-      const { credit: drawn } = await exportArtworkAsPng(artwork, { scale, credit });
-      capture("export_png", { scale, credit: drawn });
+      if (png) {
+        triggerFileDownload(png.blob, png.fileName);
+        capture("export_png", { scale, credit: png.credit });
+      } else {
+        const { credit: drawn } = await exportArtworkAsPng(artwork, { scale, credit });
+        capture("export_png", { scale, credit: drawn });
+      }
       showToast({ message: editor.settings.export.pngDone, tone: "success" });
     } catch (error) {
       const message = error instanceof Error ? error.message : editor.settings.export.pngFailed;
       showToast({ message, tone: "error" });
     }
-  }, [artwork, scale, credit, showToast]);
+  }, [artwork, scale, credit, png, showToast]);
 
   return {
     credit,
@@ -141,7 +153,11 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     selectScale,
     setCredit,
     share,
-    shareDisabled: !png,
-    shareLabel: png ? editor.settings.export.share : editor.settings.export.preparing,
+    shareDisabled: !png || sharing,
+    shareLabel: failed
+      ? editor.settings.export.pngFailed
+      : png
+        ? editor.settings.export.share
+        : editor.settings.export.preparing,
   };
 }
