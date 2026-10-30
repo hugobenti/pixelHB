@@ -2,11 +2,10 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make shared PixelHB artwork advertise the app, delivered as four independent PRs:
+**Goal:** Make shared PixelHB artwork advertise the app, delivered as three independent PRs:
 - a sharp upscaled PNG export
 - a "Made with PixelHB" credit strip, on by default
-- the phone share sheet
-- desktop buttons that copy the image and open X / Bluesky / Threads / Reddit / Discord
+- one Share button on every device (system share sheet → copy → download)
 
 **Architecture:**
 - **Pure logic** lives in `.ts` modules, each with Vitest tests:
@@ -39,16 +38,14 @@
 - localStorage keys: `pixelhb.exportScale` and `pixelhb.exportCredit`. A storage error falls back to the defaults.
 - File name: `<sanitized-title>.png` at ×1, `<sanitized-title>@<n>x.png` above ×1.
 - Palette entries are opaque `#rrggbb` (`HEX_COLOR` in `artworkFileFormat.ts`). A pixel index ≥ `palette.length` is transparent. `layers[0]` is the top layer (today's renderer paints the last layer first).
-- **Share (phones):** `navigator.share({ files })` only, with no `text`/`url`. `AbortError` means the user cancelled: no toast, no event. `NotAllowedError` → download.
-- **Share (desktop):** for each network, inside one click handler and in this order:
-  1. `navigator.clipboard.write([new ClipboardItem({ "image/png": readyBlob })])`
-  2. then `window.open(composerUrl, "_blank", "noopener")`
-  - If the clipboard write fails → download + toast.
-  - Discord copies only.
-- **Pre-render:** both share paths use a PNG rendered ahead of time while the Export panel is open. A click never awaits rendering.
+- **Share:** one button on every device. Order of attempts:
+  1. `navigator.share({ files })`, files only, with no `text`/`url`. `AbortError` (the user cancelled) → no toast, no event. Any other error → download.
+  2. Otherwise, `navigator.clipboard.write([new ClipboardItem({ "image/png": readyBlob })])`, called synchronously inside the click. If it fails → download.
+  3. Otherwise, download.
+- **Pre-render:** Share uses a PNG rendered ahead of time while the Export panel is open. A click never awaits rendering.
 - **Analytics:**
   - `export_png: { scale; credit }`
-  - `share: { method: "native" | "clipboard" | "download"; network: "x" | "bluesky" | "threads" | "reddit" | "discord" | null; scale; credit }`
+  - `share: { method: "native" | "clipboard" | "download"; scale; credit }`
   - `credit` means **a strip was drawn**. Properties never carry names, pixels or palettes.
 - The URL text in the strip is `new URL(site.url).host`.
 
@@ -57,7 +54,7 @@
 1. **A 1000×1000 artwork with the credit on.** ×4 would be 4000 + 320 = 4320 px tall, so it must be disabled and only ×1 offered. With the credit off, ×4 becomes allowed. (Task 1 + Task 3 tests.)
 2. **A stored scale that is too big for the artwork now open** (e.g. ×32 remembered from a 16×16 sprite, now on a 500×500). It must fall back to the default, never export above the cap. (Task 1 test.)
 3. **Share sheet when the tap no longer counts** (`NotAllowedError`, e.g. the browser's activation window expired). It must fall back to download, never show a raw error. (Task 4 test.)
-4. **Desktop click order:** opening the composer first moves focus away and makes the clipboard write fail. The write must be called before `window.open`, in the same synchronous handler. (Task 5 test asserts the call order.)
+4. **Clipboard on Safari:** the write has to be called in the click's synchronous turn, with the already rendered image. An `await` before it makes Safari reject it. (Task 4 test: `writeImage` is called before the first microtask.)
 5. **All layers hidden, or every pixel transparent:** the export still produces a transparent PNG of the right size, and the strip is still drawn. (Task 1 composite test, Task 3 renderer smoke.)
 
 ---
@@ -190,101 +187,41 @@
 
 ---
 
-## PR 3: Pre-render + phone share sheet
+## PR 3: Share
 
-### Task 4: Ready-to-share PNG and the share sheet
+### Task 4: Pre-rendered PNG and the Share button
 
 **Files:**
 - Create: `src/features/shared/artwork/shareImage.ts`, `shareImage.type.ts`, `shareImage.test.ts`
 - Create: `src/features/editor/components/EditorSettingsDrawer/hooks/usePreparedPng.ts` + `.type.ts`
-- Modify: `useImportExportPanel.ts` + `.type.ts`, `useEditorSettingsDrawer.ts`, `EditorSettingsImportExportPanel.tsx` / `.type.ts` (Share button, primary variant, first in the actions row, shown only when `canShareSheet`)
-- Modify: `src/content/editor.ts` (`menu.export.label: "Export & share"`; `export.share: "Share image"`; `export.preparing: "Preparing…"`), `content.type.ts`
-- Modify: `analytics.type.ts` (add `share`), `README.md`
+- Modify: `useImportExportPanel.ts` + `.type.ts`, `useEditorSettingsDrawer.ts`, `EditorSettingsImportExportPanel.tsx` / `.type.ts` (Share button, primary variant, first in the actions row)
+- Modify: `src/content/editor.ts` (`menu.export.label: "Export & share"`; `export.share: "Share image"`; `export.preparing: "Preparing…"`; `export.copied: "Image copied. Paste it into your post."`), `content.type.ts`
+- Modify: `artworkFileService.ts` (export `triggerFileDownload`), `analytics.type.ts` (add `share`), `README.md`
 
 **Interfaces:**
-- Produces (Task 5 reuses all of these):
-  - `type TShareMethod = "native" | "clipboard" | "download"`
-  - `type TShareNetwork = "x" | "bluesky" | "threads" | "reddit" | "discord"`
-  - `usePreparedPng({ artwork, scale, credit }): { png: { blob: Blob; file: File; fileName: string; credit: boolean } | null }`
-    - Renders with `renderArtworkPng` when the panel mounts, and 300 ms after scale or credit change, or after the artwork's `updatedAt` changes.
-    - Drops stale results.
-  - `shareViaSheet(file: File, env: ISheetEnv): Promise<"native" | "download" | "cancelled">`, where `ISheetEnv = { share(data: ShareData): Promise<void>; download(file: File): void }`.
-  - `canShareSheet(env: { canShare?(d: ShareData): boolean; finePointer: boolean }, probe: File): boolean`: true only when `!finePointer && canShare?.({ files: [probe] })`.
-  - Export `triggerFileDownload` from `artworkFileService.ts`.
+- `type TShareMethod = "native" | "clipboard" | "download"`
+- `usePreparedPng({ artwork, scale, credit }): { png: { blob: Blob; file: File; fileName: string; credit: boolean } | null }`
+  - Renders with `renderArtworkPng` when the panel mounts, and 300 ms after the scale, credit or the artwork's `updatedAt` changes.
+  - Drops stale results.
+- `shareImage(png: { blob: Blob; file: File }, env: IShareEnv): Promise<TShareMethod | "cancelled">`
+  - `IShareEnv = { canShare?(d: ShareData): boolean; share?(d: ShareData): Promise<void>; writeImage?(blob: Blob): Promise<void>; download(): void }`.
+  - The hook builds it from `navigator.canShare`/`share`, from `navigator.clipboard.write` + `ClipboardItem` (only when both exist), and from `triggerFileDownload`.
 
 - [ ] **Step 1: Write the failing tests** (`shareImage.test.ts`):
-  - `"share sheet gets the file and nothing else"` → `"native"`, with the `share` argument deep-equal to `{ files: [file] }`.
-  - `"AbortError → cancelled, no download"`
+  - `"uses the share sheet with the file only"` → `"native"`, with the `share` argument deep-equal to `{ files: [file] }`.
+  - `"AbortError → cancelled, nothing else called"`
   - `"NotAllowedError → download"`
-  - `"other errors → download"`
-  - `canShareSheet`: fine pointer → `false`; no `canShare` → `false`; coarse pointer + `canShare` true → `true`.
+  - `"canShare false → copies to the clipboard"` → `"clipboard"`, with `writeImage` called before any `await` (assert it was called synchronously, before the returned promise is awaited).
+  - `"clipboard write rejects → download"`
+  - `"no share, no clipboard → download"`
 - [ ] **Step 2: Run; expect FAIL.**
-- [ ] **Step 3: Implement `shareImage.ts`, `usePreparedPng`, the hook's `shareSheet()` and the button.**
-  - The button is disabled with `export.preparing` while `png` is null.
-  - Call `capture("share", { method, network: null, scale, credit: png.credit })` unless the result is cancelled.
+- [ ] **Step 3: Implement `shareImage.ts`, `usePreparedPng`, the hook's `share()` and the button.**
+  - The button is disabled and labelled `export.preparing` while `png` is null.
+  - Toasts: `"clipboard"` → `export.copied`; `"download"` → the existing PNG-done toast; `"native"` and `"cancelled"` → none.
+  - Call `capture("share", { method, scale, credit: png.credit })` unless the result is cancelled.
 - [ ] **Step 4: Verify.**
   - Run lint, typecheck, test and the isolated build.
-  - **Phone emulation (390×844, touch):** the settings menu reads "Export & share", and the Share button appears and is labelled once the image is prepared.
-  - **Desktop:** no Share button.
-  - The native sheet is only exercised by unit tests unless a real phone is available. Say so in the PR.
-- [ ] **Step 5: Commit** `feat(export): share the image from the phone share sheet`, then open the PR.
-
----
-
-## PR 4: Desktop social buttons
-
-### Task 5: Copy the image and open the network's composer
-
-**Files:**
-- Create: `src/features/shared/artwork/socialShare.ts`, `socialShare.test.ts` (composer URLs, text, click sequence)
-- Create: `public/icons/x.svg`, `bluesky.svg`, `threads.svg`, `reddit.svg`, `discord.svg`: single-colour paths, `viewBox="0 0 24 24"`, matching the existing icon files. Register them in the existing `PUBLIC_ICONS` map.
-- Modify: `useImportExportPanel.ts` + `.type.ts`, `EditorSettingsImportExportPanel.tsx` / `.style.ts` / `.type.ts` (a row of icon buttons with a hint line under it, shown only when `canSocialShare`)
-- Modify: `src/content/editor.ts`, `content.type.ts`, `README.md`
-
-**Interfaces:**
-- Consumes: Task 4 (`usePreparedPng`, `TShareNetwork`, `triggerFileDownload`).
-- Produces:
-  - `composerUrl(network: Exclude<TShareNetwork, "discord">, text: string): string`. Bases:
-    - `https://x.com/intent/tweet?text=`
-    - `https://bsky.app/intent/compose?text=`
-    - `https://www.threads.net/intent/post?text=`
-    - `https://www.reddit.com/submit?title=`
-    - The text is encoded with `encodeURIComponent`.
-  - `postText(credit: boolean, siteUrl: string, network: TShareNetwork): string`
-    - credit → `"Made with PixelHB #pixelart " + siteUrl`
-    - no credit → `"#pixelart"`
-    - Reddit drops the URL.
-  - `shareToNetwork(network, blob: Blob, env: ISocialEnv): "clipboard" | "download"`, where `ISocialEnv = { writeImage(blob: Blob): Promise<void>; open(url: string): void; download(blob: Blob): void; onWriteFailed(): void }`.
-    - **Synchronous:** it calls `writeImage` **first**, then `open` (unless the network is Discord).
-    - A rejected write triggers `download` + `onWriteFailed` asynchronously.
-  - `canSocialShare(env: { finePointer: boolean; hasClipboardItem: boolean; canWriteClipboard: boolean }): boolean`
-- **Copy:**
-  - `export.social.title: "Post it"`
-  - `export.social.hint: "Copies your image and opens a new post. Paste it with ⌘V / Ctrl+V."`
-  - `export.social.label(network)` → `"Share on X"` (or `"Copy for Discord"`)
-  - `export.social.copied: "Image copied. Paste it into your post."`
-  - `export.social.downloaded: "Couldn't copy the image, so it was downloaded. Attach the file to your post."`
-
-- [ ] **Step 1: Write the failing tests** (`socialShare.test.ts`):
-  - `composerUrl("x", "Made with PixelHB #pixelart https://pixelhb.vercel.app")` → `"https://x.com/intent/tweet?text=Made%20with%20PixelHB%20%23pixelart%20https%3A%2F%2Fpixelhb.vercel.app"`. One assertion per network base.
-  - `postText(false, …, "x")` → `"#pixelart"`.
-  - `postText(true, "https://pixelhb.vercel.app", "reddit")` → `"Made with PixelHB #pixelart"`.
-  - `"writes the clipboard before opening the composer"`: record the env call order; expect `["writeImage", "open"]`.
-  - `"discord copies without opening a tab"`
-  - `"rejected clipboard write downloads and reports"`: after the microtasks flush, `download` and `onWriteFailed` were each called once.
-  - `canSocialShare`: false without a fine pointer, false without `ClipboardItem`.
-- [ ] **Step 2: Run; expect FAIL.**
-- [ ] **Step 3: Implement `socialShare.ts`, the icons and the hook's `shareTo(network)`.**
-  - It builds `ISocialEnv` from `navigator.clipboard.write`, `ClipboardItem` and `window.open(url, "_blank", "noopener")`.
-  - Show the `copied` toast on success.
-  - Call `capture("share", { method, network, scale, credit: png.credit })`.
-  - Buttons are disabled while `png` is null.
-- [ ] **Step 4: Verify.**
-  - Run lint, typecheck, test and the isolated build.
-  - **Desktop Chrome via the browser tool:**
-    - Clicking "Share on X" opens an `x.com/intent/tweet` tab with the pre-filled text.
-    - `clipboardRead` on the PixelHB tab shows an image.
-    - Discord opens no tab.
-  - **Phone emulation:** the social row is hidden.
-  - **Screenshots** of the panel at desktop size in light and dark themes.
-- [ ] **Step 5: Commit** `feat(export): share to X, Bluesky, Threads, Reddit and Discord on desktop`, then open the PR.
+  - **Desktop Chrome (headless, via the browser tool):** headless Chrome has no share sheet, so Share copies the image. Confirm with the "Image copied" toast and `clipboardRead`.
+  - **Phone emulation (390×844):** the settings menu reads "Export & share", and the Share button is reachable and labelled once prepared.
+  - The native sheet is only exercised by unit tests unless a real device is available. Say so in the PR.
+- [ ] **Step 5: Commit** `feat(export): share the image from the editor`, then open the PR.
