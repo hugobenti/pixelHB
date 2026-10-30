@@ -12,7 +12,10 @@ import {
   exportArtworkAsJson,
   exportArtworkAsPng,
 } from "@/features/shared/artwork/artworkFileService";
-import { EXPORT_SCALE_KEY, parseExportScale } from "@/features/shared/artwork/exportPreferences";
+import {
+  readStoredExportScale,
+  writeStoredExportScale,
+} from "@/features/shared/artwork/exportPreferences";
 import {
   allowedExportScales,
   EXPORT_SCALES,
@@ -26,25 +29,11 @@ import type { IExportScaleOption, IUseImportExportPanelParams } from "./useImpor
 /** PR 1 draws no credit strip, so exports add no height. */
 const noStrip = () => 0;
 
-function readStoredScale(): TExportScale | null {
-  try {
-    return parseExportScale(localStorage.getItem(EXPORT_SCALE_KEY));
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredScale(scale: TExportScale): void {
-  try {
-    localStorage.setItem(EXPORT_SCALE_KEY, String(scale));
-  } catch {
-    // Storage unavailable: the choice just isn't remembered.
-  }
-}
-
 export function useImportExportPanel({ artwork }: IUseImportExportPanelParams) {
   const { showToast } = useToast();
-  const [storedScale, setStoredScale] = useState<TExportScale | null>(readStoredScale);
+  const [storedScale, setStoredScale] = useState<TExportScale | null>(() =>
+    readStoredExportScale(() => localStorage),
+  );
   const scale = resolveExportScale(storedScale, artwork, noStrip);
 
   const scaleOptions = useMemo((): IExportScaleOption[] => {
@@ -65,7 +54,7 @@ export function useImportExportPanel({ artwork }: IUseImportExportPanelParams) {
 
   const selectScale = useCallback((next: TExportScale) => {
     setStoredScale(next);
-    writeStoredScale(next);
+    writeStoredExportScale(() => localStorage, next);
   }, []);
 
   const exportJson = useCallback(() => {

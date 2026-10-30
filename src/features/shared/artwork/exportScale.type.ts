@@ -15,3 +15,9 @@ export interface IExportSize {
   /** Height of the scaled art; anything below it is the credit strip. */
   artHeight: number;
 }
+
+/** The slice of `Storage` the preferences need; reached through a getter because merely touching `localStorage` can throw (or not exist on the server). */
+export interface IExportStorage {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+}
