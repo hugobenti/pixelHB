@@ -8,7 +8,7 @@ export const privacy: IPrivacyContent = {
   h1: "Privacy",
   intro:
     "Your art belongs to you. PixelHB is the tool, not the owner: it keeps no copies of your work and makes no claim on it. This page explains exactly where your artworks go.",
-  updated: "Last updated: October 29, 2026",
+  updated: "Last updated: October 30, 2026",
   sections: [
     {
       id: "without-account",
@@ -36,6 +36,7 @@ export const privacy: IPrivacyContent = {
         "A working copy of your artworks, so PixelHB works offline and opens instantly. When you’re signed in, changes are copied to your Drive automatically.",
         "Your theme choice (light or dark).",
         "When you sign out, the copies of that account’s artworks are removed from this browser. They stay in your Drive.",
+        "Your analytics choice and, if you accept analytics, the random ID PostHog uses to group your visits.",
       ],
     },
     {
@@ -43,6 +44,10 @@ export const privacy: IPrivacyContent = {
       title: "Analytics",
       paragraphs: [
         "PixelHB uses Vercel Web Analytics to count page visits. It uses no cookies, doesn’t track you across sites and never sees your artworks.",
+        "If you accept on the analytics banner, PixelHB also uses PostHog to learn how the app is used and where it gets in the way. The data is sent through PixelHB’s own server, which passes on none of your cookies, and is stored on PostHog’s EU servers.",
+        "What is collected: anonymous usage events (which pages you open, and actions such as creating, opening, exporting or importing an artwork, starting to sign in, or a sync error code), with your browser, device type and screen size; heatmaps of where you click and how far you scroll; and session replays, a recording of how the page changes as you use it.",
+        "What is not: your artworks. The canvas, thumbnails and reference images are left out of replays, and events never include artwork names, pixels or palettes. What you type is hidden in replays; the rest of the page shows as you saw it, artwork names included. Your IP address is used only to estimate your country and is then discarded. PixelHB never links this data to your Google account, your name or your email.",
+        "Nothing is collected unless you accept, and declining loads nothing from PostHog. You can change your mind at any time with the switch below: turning it off stops the recording, resets PostHog’s random ID and sends nothing more.",
       ],
     },
     {
