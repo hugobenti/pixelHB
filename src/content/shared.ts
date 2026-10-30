@@ -2,6 +2,12 @@ import type { ISharedContent } from "./content.type";
 
 export const shared: ISharedContent = {
   loading: "Loading…",
+  share: {
+    label: "Share image",
+    preparing: "Preparing…",
+    copied: "Image copied. Paste it into your post.",
+    downloaded: "PNG file exported.",
+  },
   sync: {
     thisBrowserOnly: "Saved in this browser only.",
     syncing: "Syncing with your Google Drive…",

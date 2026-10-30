@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Render the export PNG ahead of time while the Export panel is open, so Share never waits on it.
+ * Render the export PNG ahead of time while the Export panel or a gallery card menu is open, so Share never waits on it.
  *
  * Notes:
  * Renders on mount and 300 ms after the scale, credit or `updatedAt` changes. A result is only
@@ -21,7 +21,8 @@ export function usePreparedPng({ artwork, scale, credit, active, onError }: IUse
   const artworkRef = useRef(artwork);
   const onErrorRef = useRef(onError);
   const renderedOnce = useRef(false);
-  const key = `${scale}|${credit}|${artwork.updatedAt}`;
+  const key = `${scale}|${credit}|${artwork?.updatedAt}`;
+  const live = active && artwork !== null;
 
   useEffect(() => {
     artworkRef.current = artwork;
@@ -29,15 +30,19 @@ export function usePreparedPng({ artwork, scale, credit, active, onError }: IUse
   });
 
   useEffect(() => {
-    if (!active) {
+    if (!live) {
       renderedOnce.current = false;
       return;
     }
     let stale = false;
     const timer = setTimeout(
       () => {
+        const current = artworkRef.current;
+        if (!current) {
+          return;
+        }
         renderedOnce.current = true;
-        renderArtworkPng(artworkRef.current, { scale, credit }).then(
+        renderArtworkPng(current, { scale, credit }).then(
           (rendered) => {
             if (stale) {
               return;
@@ -67,12 +72,12 @@ export function usePreparedPng({ artwork, scale, credit, active, onError }: IUse
       stale = true;
       clearTimeout(timer);
     };
-  }, [active, key, scale, credit]);
+  }, [live, key, scale, credit]);
 
-  const ready = active && entry?.key === key;
+  const ready = live && entry?.key === key;
   return {
     png: ready ? entry.png : null,
     /** True while the latest render for the current inputs has failed. */
-    failed: active && !ready && failedKey === key,
+    failed: live && !ready && failedKey === key,
   };
 }

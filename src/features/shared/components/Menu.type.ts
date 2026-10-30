@@ -13,4 +13,6 @@ export interface IMenuProps {
   /** Heading of the bottom sheet shown on phones. */
   sheetTitle: string;
   items: readonly IMenuItem[];
+  /** Called whenever the menu (popover or phone sheet) opens or closes. */
+  onOpenChange?: (open: boolean) => void;
 }
