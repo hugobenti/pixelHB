@@ -8,6 +8,9 @@ export const EXPORT_SCALES = [1, 4, 8, 16, 32] as const;
 export const MAX_EXPORT_EDGE_PX = 4096;
 const DEFAULT_TARGET_EDGE_PX = 1024;
 
+/** Strip height for exports without a credit strip. */
+export const noStrip: TStripHeight = () => 0;
+
 export function exportSize(
   art: IExportArtSize,
   scale: TExportScale,

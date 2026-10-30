@@ -12,34 +12,42 @@ import {
   exportArtworkAsJson,
   exportArtworkAsPng,
 } from "@/features/shared/artwork/artworkFileService";
+import { CREDIT_MIN_EXPORT_WIDTH, creditStripHeight } from "@/features/shared/artwork/creditStrip";
 import {
+  readStoredExportCredit,
   readStoredExportScale,
+  writeStoredExportCredit,
   writeStoredExportScale,
 } from "@/features/shared/artwork/exportPreferences";
 import {
   allowedExportScales,
   EXPORT_SCALES,
   exportSize,
+  noStrip,
   resolveExportScale,
 } from "@/features/shared/artwork/exportScale";
 import type { TExportScale } from "@/features/shared/artwork/exportScale.type";
 import { useToast } from "@/features/shared/components/Toast/hooks/useToast";
 import type { IExportScaleOption, IUseImportExportPanelParams } from "./useImportExportPanel.type";
 
-/** PR 1 draws no credit strip, so exports add no height. */
-const noStrip = () => 0;
-
 export function useImportExportPanel({ artwork }: IUseImportExportPanelParams) {
   const { showToast } = useToast();
   const [storedScale, setStoredScale] = useState<TExportScale | null>(() =>
     readStoredExportScale(() => localStorage),
   );
-  const scale = resolveExportScale(storedScale, artwork, noStrip);
+  const [credit, setCreditState] = useState(() => readStoredExportCredit(() => localStorage));
+  const stripHeight = credit ? creditStripHeight : noStrip;
+  const scale = resolveExportScale(storedScale, artwork, stripHeight);
+  const chosenWidth = artwork.width * scale;
+  const creditHint =
+    credit && chosenWidth < CREDIT_MIN_EXPORT_WIDTH
+      ? editor.settings.export.credit.tooNarrow
+      : null;
 
   const scaleOptions = useMemo((): IExportScaleOption[] => {
-    const allowed = allowedExportScales(artwork, noStrip);
+    const allowed = allowedExportScales(artwork, stripHeight);
     return EXPORT_SCALES.map((option) => {
-      const size = exportSize(artwork, option, noStrip);
+      const size = exportSize(artwork, option, stripHeight);
       const disabled = !allowed.includes(option);
       return {
         scale: option,
@@ -50,11 +58,16 @@ export function useImportExportPanel({ artwork }: IUseImportExportPanelParams) {
         descriptionId: `export-scale-${option}-description`,
       };
     });
-  }, [artwork, scale]);
+  }, [artwork, scale, stripHeight]);
 
   const selectScale = useCallback((next: TExportScale) => {
     setStoredScale(next);
     writeStoredExportScale(() => localStorage, next);
+  }, []);
+
+  const setCredit = useCallback((on: boolean) => {
+    setCreditState(on);
+    writeStoredExportCredit(() => localStorage, on);
   }, []);
 
   const exportJson = useCallback(() => {
@@ -65,20 +78,23 @@ export function useImportExportPanel({ artwork }: IUseImportExportPanelParams) {
 
   const exportPng = useCallback(async () => {
     try {
-      const { credit } = await exportArtworkAsPng(artwork, { scale, credit: false });
-      capture("export_png", { scale, credit });
+      const { credit: drawn } = await exportArtworkAsPng(artwork, { scale, credit });
+      capture("export_png", { scale, credit: drawn });
       showToast({ message: editor.settings.export.pngDone, tone: "success" });
     } catch (error) {
       const message = error instanceof Error ? error.message : editor.settings.export.pngFailed;
       showToast({ message, tone: "error" });
     }
-  }, [artwork, scale, showToast]);
+  }, [artwork, scale, credit, showToast]);
 
   return {
+    credit,
+    creditHint,
     exportJson,
     exportPng,
     scale,
     scaleOptions,
     selectScale,
+    setCredit,
   };
 }

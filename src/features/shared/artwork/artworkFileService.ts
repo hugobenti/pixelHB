@@ -8,10 +8,13 @@
 "use client";
 
 import { shared } from "@/content/shared";
+import { site } from "@/content/site";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import { sanitizeFileNameSegment, exportFileName } from "./artworkFileName";
 import { composeArtworkRgba } from "./artworkComposite";
-import { exportSize } from "./exportScale";
+import { creditStripHeight, creditStripLayout } from "./creditStrip";
+import { drawCreditStrip } from "./creditStripRender";
+import { exportSize, noStrip } from "./exportScale";
 import type { TExportScale } from "./exportScale.type";
 import { parseArtworkFile, serializeArtworkFile } from "./artworkFileFormat";
 import type {
@@ -24,8 +27,6 @@ const errors = shared.artworkFile.errors;
 
 const JSON_MIME = "application/json";
 const PNG_MIME = "image/png";
-
-const noStrip = () => 0;
 
 function triggerFileDownload(blob: Blob, fileName: string): void {
   const objectUrl = URL.createObjectURL(blob);
@@ -45,7 +46,11 @@ export function exportArtworkAsJson(artwork: IArtwork): void {
   triggerFileDownload(blob, fileName);
 }
 
-function renderArtworkCanvas(artwork: IArtwork, scale: TExportScale): HTMLCanvasElement {
+async function renderArtworkCanvas(
+  artwork: IArtwork,
+  scale: TExportScale,
+  credit: boolean,
+): Promise<{ canvas: HTMLCanvasElement; credit: boolean }> {
   const source = document.createElement("canvas");
   source.width = artwork.width;
   source.height = artwork.height;
@@ -56,7 +61,7 @@ function renderArtworkCanvas(artwork: IArtwork, scale: TExportScale): HTMLCanvas
   const pixels = composeArtworkRgba(artwork);
   sourceCtx.putImageData(new ImageData(pixels, artwork.width, artwork.height), 0, 0);
 
-  const size = exportSize(artwork, scale, noStrip);
+  const size = exportSize(artwork, scale, credit ? creditStripHeight : noStrip);
   const canvas = document.createElement("canvas");
   canvas.width = size.width;
   canvas.height = size.height;
@@ -66,7 +71,12 @@ function renderArtworkCanvas(artwork: IArtwork, scale: TExportScale): HTMLCanvas
   }
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(source, 0, 0, size.width, size.artHeight);
-  return canvas;
+  const layout = creditStripLayout(size.width);
+  const drawn = credit && layout.height > 0;
+  if (drawn) {
+    await drawCreditStrip(ctx, size.artHeight, layout, new URL(site.url).host);
+  }
+  return { canvas, credit: drawn };
 }
 
 /** Renders the artwork to a PNG at `scale`, without downloading it. */
@@ -74,17 +84,17 @@ export async function renderArtworkPng(
   artwork: IArtwork,
   options: IExportPngOptions,
 ): Promise<IRenderedPng> {
-  const canvas = renderArtworkCanvas(artwork, options.scale);
+  const { canvas, credit } = await renderArtworkCanvas(artwork, options.scale, options.credit);
   const fileName = exportFileName(artwork.title, options.scale);
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, PNG_MIME);
   });
   if (blob) {
-    return { blob, credit: false, fileName };
+    return { blob, credit, fileName };
   }
   const binary = atob(canvas.toDataURL(PNG_MIME).split(",")[1]);
   const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
-  return { blob: new Blob([bytes], { type: PNG_MIME }), credit: false, fileName };
+  return { blob: new Blob([bytes], { type: PNG_MIME }), credit, fileName };
 }
 
 export async function exportArtworkAsPng(

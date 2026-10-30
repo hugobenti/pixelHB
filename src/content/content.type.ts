@@ -363,6 +363,11 @@ export interface IEditorContent {
       scaleLabel: string;
       scaleOption: (scale: number, width: number, height: number) => string;
       scaleTooLarge: string;
+      credit: {
+        label: string;
+        hint: string;
+        tooNarrow: string;
+      };
     };
   };
   layers: {
