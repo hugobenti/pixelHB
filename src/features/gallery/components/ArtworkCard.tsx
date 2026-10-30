@@ -33,6 +33,7 @@ export function ArtworkCard(props: IArtworkCardProps) {
     cancelRename,
     submitRename,
     menuItems,
+    onMenuOpenChange,
     deleteDialog,
   } = useArtworkCard(props);
 
@@ -89,6 +90,7 @@ export function ArtworkCard(props: IArtworkCardProps) {
                   label={gallery.card.actionsLabel(artwork.title)}
                   sheetTitle={artwork.title}
                   items={menuItems}
+                  onOpenChange={onMenuOpenChange}
                 />
               ) : null}
             </div>

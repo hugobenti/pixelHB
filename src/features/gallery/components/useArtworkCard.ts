@@ -4,12 +4,19 @@
  */
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
 import { gallery } from "@/content/gallery";
 import { shared } from "@/content/shared";
+import { cardShareState } from "@/features/gallery/logic/cardShareState";
 import { relativeTimeParts } from "@/features/gallery/logic/relativeTime";
 import { editorPath } from "@/features/gallery/logic/artworkLinks";
+import type { IArtwork } from "@/features/shared/artwork/artwork.type";
+import * as artworkService from "@/features/shared/artwork/artworkService";
+import { creditStripHeight } from "@/features/shared/artwork/creditStrip";
+import { defaultExportScale } from "@/features/shared/artwork/exportScale";
+import { usePreparedPng } from "@/features/shared/artwork/usePreparedPng";
+import { useShareImage } from "@/features/shared/artwork/useShareImage";
 import { useAccount } from "@/features/shared/auth/useAccount";
 import type { IMenuItem } from "@/features/shared/components/Menu.type";
 import { useConfirm } from "@/features/shared/components/useConfirm";
@@ -22,6 +29,48 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
   const [title, setTitle] = useState(artwork.title);
   const { confirm, dialog: deleteDialog } = useConfirm();
   const signedIn = useAccount().status === "signedIn";
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [fullArtwork, setFullArtwork] = useState<IArtwork | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const { share, sharing } = useShareImage({ from: "gallery" });
+  // The gallery always adds the credit strip and uses the default size, never the editor's saved choice.
+  const shareScale = fullArtwork ? defaultExportScale(fullArtwork, creditStripHeight) : 1;
+  const { png, failed: renderFailed } = usePreparedPng({
+    artwork: fullArtwork,
+    scale: shareScale,
+    credit: true,
+    active: menuOpen,
+  });
+  const shareState = cardShareState({ rendered: png !== null, failed: loadFailed || renderFailed });
+
+  const artworkId = artwork.id;
+  const openable = artwork.openable;
+  useEffect(() => {
+    if (!menuOpen || !openable) return;
+    let stale = false;
+    artworkService.getArtwork(artworkId).then(
+      (loaded) => {
+        if (stale) return;
+        if (loaded) setFullArtwork(loaded);
+        else setLoadFailed(true);
+      },
+      () => {
+        if (!stale) setLoadFailed(true);
+      },
+    );
+    return () => {
+      stale = true;
+    };
+  }, [menuOpen, openable, artworkId]);
+
+  const onMenuOpenChange = useCallback((open: boolean) => {
+    setMenuOpen(open);
+    if (!open) {
+      setFullArtwork(null);
+      setLoadFailed(false);
+    }
+  }, []);
 
   const parts = relativeTimeParts(artwork.updatedAt, now);
   const edited = gallery.card.edited(
@@ -52,6 +101,19 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
 
   const menuItems: IMenuItem[] = [
     { key: "rename", label: shared.actions.rename, onSelect: () => setRenaming(true) },
+    {
+      key: "share",
+      label: {
+        preparing: shared.share.preparing,
+        ready: shared.share.label,
+        failed: shared.artworkFile.errors.pngFailed,
+      }[shareState],
+      disabled: shareState !== "ready" || sharing,
+      // Synchronous on purpose: the share sheet and clipboard need the click's user activation.
+      onSelect: () => {
+        if (png) void share(png, { scale: shareScale });
+      },
+    },
     { key: "clone", label: gallery.card.clone, onSelect: () => void onClone(artwork.id) },
     {
       key: "delete",
@@ -75,6 +137,7 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
     cancelRename,
     submitRename,
     menuItems,
+    onMenuOpenChange,
     deleteDialog,
   };
 }
