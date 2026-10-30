@@ -25,6 +25,7 @@ PixelHB is a local-first pixel-art editor that runs in the browser. You don't ne
 - Zoom with the toolbar buttons, the mouse wheel or a pinch gesture. Pan by dragging, or with the arrow keys while the canvas is focused.
 - Undo and redo.
 - Toggle the pixel grid.
+- Export PNG at ×1, ×4, ×8, ×16 or ×32 with sharp pixel upscaling (long edge capped at 4096 px). The size picker defaults to the smallest scale that reaches 1024 px and remembers your last choice; sizes that would exceed the cap are disabled.
 - Shift pixels: moves the active layer one pixel up, down, left or right. Pixels that leave one edge wrap around to the opposite edge.
 - Reference image: load an image file and show it as an overlay on the canvas, toggled from settings.
 - Canvas size: resizes the canvas with pixels anchored to the top-left. Shrinking asks for confirmation because it crops every layer and clears the undo history.
@@ -58,16 +59,16 @@ PixelHB is a local-first pixel-art editor that runs in the browser. You don't ne
 
 ## Keyboard shortcuts
 
-| Keys                                | Action                                              |
-| ----------------------------------- | --------------------------------------------------- |
-| `Ctrl+Z` / `Cmd+Z`                  | Undo                                                |
-| `Ctrl+Shift+Z` / `Cmd+Shift+Z`      | Redo                                                |
-| `G`                                 | Toggle the pixel grid                               |
-| `Space` (hold) + drag               | Pan the canvas (while the pointer is over the canvas or it has focus) |
-| `Alt` / `Option` (hold) + drag      | Pick a color from the canvas; release over a color to use it |
-| Arrow keys                          | Pan the canvas while it has focus (32 px per step)  |
-| `Shift` + arrow keys                | Pan in larger steps (128 px)                        |
-| `Esc`                               | Close the layers drawer, the settings drawer or the shift-pixels controls; cancel a color pick or turn off the color picker |
+| Keys                           | Action                                                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `Ctrl+Z` / `Cmd+Z`             | Undo                                                                                                                        |
+| `Ctrl+Shift+Z` / `Cmd+Shift+Z` | Redo                                                                                                                        |
+| `G`                            | Toggle the pixel grid                                                                                                       |
+| `Space` (hold) + drag          | Pan the canvas (while the pointer is over the canvas or it has focus)                                                       |
+| `Alt` / `Option` (hold) + drag | Pick a color from the canvas; release over a color to use it                                                                |
+| Arrow keys                     | Pan the canvas while it has focus (32 px per step)                                                                          |
+| `Shift` + arrow keys           | Pan in larger steps (128 px)                                                                                                |
+| `Esc`                          | Close the layers drawer, the settings drawer or the shift-pixels controls; cancel a color pick or turn off the color picker |
 
 Shortcuts are ignored while focus is in a text field.
 
@@ -105,7 +106,7 @@ The app works fully without an account; signing in with Google (Auth.js v5, with
 | Variable                               | Purpose                                                                                                                                                                                                                |
 | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `AUTH_SECRET`                          | `npx auth secret` or `openssl rand -base64 33`; same value in Production and Preview                                                                                                                                   |
-| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client: the **Dev** client in `.env.local`, the **production** client only in Vercel (see below)                                                                                                     |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client: the **Dev** client in `.env.local`, the **production** client only in Vercel (see below)                                                                                                      |
 | `AUTH_REDIRECT_PROXY_URL`              | `https://pixelhb.vercel.app/api/auth` in **both** Production and Preview, so previews sign in through production. Auth.js appends `/callback/google`, so the production client needs only the production redirect URI. |
 | `AUTH_TRUST_HOST`                      | `true`, only for a local `npm start`. Vercel and `next dev` already trust the host.                                                                                                                                    |
 
@@ -115,16 +116,16 @@ Tokens stay in the encrypted `HttpOnly` session cookie and never reach client Ja
 
 ## Scripts
 
-| Command              | What it does                                                         |
-| -------------------- | -------------------------------------------------------------------- |
-| `npm run dev`        | Next.js dev server                                                   |
-| `npm run lint`       | ESLint (feature boundaries, component, style-file and type rules)    |
-| `npm run typecheck`  | `next typegen` then `tsc --noEmit`                                   |
-| `npm test`           | Vitest, single run                                                   |
-| `npm run test:watch` | Vitest in watch mode                                                 |
-| `npm run build`      | Production build                                                     |
-| `npm start`          | Serve the production build                                           |
-| `npm run format`     | Prettier, which also sorts Tailwind classes                          |
+| Command              | What it does                                                      |
+| -------------------- | ----------------------------------------------------------------- |
+| `npm run dev`        | Next.js dev server                                                |
+| `npm run lint`       | ESLint (feature boundaries, component, style-file and type rules) |
+| `npm run typecheck`  | `next typegen` then `tsc --noEmit`                                |
+| `npm test`           | Vitest, single run                                                |
+| `npm run test:watch` | Vitest in watch mode                                              |
+| `npm run build`      | Production build                                                  |
+| `npm start`          | Serve the production build                                        |
+| `npm run format`     | Prettier, which also sorts Tailwind classes                       |
 
 To build without touching the `.next` directory used by a running dev server, run the build in isolation:
 

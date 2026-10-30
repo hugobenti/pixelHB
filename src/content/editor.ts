@@ -7,7 +7,8 @@ export const editor: IEditorContent = {
   },
   screen: {
     notFound: "Artwork not found.",
-    loadFailed: "This artwork couldn’t be opened. Your browser’s storage may be blocked or full. Try again in a moment.",
+    loadFailed:
+      "This artwork couldn’t be opened. Your browser’s storage may be blocked or full. Try again in a moment.",
     documentTitle: (artworkTitle) => `${artworkTitle} · ${site.name}`,
     backToGallery: "Back to gallery",
     loading: "Loading artwork…",
@@ -106,6 +107,9 @@ export const editor: IEditorContent = {
       jsonDone: "JSON file exported.",
       pngDone: "PNG file exported.",
       pngFailed: "Failed to export PNG.",
+      scaleLabel: "Size",
+      scaleOption: (scale, width, height) => `×${scale} · ${width} × ${height}`,
+      scaleTooLarge: "Too large to export",
     },
   },
   layers: {

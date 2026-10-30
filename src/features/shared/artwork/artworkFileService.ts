@@ -9,21 +9,23 @@
 
 import { shared } from "@/content/shared";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
+import { sanitizeFileNameSegment, exportFileName } from "./artworkFileName";
+import { composeArtworkRgba } from "./artworkComposite";
+import { exportSize } from "./exportScale";
+import type { TExportScale } from "./exportScale.type";
 import { parseArtworkFile, serializeArtworkFile } from "./artworkFileFormat";
-import type { IImportedArtworkData } from "./artworkFileService.type";
+import type {
+  IExportPngOptions,
+  IImportedArtworkData,
+  IRenderedPng,
+} from "./artworkFileService.type";
 
 const errors = shared.artworkFile.errors;
 
 const JSON_MIME = "application/json";
 const PNG_MIME = "image/png";
 
-function sanitizeFileNameSegment(value: string): string {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return "artwork";
-  }
-  return trimmed.toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/-+/g, "-");
-}
+const noStrip = () => 0;
 
 function triggerFileDownload(blob: Blob, fileName: string): void {
   const objectUrl = URL.createObjectURL(blob);
@@ -43,51 +45,55 @@ export function exportArtworkAsJson(artwork: IArtwork): void {
   triggerFileDownload(blob, fileName);
 }
 
-function drawArtworkToCanvas(artwork: IArtwork): HTMLCanvasElement {
+function renderArtworkCanvas(artwork: IArtwork, scale: TExportScale): HTMLCanvasElement {
+  const source = document.createElement("canvas");
+  source.width = artwork.width;
+  source.height = artwork.height;
+  const sourceCtx = source.getContext("2d");
+  if (!sourceCtx) {
+    throw new Error(errors.canvasUnavailable);
+  }
+  const pixels = composeArtworkRgba(artwork);
+  sourceCtx.putImageData(new ImageData(pixels, artwork.width, artwork.height), 0, 0);
+
+  const size = exportSize(artwork, scale, noStrip);
   const canvas = document.createElement("canvas");
-  canvas.width = artwork.width;
-  canvas.height = artwork.height;
+  canvas.width = size.width;
+  canvas.height = size.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) {
     throw new Error(errors.canvasUnavailable);
   }
-
-  ctx.clearRect(0, 0, artwork.width, artwork.height);
-  for (let layerIndex = artwork.layers.length - 1; layerIndex >= 0; layerIndex -= 1) {
-    const layer = artwork.layers[layerIndex];
-    if (!layer.visible) {
-      continue;
-    }
-    for (let y = 0; y < artwork.height; y += 1) {
-      for (let x = 0; x < artwork.width; x += 1) {
-        const pixelIndex = x + y * artwork.width;
-        const color = artwork.palette[layer.pixelData[pixelIndex]] ?? "transparent";
-        ctx.fillStyle = color;
-        ctx.fillRect(x, y, 1, 1);
-      }
-    }
-  }
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(source, 0, 0, size.width, size.artHeight);
   return canvas;
 }
 
-export async function exportArtworkAsPng(artwork: IArtwork): Promise<void> {
-  const canvas = drawArtworkToCanvas(artwork);
-  const fileName = `${sanitizeFileNameSegment(artwork.title)}.png`;
+/** Renders the artwork to a PNG at `scale`, without downloading it. */
+export async function renderArtworkPng(
+  artwork: IArtwork,
+  options: IExportPngOptions,
+): Promise<IRenderedPng> {
+  const canvas = renderArtworkCanvas(artwork, options.scale);
+  const fileName = exportFileName(artwork.title, options.scale);
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, PNG_MIME);
   });
   if (blob) {
-    triggerFileDownload(blob, fileName);
-    return;
+    return { blob, credit: false, fileName };
   }
+  const binary = atob(canvas.toDataURL(PNG_MIME).split(",")[1]);
+  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+  return { blob: new Blob([bytes], { type: PNG_MIME }), credit: false, fileName };
+}
 
-  const fallbackUrl = canvas.toDataURL(PNG_MIME);
-  const anchor = document.createElement("a");
-  anchor.href = fallbackUrl;
-  anchor.download = fileName;
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
+export async function exportArtworkAsPng(
+  artwork: IArtwork,
+  options: IExportPngOptions,
+): Promise<{ credit: boolean }> {
+  const { blob, credit, fileName } = await renderArtworkPng(artwork, options);
+  triggerFileDownload(blob, fileName);
+  return { credit };
 }
 
 export async function importArtworkFromJsonFile(file: File): Promise<IImportedArtworkData> {

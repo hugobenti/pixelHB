@@ -49,7 +49,7 @@ describe("without a token", () => {
       expect(controller.enabled).toBe(false);
       controller.start();
       controller.setConsent("granted");
-      controller.capture("export_png");
+      controller.capture("export_png", { scale: 1, credit: false });
       await controller.ready();
       expect(load).not.toHaveBeenCalled();
     }
@@ -129,7 +129,7 @@ describe("capture", () => {
   test("drops an event captured while loading if consent is withdrawn before it lands", async () => {
     const { controller, client } = setup({ stored: "granted" });
     controller.start();
-    controller.capture("export_png");
+    controller.capture("export_png", { scale: 1, credit: false });
     controller.setConsent("denied");
     await controller.ready();
     expect(client.capture).not.toHaveBeenCalled();
@@ -144,7 +144,7 @@ describe("withdrawing consent", () => {
     controller.setConsent("denied");
     expect(calls).toEqual(["stop_recording", "reset", "opt_out"]);
     expect(values.get(ANALYTICS_CONSENT_KEY)).toBe("denied");
-    controller.capture("export_png");
+    controller.capture("export_png", { scale: 1, credit: false });
     await controller.ready();
     expect(client.capture).not.toHaveBeenCalled();
   });

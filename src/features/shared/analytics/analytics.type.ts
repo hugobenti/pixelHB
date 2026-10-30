@@ -1,3 +1,4 @@
+import type { TExportScale } from "@/features/shared/artwork/exportScale.type";
 import type { TSyncErrorKind } from "@/features/shared/sync/sync.type";
 
 /** The visitor's stored analytics choice; `null` until they pick one. */
@@ -10,7 +11,7 @@ export type TAnalyticsConsent = "granted" | "denied" | null;
 export interface IAnalyticsEvents {
   artwork_created: { width: number; height: number };
   artwork_opened: Record<string, never>;
-  export_png: Record<string, never>;
+  export_png: { scale: TExportScale; credit: boolean };
   export_json: Record<string, never>;
   import_json: Record<string, never>;
   sign_in_started: Record<string, never>;

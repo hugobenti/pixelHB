@@ -14,7 +14,7 @@ function parseHexRgb(color: string): [number, number, number] {
 
 export function composeArtworkRgba(
   artwork: Pick<IArtwork, "width" | "height" | "layers" | "palette">,
-): Uint8ClampedArray {
+): Uint8ClampedArray<ArrayBuffer> {
   const pixelCount = artwork.width * artwork.height;
   const rgba = new Uint8ClampedArray(pixelCount * 4);
   const palette = artwork.palette.map(parseHexRgb);
