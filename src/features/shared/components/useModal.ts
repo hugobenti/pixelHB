@@ -1,19 +1,21 @@
 /**
  * Purpose:
  * Modal behavior: the heading id for `aria-labelledby`, mount and fade state (the panel stays mounted
- * until its exit fade ends), focus trap with an optional `data-autofocus` start field, and Escape.
+ * until its exit fade ends), focus trap with an optional `data-autofocus` start field (the panel itself on touch, so the keyboard stays down), and Escape.
  */
 "use client";
 
 import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 
 import { useFocusTrap } from "@/features/shared/hooks/useFocusTrap";
+import { isTextEntryField, shouldAutofocusTarget } from "@/features/shared/logic/modalAutofocus";
 import type { IUseModalInput } from "./Modal.type";
 
 /** Matches `duration-200` on the overlay and panel in Modal.style.ts. */
 const MODAL_MOTION_MS = 200;
 /** Element inside the panel that receives focus on open instead of the first focusable (the close button). */
 const AUTOFOCUS_SELECTOR = "[data-autofocus]";
+const COARSE_POINTER_QUERY = "(pointer: coarse)";
 
 export function useModal({ open, closeOnEscape, onClose }: IUseModalInput) {
   const titleId = useId();
@@ -35,6 +37,19 @@ export function useModal({ open, closeOnEscape, onClose }: IUseModalInput) {
       return;
     }
     const target = panelRef.current?.querySelector<HTMLElement>(AUTOFOCUS_SELECTOR);
+    const isTextEntry =
+      target !== null &&
+      target !== undefined &&
+      isTextEntryField({
+        tagName: target.tagName,
+        inputType: target instanceof HTMLInputElement ? target.type : undefined,
+        isContentEditable: target.isContentEditable,
+      });
+    const coarsePointer = window.matchMedia(COARSE_POINTER_QUERY).matches;
+    if (!shouldAutofocusTarget({ coarsePointer, isTextEntry })) {
+      panelRef.current?.focus();
+      return;
+    }
     target?.focus();
     if (target instanceof HTMLInputElement) {
       target.select();

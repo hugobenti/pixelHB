@@ -291,6 +291,7 @@ export interface IEditorContent {
   toolbar: {
     back: string;
     groupLabel: string;
+    toolsGroupLabel: string;
     undo: IIconControl;
     redo: IIconControl;
     brush: IIconControl;
