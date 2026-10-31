@@ -143,9 +143,9 @@
   /* Editor canvas */
   --color-checker-light: #757370;
   --color-checker-dark: #6b6965;
-  --color-grid-line: color-mix(in srgb, var(--color-muted) 34%, transparent);
-  --color-guide-horizontal: #ffc2c2;
-  --color-guide-vertical: #b8d8ff;
+  --color-grid-line: color-mix(in srgb, var(--color-fg) 34%, transparent);
+  --color-guide-horizontal: #ff5c5c;
+  --color-guide-vertical: #5fa8ff;
   --color-loupe-edge-dark: #000000;
   --color-loupe-edge-light: #ffffff;
 
@@ -195,7 +195,8 @@ html {
 }
 
 /**
- * Transparency hint behind the artwork canvas (not the editable pixel grid).
+ * Transparency checkerboard for DOM previews (layer previews, gallery thumbnails, transparent chip, loupe);
+ * the editor canvas draws its own in canvasBackdrop.ts.
  */
 @layer utilities {
   .pixel-checkerboard {

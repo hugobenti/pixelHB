@@ -60,8 +60,24 @@ export function renderPixelGrid(
   }
   ctx.stroke();
 
-  const centerFactor = options.centerLineWidthFactor ?? 1.45;
-  const centerLineWidth = Math.max(baseLineWidth * centerFactor, 1e-6);
+  const guideWidth = 1 / viewport.scale;
+  const haloWidth = 3 / viewport.scale;
+  const strokeGuide = (color: string, x0: number, y0: number, x1: number, y1: number) => {
+    if (options.centerHaloColor) {
+      ctx.beginPath();
+      ctx.strokeStyle = options.centerHaloColor;
+      ctx.lineWidth = haloWidth;
+      ctx.moveTo(x0, y0);
+      ctx.lineTo(x1, y1);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = guideWidth;
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+  };
   const cx = worldWidth / 2;
   const cy = worldHeight / 2;
 
@@ -71,12 +87,7 @@ export function renderPixelGrid(
     cx >= startX &&
     cx <= endX
   ) {
-    ctx.beginPath();
-    ctx.strokeStyle = options.centerVerticalColor;
-    ctx.lineWidth = centerLineWidth;
-    ctx.moveTo(cx, startY);
-    ctx.lineTo(cx, endY);
-    ctx.stroke();
+    strokeGuide(options.centerVerticalColor, cx, startY, cx, endY);
   }
 
   if (
@@ -85,12 +96,7 @@ export function renderPixelGrid(
     cy >= startY &&
     cy <= endY
   ) {
-    ctx.beginPath();
-    ctx.strokeStyle = options.centerHorizontalColor;
-    ctx.lineWidth = centerLineWidth;
-    ctx.moveTo(startX, cy);
-    ctx.lineTo(endX, cy);
-    ctx.stroke();
+    strokeGuide(options.centerHorizontalColor, startX, cy, endX, cy);
   }
 
   ctx.restore();

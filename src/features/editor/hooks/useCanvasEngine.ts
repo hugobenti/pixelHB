@@ -126,6 +126,7 @@ export function useCanvasEngine({
           color: gridColor,
           centerHorizontalColor: centerH,
           centerVerticalColor: centerV,
+          centerHaloColor: readRootCssColor(EDITOR_ROOT_CSS_VARS.guideHalo),
         },
         cssSize.w,
         cssSize.h
