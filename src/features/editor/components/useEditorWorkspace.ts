@@ -34,6 +34,7 @@ import { applyToolAction } from "@/features/editor/logic/editorTools";
 import type { TEditorToolAction, TPickerReturnTool } from "@/features/editor/logic/editorTools.type";
 import { clampPaletteIndex } from "@/features/editor/logic/paletteMutations";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
+import { isStrokeHidden } from "@/features/editor/logic/strokeOcclusion";
 import type { IHistoryCommand } from "@/features/editor/types/editor.type";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import { canAddLayer, MAX_PALETTE_ENTRIES } from "@/features/shared/artwork/artworkLimits";
@@ -187,8 +188,16 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const onCommitStroke = useCallback(
     (cmd: IHistoryCommand) => {
       pushCommand(cmd);
+      const current = artworkRef.current;
+      if (isStrokeHidden(current, current.activeLayerId, cmd.deltas)) {
+        showToast({
+          message: editor.toasts.strokeHidden,
+          tone: "error",
+          skipDuplicateActiveToast: true,
+        });
+      }
     },
-    [pushCommand],
+    [pushCommand, showToast],
   );
 
   const handleApplyCanvasSize = useCallback(
@@ -350,6 +359,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     viewport,
     cssSize,
     paintRevision,
+    historyRevision,
     showPixelGrid,
     togglePixelGrid,
     referenceImage,

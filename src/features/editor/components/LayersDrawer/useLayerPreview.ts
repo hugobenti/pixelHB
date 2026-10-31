@@ -14,7 +14,7 @@ import {
 } from "@/features/editor/logic/layerPreviewRaster";
 import type { ILayerPreviewProps } from "./LayerPreview.type";
 
-export function useLayerPreview({ layer, palette, width, height }: ILayerPreviewProps) {
+export function useLayerPreview({ layer, palette, width, height, revision }: ILayerPreviewProps) {
   const previewUrl = useMemo(() => {
     if (typeof document === "undefined") {
       return "";
@@ -46,8 +46,9 @@ export function useLayerPreview({ layer, palette, width, height }: ILayerPreview
       return "";
     }
     // Keyed on the pixel buffer, which strokes often mutate in place (same ref); SortableLayerItem
-    // remounts the preview on drawer open/close to pick those up.
-  }, [layer.pixelData, palette, width, height]);
+    // remounts the preview on drawer open/close to pick those up; `revision` redraws it on demand.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revision only forces a redraw
+  }, [layer.pixelData, palette, width, height, revision]);
 
   return { previewUrl };
 }

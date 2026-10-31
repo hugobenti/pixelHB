@@ -14,6 +14,7 @@ import { Button } from "@/features/shared/components/Button";
 import { IconButton } from "@/features/shared/components/IconButton";
 import { PublicMaskIcon } from "@/features/shared/components/PublicMaskIcon";
 import { PUBLIC_ICONS } from "@/features/shared/constants/publicIcons";
+import { ActiveLayerChip } from "./ActiveLayerChip";
 import { editorActionsBar } from "./EditorActionsBar.style";
 import type { IEditorActionsBarProps } from "./EditorActionsBar.type";
 import { useEditorActionsBar } from "./useEditorActionsBar";
@@ -41,6 +42,11 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     onZoomIn,
     shiftOverlayOpen,
     onToggleShiftOverlay,
+    activeLayer,
+    palette,
+    width,
+    height,
+    historyRevision,
     layersDrawerOpen,
     onToggleLayersDrawer,
     settingsDrawerOpen,
@@ -121,12 +127,17 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
           pressed={shiftOverlayOpen}
           onClick={onToggleShiftOverlay}
         />
-        <IconButton
-          icon={PUBLIC_ICONS.layers}
-          label={toolbar.layers.label}
-          pressed={layersDrawerOpen}
-          onClick={onToggleLayersDrawer}
-        />
+        {activeLayer ? (
+          <ActiveLayerChip
+            layer={activeLayer}
+            palette={palette}
+            width={width}
+            height={height}
+            revision={historyRevision}
+            pressed={layersDrawerOpen}
+            onClick={onToggleLayersDrawer}
+          />
+        ) : null}
         <Button
           type="button"
           variant={activeSlot === "primary" ? "primary" : "outline"}

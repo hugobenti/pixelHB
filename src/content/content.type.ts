@@ -300,7 +300,10 @@ export interface IEditorContent {
     zoomOut: IIconControl;
     zoomIn: IIconControl;
     shift: IIconControl;
-    layers: IIconControl;
+    layers: IIconControl & {
+      /** Accessible name of the active-layer chip that opens the Layers drawer. */
+      chipLabel: (name: string) => string;
+    };
     settings: IIconControl;
     slot: {
       primary: string;
@@ -419,6 +422,8 @@ export interface IEditorContent {
   toasts: {
     /** Stable text so the toast stack can dedupe repeats by exact message. */
     hiddenLayer: string;
+    /** A finished stroke is fully covered by visible layers above the active one. */
+    strokeHidden: string;
   };
   referenceImage: {
     errors: {
