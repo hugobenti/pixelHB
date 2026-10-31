@@ -19,6 +19,7 @@ export const PUBLIC_ICONS = {
   grip: "/icons/grip.svg",
   pencil: "/icons/pencil.svg",
   bucket: "/icons/bucket.svg",
+  eraser: "/icons/eraser.svg",
   pipette: "/icons/pipette.svg",
   copy: "/icons/copy.svg",
   undo: "/icons/undo.svg",

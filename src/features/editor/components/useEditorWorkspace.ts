@@ -50,6 +50,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const [layersDrawerOpen, setLayersDrawerOpen] = useState(false);
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
   const [bucketMode, setBucketMode] = useState(false);
+  const [eraserMode, setEraserMode] = useState(false);
   const [pickerArmed, setPickerArmed] = useState(false);
   const [pickerReturnsToBucket, setPickerReturnsToBucket] = useState(false);
 
@@ -183,12 +184,6 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
 
   const togglePixelGrid = () => setShowPixelGrid((v) => !v);
 
-  useEditorKeyboardShortcuts({
-    onTogglePixelGrid: togglePixelGrid,
-    undo,
-    redo,
-  });
-
   const onCommitStroke = useCallback(
     (cmd: IHistoryCommand) => {
       pushCommand(cmd);
@@ -207,20 +202,29 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const runToolAction = useCallback(
     (action: TEditorToolAction) => {
       const next = applyToolAction(
-        { panMode, bucketMode, pickerArmed, pickerReturnsToBucket },
+        { panMode, bucketMode, eraserMode, pickerArmed, pickerReturnsToBucket },
         action,
       );
       setPanMode(next.panMode);
       setBucketMode(next.bucketMode);
+      setEraserMode(next.eraserMode);
       setPickerArmed(next.pickerArmed);
       setPickerReturnsToBucket(next.pickerReturnsToBucket);
     },
-    [panMode, bucketMode, pickerArmed, pickerReturnsToBucket, setPanMode],
+    [panMode, bucketMode, eraserMode, pickerArmed, pickerReturnsToBucket, setPanMode],
   );
 
   const togglePanMode = useCallback(() => runToolAction("togglePan"), [runToolAction]);
   const toggleBucketMode = useCallback(() => runToolAction("toggleBucket"), [runToolAction]);
+  const toggleEraserMode = useCallback(() => runToolAction("toggleEraser"), [runToolAction]);
   const togglePicker = useCallback(() => runToolAction("togglePicker"), [runToolAction]);
+
+  useEditorKeyboardShortcuts({
+    onTogglePixelGrid: togglePixelGrid,
+    onToggleEraser: toggleEraserMode,
+    undo,
+    redo,
+  });
 
   const onHiddenActiveLayerPaintAttempt = useCallback(() => {
     showToast({
@@ -255,6 +259,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     touchPointersRef,
     onHiddenActiveLayerPaintAttempt,
     bucketMode,
+    eraserMode,
   });
 
   const { assignSwatchToSlot } = paletteUi;
@@ -306,6 +311,8 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     togglePanMode,
     bucketMode,
     toggleBucketMode,
+    eraserMode,
+    toggleEraserMode,
     pickerPressed: pickerArmed || picker.altHeld,
     togglePicker,
     pickHold: picker.hold,

@@ -23,6 +23,8 @@ export interface IUsePixelPaintingParams {
   deferPrimaryPaint?: () => boolean;
   /** True enables one-shot flood fill on pointer down. */
   bucketMode?: boolean;
+  /** True paints transparent on both mouse buttons (the eraser ignores color slots). */
+  eraserMode?: boolean;
   /** Shared touch Set from useEditorPointerContacts; hook order must place contacts before painting. */
   touchPointersRef: RefObject<Set<number>>;
   /** Fires when the user tries to paint while the active layer is hidden. */

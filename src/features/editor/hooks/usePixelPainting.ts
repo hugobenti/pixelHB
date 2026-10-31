@@ -14,6 +14,7 @@ import { useEffect, useRef } from "react";
 
 import { screenToWorldCoordinates } from "@/features/editor/logic/coordinateMath";
 import { mergeStrokeDeltas } from "@/features/editor/logic/mergeStrokeDeltas";
+import { TRANSPARENT_PIXEL_INDEX } from "@/features/shared/artwork/artworkService";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import type { IPixelDelta } from "@/features/editor/types/editor.type";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
@@ -94,6 +95,7 @@ export function usePixelPainting({
   onPixelsChanged,
   deferPrimaryPaint,
   bucketMode = false,
+  eraserMode = false,
   touchPointersRef,
   onHiddenActiveLayerPaintAttempt,
 }: IUsePixelPaintingParams) {
@@ -119,10 +121,15 @@ export function usePixelPainting({
   const activePaintingPointerId = useRef<number | null>(null);
   const activeSlotRef = useRef(activeSlot);
   const bucketModeRef = useRef(bucketMode);
+  const eraserModeRef = useRef(eraserMode);
 
   useEffect(() => {
     activeSlotRef.current = activeSlot;
   }, [activeSlot]);
+
+  useEffect(() => {
+    eraserModeRef.current = eraserMode;
+  }, [eraserMode]);
 
   useEffect(() => {
     bucketModeRef.current = bucketMode;
@@ -147,12 +154,14 @@ export function usePixelPainting({
         return;
       }
       const rect = canvas.getBoundingClientRect();
-      const pi = paletteIndexForButtons(
-        e.buttons,
-        activeSlotRef.current,
-        primaryPaletteIndex,
-        secondaryPaletteIndex,
-      );
+      const pi = eraserModeRef.current
+        ? TRANSPARENT_PIXEL_INDEX
+        : paletteIndexForButtons(
+            e.buttons,
+            activeSlotRef.current,
+            primaryPaletteIndex,
+            secondaryPaletteIndex,
+          );
       const samples = e.getCoalescedEvents?.();
       const events = samples && samples.length > 0 ? samples : [e];
       let changed = false;
@@ -356,7 +365,8 @@ export function usePixelPainting({
       painting.current = true;
       strokeRaw.current = [];
       lastCell.current = { x, y };
-      if (paintCell(pixelData, strokeRaw.current, layerId, index, pi)) {
+      const strokePi = eraserModeRef.current ? TRANSPARENT_PIXEL_INDEX : pi;
+      if (paintCell(pixelData, strokeRaw.current, layerId, index, strokePi)) {
         onPixelsChanged();
       }
     }

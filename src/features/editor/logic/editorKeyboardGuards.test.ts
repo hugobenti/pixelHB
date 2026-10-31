@@ -59,6 +59,18 @@ describe("editorShortcutForKey", () => {
     expect(editorShortcutForKey(key("g", { altKey: true }), false)).toBeNull();
   });
 
+  it("maps bare e to the eraser toggle", () => {
+    expect(editorShortcutForKey(key("e"), false)).toBe("toggleEraser");
+    expect(editorShortcutForKey(key("E"), false)).toBe("toggleEraser");
+  });
+
+  it("ignores e with Ctrl, Cmd or Alt, and while typing in a text field", () => {
+    expect(editorShortcutForKey(key("e", { ctrlKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("e", { metaKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("e", { altKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("e"), true)).toBeNull();
+  });
+
   it("maps Ctrl/Cmd+Z to undo and with Shift to redo", () => {
     expect(editorShortcutForKey(key("z", { ctrlKey: true }), false)).toBe("undo");
     expect(editorShortcutForKey(key("z", { metaKey: true }), false)).toBe("undo");

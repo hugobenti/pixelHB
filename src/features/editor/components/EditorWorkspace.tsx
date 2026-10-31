@@ -34,6 +34,8 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
     togglePanMode,
     bucketMode,
     toggleBucketMode,
+    eraserMode,
+    toggleEraserMode,
     pickerPressed,
     togglePicker,
     pickHold,
@@ -90,6 +92,8 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           onTogglePanMode={togglePanMode}
           bucketMode={bucketMode}
           onToggleBucketMode={toggleBucketMode}
+          eraserMode={eraserMode}
+          onToggleEraserMode={toggleEraserMode}
           pickerPressed={pickerPressed}
           onTogglePicker={togglePicker}
           canZoomOut={canZoomOut}

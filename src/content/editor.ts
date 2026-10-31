@@ -23,6 +23,7 @@ export const editor: IEditorContent = {
     redo: { label: "Redo", shortcut: "Ctrl+Shift+Z" },
     pan: { label: "Pan mode", shortcut: "hold Space" },
     bucket: { label: "Paint bucket mode" },
+    eraser: { label: "Eraser", shortcut: "E" },
     picker: { label: "Color picker", shortcut: "hold Alt" },
     zoomOut: { label: "Zoom out" },
     zoomIn: { label: "Zoom in" },

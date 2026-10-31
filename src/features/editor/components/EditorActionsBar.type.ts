@@ -14,6 +14,8 @@ export interface IEditorActionsBarProps {
   onTogglePanMode: () => void;
   bucketMode: boolean;
   onToggleBucketMode: () => void;
+  eraserMode: boolean;
+  onToggleEraserMode: () => void;
   /** Picker armed, or Alt held for a quick pick. */
   pickerPressed: boolean;
   onTogglePicker: () => void;
