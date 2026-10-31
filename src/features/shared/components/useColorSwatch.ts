@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * ColorSwatch view model: 1-based title and accessible name, pressed/current state, and which ring to show.
+ * ColorSwatch view model: 1-based title and accessible name, pressed/current state, which ring to show and which slot markers.
  */
 "use client";
 
@@ -20,6 +20,8 @@ export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
       ariaCurrent: undefined,
       ring,
       focused: false,
+      showPrimaryMarker: false,
+      showSecondaryMarker: false,
     };
   }
 
@@ -33,5 +35,7 @@ export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
     ariaCurrent: props.isFocused ? "true" : undefined,
     ring,
     focused: props.isFocused,
+    showPrimaryMarker: props.isPrimary,
+    showSecondaryMarker: props.isSecondary,
   };
 }

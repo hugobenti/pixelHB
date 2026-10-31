@@ -231,6 +231,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   useEditorKeyboardShortcuts({
     onTogglePixelGrid: togglePixelGrid,
     onToggleEraser: toggleEraserMode,
+    onSwitchSlot: paletteUi.toggleActiveSlot,
     undo,
     redo,
   });

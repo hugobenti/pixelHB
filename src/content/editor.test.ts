@@ -16,10 +16,10 @@ describe("editor.settings.imageDetail.summary", () => {
   });
 });
 
-describe("editor.toolbar.slot.label", () => {
-  it("names the active slot", () => {
-    expect(editor.toolbar.slot.label(editor.toolbar.slot.secondary)).toBe(
-      "Painting slot: Secondary. Click to switch."
+describe("editor.toolbar.colors.label", () => {
+  it("names the painting color, the right-click color and the shortcut", () => {
+    expect(editor.toolbar.colors.label("#1A1C2C", "#F4F4F4")).toBe(
+      "Colors: painting with #1A1C2C, right-click paints #F4F4F4. Press X to switch."
     );
   });
 });

@@ -36,4 +36,7 @@ export interface IColorSwatchView {
   ariaCurrent: "true" | undefined;
   ring: TColorSwatchRing;
   focused: boolean;
+  /** Corner markers that tell the slots apart without relying on hue. */
+  showPrimaryMarker: boolean;
+  showSecondaryMarker: boolean;
 }

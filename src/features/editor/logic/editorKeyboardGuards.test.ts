@@ -71,6 +71,18 @@ describe("editorShortcutForKey", () => {
     expect(editorShortcutForKey(key("e"), true)).toBeNull();
   });
 
+  it("maps bare x to the slot switch", () => {
+    expect(editorShortcutForKey(key("x"), false)).toBe("switchSlot");
+    expect(editorShortcutForKey(key("X"), false)).toBe("switchSlot");
+  });
+
+  it("leaves Ctrl/Cmd/Alt+X to the browser (cut) and ignores x in a text field", () => {
+    expect(editorShortcutForKey(key("x", { ctrlKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("x", { metaKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("x", { altKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("x"), true)).toBeNull();
+  });
+
   it("maps Ctrl/Cmd+Z to undo and with Shift to redo", () => {
     expect(editorShortcutForKey(key("z", { ctrlKey: true }), false)).toBe("undo");
     expect(editorShortcutForKey(key("z", { metaKey: true }), false)).toBe("undo");

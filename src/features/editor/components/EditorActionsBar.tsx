@@ -3,18 +3,18 @@
  * Single toolbar row: navigation, document title, icon toolbar (undo/redo/pan/zoom/… ), and settings (drawer).
  *
  * Notes:
- * Toggles use IconButton's pressed state; the painting-slot switch is the only accent fill.
+ * Toggles use IconButton's pressed state; the color-pair chip is a neutral outline button (never the accent).
  */
 "use client";
 
 import Link from "next/link";
 
 import { editor } from "@/content/editor";
-import { Button } from "@/features/shared/components/Button";
 import { IconButton } from "@/features/shared/components/IconButton";
 import { PublicMaskIcon } from "@/features/shared/components/PublicMaskIcon";
 import { PUBLIC_ICONS } from "@/features/shared/constants/publicIcons";
 import { ActiveLayerChip } from "./ActiveLayerChip";
+import { ColorPairChip } from "./ColorPairChip";
 import { editorActionsBar } from "./EditorActionsBar.style";
 import type { IEditorActionsBarProps } from "./EditorActionsBar.type";
 import { useEditorActionsBar } from "./useEditorActionsBar";
@@ -26,6 +26,8 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     canRedo,
     onUndo,
     onRedo,
+    primaryColor,
+    secondaryColor,
     activeSlot,
     onToggleActiveSlot,
     panMode,
@@ -52,7 +54,7 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     settingsDrawerOpen,
     onToggleSettingsDrawer,
   } = props;
-  const { slotLabel, slotAriaLabel, syncStatus } = useEditorActionsBar(props);
+  const { syncStatus } = useEditorActionsBar(props);
   const { toolbar } = editor;
 
   return (
@@ -138,16 +140,12 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
             onClick={onToggleLayersDrawer}
           />
         ) : null}
-        <Button
-          type="button"
-          variant={activeSlot === "primary" ? "primary" : "outline"}
-          className={editorActionsBar.slotToggle}
-          onClick={onToggleActiveSlot}
-          aria-label={slotAriaLabel}
-          title={toolbar.slot.title}
-        >
-          {slotLabel}
-        </Button>
+        <ColorPairChip
+          primaryColor={primaryColor}
+          secondaryColor={secondaryColor}
+          activeSlot={activeSlot}
+          onToggle={onToggleActiveSlot}
+        />
         <IconButton
           icon={PUBLIC_ICONS.cog}
           label={toolbar.settings.label}

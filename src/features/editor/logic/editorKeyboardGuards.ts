@@ -44,6 +44,9 @@ export function editorShortcutForKey(
   if (lower === "e" && !e.ctrlKey && !e.metaKey && !e.altKey) {
     return "toggleEraser";
   }
+  if (lower === "x" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    return "switchSlot";
+  }
   if ((e.ctrlKey || e.metaKey) && lower === "z") {
     return e.shiftKey ? "redo" : "undo";
   }
