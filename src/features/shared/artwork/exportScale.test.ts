@@ -6,6 +6,7 @@ import {
   defaultExportScale,
   exportSize,
   resolveExportScale,
+  shareExportOptions,
 } from "./exportScale";
 
 const none = () => 0;
@@ -34,13 +35,18 @@ describe("exportScale", () => {
     expect(defaultExportScale({ width: 1000, height: 1000 }, none)).toBe(4);
   });
 
-  it("falls back to the default for a stored scale that is too big or missing", () => {
-    expect(resolveExportScale(32, { width: 500, height: 500 }, none)).toBe(4);
-    expect(resolveExportScale(null, { width: 500, height: 500 }, none)).toBe(4);
+  it("falls back to ×1 for a stored scale that is too big or missing", () => {
+    expect(resolveExportScale(null, { width: 32, height: 32 }, none)).toBe(1);
+    expect(resolveExportScale(32, { width: 500, height: 500 }, none)).toBe(1);
   });
 
   it("keeps an allowed stored scale", () => {
-    expect(resolveExportScale(8, { width: 500, height: 500 }, none)).toBe(8);
+    expect(resolveExportScale(8, { width: 32, height: 32 }, none)).toBe(8);
+  });
+
+  it("shares at the smallest scale reaching 1024 px, with the strip", () => {
+    expect(shareExportOptions({ width: 32, height: 32 })).toEqual({ scale: 32, credit: true });
+    expect(shareExportOptions({ width: 1000, height: 1000 })).toEqual({ scale: 1, credit: true });
   });
 });
 

@@ -12,7 +12,6 @@ import { capture } from "@/features/shared/analytics/analytics";
 import {
   exportArtworkAsJson,
   exportArtworkAsPng,
-  triggerFileDownload,
 } from "@/features/shared/artwork/artworkFileService";
 import { CREDIT_MIN_EXPORT_WIDTH, creditStripHeight } from "@/features/shared/artwork/creditStrip";
 import {
@@ -27,6 +26,7 @@ import {
   exportSize,
   noStrip,
   resolveExportScale,
+  shareExportOptions,
 } from "@/features/shared/artwork/exportScale";
 import type { TExportScale } from "@/features/shared/artwork/exportScale.type";
 import { usePreparedPng } from "@/features/shared/artwork/usePreparedPng";
@@ -75,10 +75,17 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
   }, []);
 
   const { share: shareImage, sharing } = useShareImage({ from: "editor" });
+  const shareOptions = useMemo(() => shareExportOptions(artwork), [artwork]);
+  const shareSize = exportSize(artwork, shareOptions.scale, creditStripHeight);
+  const shareSizeLabel = editor.settings.export.shareSize(
+    shareSize.width,
+    shareSize.height,
+    shareSize.height > shareSize.artHeight,
+  );
   const { png, failed } = usePreparedPng({
     artwork,
-    scale,
-    credit,
+    scale: shareOptions.scale,
+    credit: shareOptions.credit,
     active,
     onError: (error) => {
       const message = error instanceof Error ? error.message : editor.settings.export.pngFailed;
@@ -88,9 +95,9 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
 
   const share = useCallback(() => {
     if (png) {
-      void shareImage(png, { scale });
+      void shareImage(png, { scale: shareOptions.scale });
     }
-  }, [png, scale, shareImage]);
+  }, [png, shareOptions.scale, shareImage]);
 
   const exportJson = useCallback(() => {
     exportArtworkAsJson(artwork);
@@ -98,32 +105,28 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     showToast({ message: editor.settings.export.jsonDone, tone: "success" });
   }, [artwork, showToast]);
 
-  const exportPng = useCallback(async () => {
+  const downloadPng = useCallback(async () => {
     try {
-      if (png) {
-        triggerFileDownload(png.blob, png.fileName);
-        capture("export_png", { scale, credit: png.credit });
-      } else {
-        const { credit: drawn } = await exportArtworkAsPng(artwork, { scale, credit });
-        capture("export_png", { scale, credit: drawn });
-      }
+      const { credit: drawn } = await exportArtworkAsPng(artwork, { scale, credit });
+      capture("export_png", { scale, credit: drawn });
       showToast({ message: editor.settings.export.pngDone, tone: "success" });
     } catch (error) {
       const message = error instanceof Error ? error.message : editor.settings.export.pngFailed;
       showToast({ message, tone: "error" });
     }
-  }, [artwork, scale, credit, png, showToast]);
+  }, [artwork, scale, credit, showToast]);
 
   return {
     credit,
     creditHint,
     exportJson,
-    exportPng,
+    downloadPng,
     scale,
     scaleOptions,
     selectScale,
     setCredit,
     share,
+    shareSizeLabel,
     shareDisabled: !png || sharing,
     shareLabel: failed
       ? editor.settings.export.pngFailed

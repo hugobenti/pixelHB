@@ -36,17 +36,17 @@ export function writeStoredExportScale(
   }
 }
 
-/** The credit strip is on unless the stored value is exactly "off". */
+/** The credit strip is off unless the stored value is exactly "on". */
 export function parseExportCredit(raw: string | null): boolean {
-  return raw !== "off";
+  return raw === "on";
 }
 
-/** Reads the remembered credit choice; a storage error reads as the default (on). */
+/** Reads the remembered credit choice; a storage error reads as the default (off). */
 export function readStoredExportCredit(getStorage: () => IExportStorage): boolean {
   try {
     return parseExportCredit(getStorage().getItem(EXPORT_CREDIT_KEY));
   } catch {
-    return true;
+    return false;
   }
 }
 

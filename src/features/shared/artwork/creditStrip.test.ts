@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { WORDMARK_GRID } from "@/features/shared/brand/brandArt";
 import { creditStripHeight, creditStripLayout, CREDIT_MIN_EXPORT_WIDTH } from "./creditStrip";
-import { parseExportCredit } from "./exportPreferences";
 import { allowedExportScales, noStrip } from "./exportScale";
 
 const WORDMARK_WIDTH = WORDMARK_GRID[0].length;
@@ -45,14 +44,5 @@ describe("credit and export sizes", () => {
 
   it("allows ×4 for a 1000×1000 artwork without the strip", () => {
     expect(allowedExportScales({ width: 1000, height: 1000 }, noStrip)).toEqual([1, 4]);
-  });
-});
-
-describe("parseExportCredit", () => {
-  it("is on unless the stored value is off", () => {
-    expect(parseExportCredit(null)).toBe(true);
-    expect(parseExportCredit("on")).toBe(true);
-    expect(parseExportCredit("garbage")).toBe(true);
-    expect(parseExportCredit("off")).toBe(false);
   });
 });

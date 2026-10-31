@@ -52,7 +52,7 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 
 ### Hugo's
 
-- Credit **on by default**.
+- Credit strip: **off by default for Download PNG**, **always on for Share** (Hugo's decision, 2026-10-31, replacing "on by default"). Download PNG is the primary action for game assets; the editor's Share now uses the same rule as the gallery's.
 - Work split into separate PRs.
 - Sharing: one Share button using the system share sheet, with no per-network buttons.
 
@@ -60,8 +60,8 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 
 **Scale options.** ×1, ×4, ×8, ×16, ×32.
 - An option is disabled when the output, including the credit strip, would exceed 4096 px on its long edge.
-- **Default:** the smallest scale whose long edge reaches 1024 px. If none qualifies, the largest allowed scale.
-- The last choice is remembered per device, and falls back to the default when it isn't allowed for the current artwork's size.
+- **Download PNG default:** ×1 with no strip (2026-10-31 decision). The last choice is remembered per device and falls back to ×1 when it isn't allowed for the current artwork's size.
+- **Share:** ignores the Download settings. It uses the smallest scale whose long edge reaches 1024 px (the largest allowed if none qualifies), with the strip on, via `shareExportOptions`. The editor and the gallery share one rule.
 
 **Renderer.**
 - `drawArtworkToCanvas` currently calls `fillRect` once per pixel per layer, which is slow for 1000×1000.
@@ -76,12 +76,12 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 - The renderer reports whether it drew the strip. Analytics `credit` follows **what was drawn**, not the switch position.
 
 **Credit switch.**
-- One switch, "Add 'Made with PixelHB'", in the export panel. On by default.
+- One switch, "Add 'Made with PixelHB'", in the export panel. **Off by default** (2026-10-31 decision).
 - The choice is stored on the device (`pixelhb.`-prefixed localStorage key, like the theme and consent choices).
-- It applies to both Export PNG and Share.
+- It applies to Download PNG only; Share always adds the strip.
 
 **Share.**
-- Shown on every device. It uses the same scale and credit choices as Export PNG.
+- Shown on every device. It always uses the share rule above, not the Download PNG scale and credit choices.
 - **Order of attempts:**
   1. If `navigator.canShare({ files: [png] })` is true, call `navigator.share({ files: [png] })` with files only, no `text`/`url`. Some iOS apps drop the image or turn the post into a link when they are attached; the strip already carries the URL.
      - `AbortError` (the user cancelled) → no toast, no event.

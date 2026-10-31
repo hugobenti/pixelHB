@@ -15,7 +15,7 @@ export const privacy: IPrivacyContent = {
       title: "If you don’t sign in",
       paragraphs: [
         "Your artworks are saved in this browser only, in its built-in storage (IndexedDB). They are not sent to PixelHB or anyone else.",
-        "Clearing your browsing data deletes them. Use Export JSON in the editor settings to keep a copy.",
+        "Clearing your browsing data deletes them. Use Download JSON in the editor settings to keep a copy.",
       ],
     },
     {

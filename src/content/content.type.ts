@@ -361,9 +361,11 @@ export interface IEditorContent {
     };
     export: {
       hint: string;
-      sectionLabel: string;
-      title: string;
-      png: string;
+      downloadSectionLabel: string;
+      shareSectionLabel: string;
+      downloadPng: string;
+      /** The size Share produces; `strip` is whether the PixelHB strip is drawn. */
+      shareSize: (width: number, height: number, strip: boolean) => string;
       json: string;
       jsonDone: string;
       pngDone: string;

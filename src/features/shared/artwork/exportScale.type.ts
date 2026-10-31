@@ -9,6 +9,11 @@ export interface IExportArtSize {
   height: number;
 }
 
+export interface IShareExportOptions {
+  scale: TExportScale;
+  credit: true;
+}
+
 export interface IExportSize {
   width: number;
   height: number;

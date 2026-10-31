@@ -2,7 +2,14 @@
  * Purpose:
  * Pure rules for which PNG export scales an artwork may use, and the size each produces.
  */
-import type { IExportArtSize, IExportSize, TExportScale, TStripHeight } from "./exportScale.type";
+import { creditStripHeight } from "./creditStrip";
+import type {
+  IExportArtSize,
+  IExportSize,
+  IShareExportOptions,
+  TExportScale,
+  TStripHeight,
+} from "./exportScale.type";
 
 export const EXPORT_SCALES = [1, 4, 8, 16, 32] as const;
 export const MAX_EXPORT_EDGE_PX = 4096;
@@ -40,6 +47,7 @@ export function defaultExportScale(art: IExportArtSize, stripHeight: TStripHeigh
   return reaching ?? allowed[allowed.length - 1] ?? 1;
 }
 
+/** A stored scale that no longer fits falls back to ×1, which always fits (1000 px plus the strip is under the cap). */
 export function resolveExportScale(
   stored: TExportScale | null,
   art: IExportArtSize,
@@ -48,5 +56,10 @@ export function resolveExportScale(
   if (stored !== null && allowedExportScales(art, stripHeight).includes(stored)) {
     return stored;
   }
-  return defaultExportScale(art, stripHeight);
+  return 1;
+}
+
+/** The one share rule, for the editor and the gallery: the smallest scale reaching 1024 px, with the credit strip. */
+export function shareExportOptions(art: IExportArtSize): IShareExportOptions {
+  return { scale: defaultExportScale(art, creditStripHeight), credit: true };
 }

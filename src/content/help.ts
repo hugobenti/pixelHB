@@ -28,14 +28,14 @@ export const help: IHelpContent = {
         "When you sign in, any artworks in this browser that aren’t tied to an account are added to your Drive, including when you sign in with a different Google account. On a shared computer, check the gallery before signing in: someone else’s drawings would be uploaded too.",
         "Signing out removes that account’s artworks from this browser; they stay in your Drive. If some changes haven’t reached Drive yet, PixelHB asks first: Download them, Sign out anyway, or Cancel.",
         "To disconnect PixelHB from your Google account, sign out, then remove PixelHB from your Google account’s third-party connections. Your files stay in your Drive.",
-        "To keep a copy or move an artwork anywhere, open it, go to Settings › Export & share and choose Export JSON. Open that file later with Import file in your gallery.",
+        "To keep a copy or move an artwork anywhere, open it, go to Settings › Export & share and choose Download JSON (editable). Open that file later with Import file in your gallery.",
       ],
     },
     {
       id: "export-png",
       title: "Exporting a PNG",
       paragraphs: [
-        "In the editor, open Settings › Export & share and choose Export PNG to download an image of the visible layers.",
+        "In the editor, open Settings › Export & share and choose Download PNG to download an image of the visible layers.",
       ],
     },
     {
