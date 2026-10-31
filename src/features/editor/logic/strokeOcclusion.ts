@@ -13,14 +13,14 @@ import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 export function isStrokeHidden(
   artwork: Pick<IArtwork, "layers" | "palette">,
   activeLayerId: string,
-  pixelIndices: readonly number[],
+  deltas: readonly { index: number }[],
 ): boolean {
   const { layers, palette } = artwork;
   const activeIdx = layers.findIndex((layer) => layer.id === activeLayerId);
-  if (activeIdx <= 0 || pixelIndices.length === 0) {
+  if (activeIdx <= 0 || deltas.length === 0) {
     return false;
   }
-  for (const pixelIndex of pixelIndices) {
+  for (const { index: pixelIndex } of deltas) {
     let covered = false;
     for (let i = 0; i < activeIdx && !covered; i++) {
       const above = layers[i];

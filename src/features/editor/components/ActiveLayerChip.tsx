@@ -20,6 +20,7 @@ export function ActiveLayerChip(props: IActiveLayerChipProps) {
     <button
       type="button"
       aria-label={label}
+      title={label}
       aria-pressed={pressed}
       className={activeLayerChip.base}
       onClick={onClick}

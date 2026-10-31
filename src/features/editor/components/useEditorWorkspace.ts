@@ -31,10 +31,7 @@ import { useViewportKeyboardPan } from "@/features/editor/hooks/useViewportKeybo
 import { useViewportNavigation } from "@/features/editor/hooks/useViewportNavigation";
 import { useViewportWheelAndPinch } from "@/features/editor/hooks/useViewportWheelAndPinch";
 import { applyToolAction } from "@/features/editor/logic/editorTools";
-import type {
-  TEditorToolAction,
-  TPickerReturnTool,
-} from "@/features/editor/logic/editorTools.type";
+import type { TEditorToolAction, TPickerReturnTool } from "@/features/editor/logic/editorTools.type";
 import { clampPaletteIndex } from "@/features/editor/logic/paletteMutations";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
 import { isStrokeHidden } from "@/features/editor/logic/strokeOcclusion";
@@ -84,11 +81,19 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
 
   const getDocument = useCallback(() => artworkRef.current, []);
 
-  const { pushCommand, discardRedo, undo, undoCommand, redo, canUndo, canRedo, historyRevision } =
-    useHistory({
-      documentKey: `${artwork.id}:${artwork.width}x${artwork.height}`,
-      getDocument,
-    });
+  const {
+    pushCommand,
+    discardRedo,
+    undo,
+    undoCommand,
+    redo,
+    canUndo,
+    canRedo,
+    historyRevision,
+  } = useHistory({
+    documentKey: `${artwork.id}:${artwork.width}x${artwork.height}`,
+    getDocument,
+  });
 
   const paletteUi = useEditorPalette({
     artwork,
@@ -184,13 +189,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     (cmd: IHistoryCommand) => {
       pushCommand(cmd);
       const current = artworkRef.current;
-      if (
-        isStrokeHidden(
-          current,
-          current.activeLayerId,
-          cmd.deltas.map((delta) => delta.index),
-        )
-      ) {
+      if (isStrokeHidden(current, current.activeLayerId, cmd.deltas)) {
         showToast({
           message: editor.toasts.strokeHidden,
           tone: "error",
