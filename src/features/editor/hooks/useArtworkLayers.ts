@@ -8,6 +8,7 @@
 import { useCallback, useMemo } from "react";
 import { editor } from "@/content/editor";
 import {
+  insertLayerAbove,
   moveLayerByIds,
   withRenamedLayer,
   withToggledVisibility,
@@ -86,7 +87,7 @@ export function useArtworkLayers({
     [layers, setArtwork, onLayersChanged]
   );
 
-  /** Adds an empty layer on top; does nothing once the artwork has `MAX_LAYERS`. */
+  /** Adds an empty layer directly above the active layer; does nothing once the artwork has `MAX_LAYERS`. */
   const addLayer = useCallback(() => {
     if (!canAddLayer(layers.length)) {
       return "";
@@ -104,7 +105,7 @@ export function useArtworkLayers({
       createdLayerId = nextLayer.id;
       return {
         ...prev,
-        layers: [...prev.layers, nextLayer],
+        layers: insertLayerAbove(prev.layers, prev.activeLayerId, nextLayer),
         activeLayerId: nextLayer.id,
       };
     });

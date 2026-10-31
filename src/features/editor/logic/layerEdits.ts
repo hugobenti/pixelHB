@@ -21,6 +21,21 @@ export function moveLayerByIds(
   return next;
 }
 
+/** Inserts `layer` directly above the active layer (layers[0] is topmost); at the top if the id is unknown. */
+export function insertLayerAbove(
+  layers: IArtworkLayer[],
+  activeLayerId: string,
+  layer: IArtworkLayer,
+): IArtworkLayer[] {
+  const index = Math.max(
+    0,
+    layers.findIndex((item) => item.id === activeLayerId),
+  );
+  const next = [...layers];
+  next.splice(index, 0, layer);
+  return next;
+}
+
 export function withToggledVisibility(
   layers: IArtworkLayer[],
   layerId: string,
