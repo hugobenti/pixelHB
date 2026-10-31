@@ -16,6 +16,6 @@ export const activeLayerChip = {
     pressedState,
   ),
   well: "pixel-checkerboard [--checker-size:6px] [&_img]:shadow-none [&_img]:[image-rendering:pixelated] flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-sm ring-1 ring-line-strong ring-inset",
-  /** Preview only below `lg` (the top row also holds the tools from `sm`); the name stays in the accessible name. */
+  /** Preview only below `lg` (the top row also holds the tools from `md`); the name stays in the accessible name. */
   layerName: "sr-only lg:not-sr-only lg:max-w-[14ch] lg:truncate",
 };

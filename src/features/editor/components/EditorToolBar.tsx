@@ -3,7 +3,7 @@
  * Drawing tools: brush, eraser, bucket, picker, pan, shift, the color pair and zoom.
  *
  * Notes:
- * A bottom bar below `sm` (zoom hidden there, pinch covers it), the right half of the top row from `sm`.
+ * A bottom bar below `md` (zoom hidden there, pinch covers it), the right half of the top row from `md`.
  * Toggles use IconButton's pressed state; the color-pair chip is a neutral outline button (never the accent).
  */
 "use client";
