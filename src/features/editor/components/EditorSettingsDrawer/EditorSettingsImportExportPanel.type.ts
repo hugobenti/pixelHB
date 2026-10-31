@@ -11,6 +11,10 @@ export interface IEditorSettingsImportExportPanelProps {
   onShare: () => void;
   shareDisabled: boolean;
   shareLabel: string;
-  onExportPng: () => void;
+  /** The size Share produces, e.g. "1024 × 1106 with the PixelHB strip". */
+  shareSizeLabel: string;
+  /** True while a PNG download is rendering; the button is disabled. */
+  downloading: boolean;
+  onDownloadPng: () => void;
   onExportJson: () => void;
 }

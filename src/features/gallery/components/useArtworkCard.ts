@@ -13,8 +13,7 @@ import { relativeTimeParts } from "@/features/gallery/logic/relativeTime";
 import { editorPath } from "@/features/gallery/logic/artworkLinks";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import * as artworkService from "@/features/shared/artwork/artworkService";
-import { creditStripHeight } from "@/features/shared/artwork/creditStrip";
-import { defaultExportScale } from "@/features/shared/artwork/exportScale";
+import { shareExportOptions } from "@/features/shared/artwork/exportScale";
 import { usePreparedPng } from "@/features/shared/artwork/usePreparedPng";
 import { useShareImage } from "@/features/shared/artwork/useShareImage";
 import { useAccount } from "@/features/shared/auth/useAccount";
@@ -34,12 +33,13 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
   const [fullArtwork, setFullArtwork] = useState<IArtwork | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const { share, sharing } = useShareImage({ from: "gallery" });
-  // The gallery always adds the credit strip and uses the default size, never the editor's saved choice.
-  const shareScale = fullArtwork ? defaultExportScale(fullArtwork, creditStripHeight) : 1;
+  // Share always uses the shared rule (strip on, smallest scale reaching 1024 px), never a saved choice.
+  const shareOptions = fullArtwork ? shareExportOptions(fullArtwork) : null;
+  const shareScale = shareOptions?.scale ?? 1;
   const { png, failed: renderFailed } = usePreparedPng({
     artwork: fullArtwork,
     scale: shareScale,
-    credit: true,
+    credit: shareOptions?.credit ?? true,
     active: menuOpen,
   });
   const shareState = cardShareState({ rendered: png !== null, failed: loadFailed || renderFailed });

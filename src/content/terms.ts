@@ -46,7 +46,7 @@ export const terms: ITermsContent = {
       title: "No guarantees",
       paragraphs: [
         "To the extent the law allows, PixelHB is provided as is, without warranties of any kind.",
-        `Keep your own backups with Export JSON (Export PNG saves an image only). To the extent the law allows, neither PixelHB nor ${site.author} is liable for lost or damaged work, or for any indirect damage.`,
+        `Keep your own backups with Download JSON (Download PNG saves an image only). To the extent the law allows, neither PixelHB nor ${site.author} is liable for lost or damaged work, or for any indirect damage.`,
       ],
     },
     {

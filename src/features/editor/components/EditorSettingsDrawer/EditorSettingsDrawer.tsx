@@ -62,7 +62,9 @@ export function EditorSettingsDrawer(props: IEditorSettingsDrawerProps) {
     applyCanvasSize,
     shrinkDialog,
     exportJson,
-    exportPng,
+    downloadPng,
+    downloading,
+    shareSizeLabel,
     credit,
     creditHint,
     scaleOptions,
@@ -218,7 +220,9 @@ export function EditorSettingsDrawer(props: IEditorSettingsDrawerProps) {
             onShare={share}
             shareDisabled={shareDisabled}
             shareLabel={shareLabel}
-            onExportPng={exportPng}
+            onDownloadPng={downloadPng}
+            downloading={downloading}
+            shareSizeLabel={shareSizeLabel}
             onExportJson={exportJson}
           />
         ) : null}

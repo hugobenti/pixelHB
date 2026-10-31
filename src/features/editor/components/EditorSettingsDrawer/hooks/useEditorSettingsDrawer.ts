@@ -29,7 +29,9 @@ export function useEditorSettingsDrawer({
     credit,
     creditHint,
     exportJson,
-    exportPng,
+    downloadPng,
+    downloading,
+    shareSizeLabel,
     scaleOptions,
     selectScale,
     setCredit,
@@ -86,11 +88,13 @@ export function useEditorSettingsDrawer({
     setCredit,
     shareDisabled,
     shareLabel,
+    shareSizeLabel,
+    downloading,
     share: () => {
       void share();
     },
-    exportPng: () => {
-      void exportPng();
+    downloadPng: () => {
+      void downloadPng();
     },
   };
 }

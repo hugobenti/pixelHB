@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   EXPORT_CREDIT_KEY,
   EXPORT_SCALE_KEY,
+  parseExportCredit,
   parseExportScale,
   readStoredExportCredit,
   readStoredExportScale,
@@ -67,13 +68,19 @@ describe("stored export credit", () => {
     },
   };
 
-  it("defaults to on when storage throws or is unreachable", () => {
-    expect(readStoredExportCredit(() => throwing)).toBe(true);
+  it("parses only an explicit on as true", () => {
+    expect(parseExportCredit(null)).toBe(false);
+    expect(parseExportCredit("garbage")).toBe(false);
+    expect(parseExportCredit("on")).toBe(true);
+  });
+
+  it("defaults to off when storage throws or is unreachable", () => {
+    expect(readStoredExportCredit(() => throwing)).toBe(false);
     expect(
       readStoredExportCredit(() => {
         throw new Error("SecurityError");
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("does not throw when writing to throwing storage", () => {
@@ -91,11 +98,11 @@ describe("stored export credit", () => {
       getItem: (key: string) => values.get(key) ?? null,
       setItem: (key: string, value: string) => void values.set(key, value),
     };
-    expect(readStoredExportCredit(() => storage)).toBe(true);
-    writeStoredExportCredit(() => storage, false);
-    expect(values.get(EXPORT_CREDIT_KEY)).toBe("off");
     expect(readStoredExportCredit(() => storage)).toBe(false);
     writeStoredExportCredit(() => storage, true);
+    expect(values.get(EXPORT_CREDIT_KEY)).toBe("on");
     expect(readStoredExportCredit(() => storage)).toBe(true);
+    writeStoredExportCredit(() => storage, false);
+    expect(readStoredExportCredit(() => storage)).toBe(false);
   });
 });

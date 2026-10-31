@@ -20,7 +20,9 @@ export function EditorSettingsImportExportPanel({
   onShare,
   shareDisabled,
   shareLabel,
-  onExportPng,
+  shareSizeLabel,
+  downloading,
+  onDownloadPng,
   onExportJson,
 }: IEditorSettingsImportExportPanelProps) {
   return (
@@ -29,11 +31,8 @@ export function EditorSettingsImportExportPanel({
 
       <section
         className={editorSettingsImportExportPanel.section}
-        aria-label={editor.settings.export.sectionLabel}
+        aria-label={editor.settings.export.downloadSectionLabel}
       >
-        <h3 className={editorSettingsImportExportPanel.sectionTitle}>
-          {editor.settings.export.title}
-        </h3>
         <p className={editorSettingsImportExportPanel.scaleLabel}>
           {editor.settings.export.scaleLabel}
         </p>
@@ -45,7 +44,7 @@ export function EditorSettingsImportExportPanel({
             <span key={option.scale}>
               <Button
                 type="button"
-                variant={option.pressed ? "primary" : "ghost"}
+                variant="ghost"
                 className={editorSettingsImportExportPanel.scaleOption}
                 aria-pressed={option.pressed}
                 aria-describedby={option.description ? option.descriptionId : undefined}
@@ -74,29 +73,42 @@ export function EditorSettingsImportExportPanel({
             type="button"
             variant="primary"
             className={editorSettingsImportExportPanel.button}
+            disabled={downloading}
+            onClick={onDownloadPng}
+          >
+            {editor.settings.export.downloadPng}
+          </Button>
+        </div>
+      </section>
+
+      <section
+        className={editorSettingsImportExportPanel.section}
+        aria-label={editor.settings.export.shareSectionLabel}
+      >
+        <p className={editorSettingsImportExportPanel.shareHint}>{shareSizeLabel}</p>
+        <div className={editorSettingsImportExportPanel.actions}>
+          <Button
+            type="button"
+            variant="outline"
+            className={editorSettingsImportExportPanel.button}
             disabled={shareDisabled}
             onClick={onShare}
           >
             {shareLabel}
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className={editorSettingsImportExportPanel.button}
-            onClick={onExportPng}
-          >
-            {editor.settings.export.png}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className={editorSettingsImportExportPanel.button}
-            onClick={onExportJson}
-          >
-            {editor.settings.export.json}
-          </Button>
         </div>
       </section>
+
+      <div className={editorSettingsImportExportPanel.actions}>
+        <Button
+          type="button"
+          variant="outline"
+          className={editorSettingsImportExportPanel.button}
+          onClick={onExportJson}
+        >
+          {editor.settings.export.json}
+        </Button>
+      </div>
     </div>
   );
 }

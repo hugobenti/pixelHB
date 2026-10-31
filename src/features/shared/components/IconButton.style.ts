@@ -5,6 +5,7 @@
  */
 
 import { focusRing } from "@/features/shared/components/focus.style";
+import { pressedState } from "@/features/shared/components/pressedState.style";
 import { cx } from "@/features/shared/utils/cx";
 
 export const iconButton = {
@@ -14,7 +15,5 @@ export const iconButton = {
     focusRing,
     "disabled:pointer-events-none disabled:opacity-50",
   ),
-  /** Toggle on: a step up the surface ramp plus an inset ring, never the accent (The One Accent Rule). */
-  pressed:
-    "aria-pressed:bg-surface-strong aria-pressed:text-fg aria-pressed:ring-1 aria-pressed:ring-control-border aria-pressed:ring-inset aria-pressed:hover:bg-surface-strong",
+  pressed: pressedState,
 };
