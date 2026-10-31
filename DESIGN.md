@@ -77,11 +77,11 @@ colors:
   success-surface-dark: "#15231a"
   success-line-dark: "#2d4a36"
   success-fg-dark: "#8fdca7"
-  checker-light-dark: "#3a3835"
-  checker-dark-dark: "#2d2b29"
+  checker-light-dark: "#757370"
+  checker-dark-dark: "#6b6965"
   grid-line-dark: "color-mix(in srgb, var(--color-muted) 34%, transparent)"
-  guide-horizontal-dark: "#ff5c5c"
-  guide-vertical-dark: "#5fa8ff"
+  guide-horizontal-dark: "#ffc2c2"
+  guide-vertical-dark: "#b8d8ff"
   loupe-edge-dark-dark: "#000000"
   loupe-edge-light-dark: "#ffffff"
   google-btn-fill-dark: "#131314"
@@ -259,11 +259,11 @@ Every color token, as declared in `src/app/globals.css`. Light values are the `@
 | `success-surface`  | `#edf2e6`                                              | `#15231a`                                                 | Success toast background                                                |
 | `success-line`     | `#bfd2b0`                                              | `#2d4a36`                                                 | Success toast border                                                    |
 | `success-fg`       | `#234a1c`                                              | `#8fdca7`                                                 | Success toast text                                                      |
-| `checker-light`    | `#e8e6e0`                                              | `#3a3835`                                                 | Transparency checkerboard, light squares                                |
-| `checker-dark`     | `#d3d0c8`                                              | `#2d2b29`                                                 | Transparency checkerboard, dark squares                                 |
+| `checker-light`    | `#e8e6e0`                                              | `#757370`                                                 | Transparency checkerboard, light squares                                |
+| `checker-dark`     | `#d3d0c8`                                              | `#6b6965`                                                 | Transparency checkerboard, dark squares                                 |
 | `grid-line`        | `color-mix(in srgb, var(--color-fg) 24%, transparent)` | `color-mix(in srgb, var(--color-muted) 34%, transparent)` | Editor pixel grid (canvas renderer)                                     |
-| `guide-horizontal` | `#c0261d`                                              | `#ff5c5c`                                                 | Horizontal symmetry guide (canvas renderer)                             |
-| `guide-vertical`   | `#2b3a9e`                                              | `#5fa8ff`                                                 | Vertical symmetry guide (canvas renderer)                               |
+| `guide-horizontal` | `#c0261d`                                              | `#ffc2c2`                                                 | Horizontal symmetry guide (canvas renderer)                             |
+| `guide-vertical`   | `#2b3a9e`                                              | `#b8d8ff`                                                 | Vertical symmetry guide (canvas renderer)                               |
 | `loupe-edge-dark`  | `#000000`                                              | `#000000`                                                 | Color picker: the black line on each side of the loupe ring and around the picked pixel |
 | `loupe-edge-light` | `#ffffff`                                              | `#ffffff`                                                 | Color picker: the white line paired with `loupe-edge-dark`, so the edges read on any artwork color |
 | `google-btn-fill`  | `#ffffff`                                              | `#131314`                                                 | Sign in with Google button fill (Google brand color, see below)          |
@@ -278,7 +278,7 @@ The `google-btn-*` tokens (and the `shadow-google-btn` hover elevation) are Goog
 - **Default and override.** There are two themes and no "System" option. A first visit follows `prefers-color-scheme`; once the user picks Light or Dark, the choice is stored in `localStorage` under `pixelcraft-theme` as `"light"` or `"dark"` and the OS setting is ignored from then on. The preference logic lives in `src/features/shared/theme/`: `themePreference.ts` (pure parse/resolve helpers, the option list and the pre-paint script, unit-tested) and `useThemePreference.ts` (hooks `useSetTheme`, `useResolvedTheme`, `useThemeSync`).
 - **Switch.** The resolved theme is written to `data-theme` on `<html>`. An inline script rendered in `<head>` by `src/app/layout.tsx` sets it before first paint, so there is no flash of the wrong theme. `useThemeSync` (called in `src/app/AppProviders.tsx`) keeps it in sync with a pick in this or another tab, and with the OS setting while nothing has been picked yet.
 - **Tokens.** Light values live in the `@theme static` block of `src/app/globals.css`; dark values override the same `--color-*` custom properties under `[data-theme="dark"]`, which also sets `color-scheme: dark`. Tailwind utilities (`bg-surface`, `text-muted`, `outline-focus`) resolve to whichever value is active.
-- **Canvas.** The editor's canvas renderers read the grid and guide colors from the CSS variables (`--color-grid-line`, `--color-guide-horizontal`, `--color-guide-vertical`) and re-read them when the resolved theme changes.
+- **Canvas.** The editor's canvas renderers read the grid, guide, checker and canvas-edge colors from the CSS variables (`--color-grid-line`, `--color-guide-horizontal`, `--color-guide-vertical`, `--color-checker-light`, `--color-checker-dark`, `--color-line-strong`) and re-read them when the resolved theme changes. The checkerboard is drawn inside the artwork rectangle only, aligned to art pixels, with a 1px `line-strong` edge just outside it. The dark checker tones are lightened so the darkest palette color (`#1A1C2C`) keeps 3:1 against both; the dark guides were lightened to `#ffc2c2` / `#b8d8ff` because the contrast rule (guides on the checkerboard, 3:1) forced it.
 - **Contrast.** `src/app/tokenContrast.test.ts` checks the same pair list against both token sets: text pairs at 4.5:1, UI pairs (focus, accent, danger, swatch rings, `control-border` on `bg` / `surface` / `surface-subtle`, guides on the checkerboard, `surface` on `surface-inverse`, the Google button border on its fill and the page) at 3:1. It also fails if the dark block leaves any color token undefined, so a light value can never leak into dark.
 
 ### Named Rules
@@ -377,7 +377,7 @@ Restrained and tactile: flat fills, 1px borders, color changes on hover, no moti
 - **Corner Style:** `rounded-xl` (12px).
 - **Background:** `surface` with a `line` border.
 - **Shadow Strategy:** `shadow-sm` (see Elevation & Depth).
-- **Artwork card:** a square thumbnail link on a `surface-muted` full-bleed well (`rounded-t-xl`, clipped by its own `overflow-hidden`; image `object-contain` with `image-rendering: pixelated`), a body with a title row (title link in `font-medium fg`, truncated, and the `Menu` overflow trigger `⋯` for Rename, Duplicate and Delete at its right) and a meta line under it (`text-xs muted`: size in `font-mono`, then "Edited …"). The card itself is not clipped, so the dropdown can overlap the cards below; the body is `p-3`. Delete opens `ConfirmDialog`; danger styling appears only on the confirmation button.
+- **Artwork card:** a square thumbnail link on a `surface-muted` full-bleed well (`rounded-t-xl`, clipped by its own `overflow-hidden`; inside it a frame sized to the artwork's aspect ratio, centered and contained, wears the `pixel-checkerboard` so the checker never shows outside the art; the image fills the frame, `object-contain` with `image-rendering: pixelated`), a body with a title row (title link in `font-medium fg`, truncated, and the `Menu` overflow trigger `⋯` for Rename, Duplicate and Delete at its right) and a meta line under it (`text-xs muted`: size in `font-mono`, then "Edited …"). The card itself is not clipped, so the dropdown can overlap the cards below; the body is `p-3`. Delete opens `ConfirmDialog`; danger styling appears only on the confirmation button.
 - **Thumbnails:** a lossless PNG of the visible layers at the largest integer scale that fits 256px, with no grid lines. Thumbnails saved by the old renderer (WebP or a fractional scale, which showed seams between pixels) are detected on gallery load (`isThumbnailCurrent`) and regenerated from the pixel data.
 
 ### Modal

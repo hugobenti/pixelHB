@@ -127,6 +127,8 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
   return {
     href: editorPath(artwork.id),
     thumbnail: artwork.thumbnail,
+    frameOrientation: artwork.height > artwork.width ? ("tall" as const) : ("wide" as const),
+    frameStyle: { aspectRatio: `${artwork.width} / ${artwork.height}` },
     openable: artwork.openable,
     marker: artwork.marker ? gallery.card[artwork.marker] : null,
     size: gallery.card.size(artwork.width, artwork.height),

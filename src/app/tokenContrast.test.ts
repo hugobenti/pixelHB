@@ -101,8 +101,8 @@ describe.each(themes)("%s theme tokens meet WCAG 2.2 AA", (_name, tokens) => {
     }
   );
 
-  test("the two checker tones stay distinct", () => {
-    expect(tokens["checker-light"]).not.toBe(tokens["checker-dark"]);
+  test("the two checker tones stay distinguishable (≥ 1.1:1)", () => {
+    expect(ratio("checker-light", "checker-dark")).toBeGreaterThanOrEqual(1.1);
   });
 });
 

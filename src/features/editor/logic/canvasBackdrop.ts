@@ -29,6 +29,7 @@ export function drawCanvasBackdrop(
   const { width, height } = size;
   const cell = checkerWorldSize(scale);
 
+  // Tight bounds, not getVisibleWorldBounds: its ±1 margin would overdraw squares that are off screen.
   const minX = Math.max(0, -viewOffset.x / scale);
   const maxX = Math.min(width, (canvasCss.w - viewOffset.x) / scale);
   const minY = Math.max(0, -viewOffset.y / scale);
