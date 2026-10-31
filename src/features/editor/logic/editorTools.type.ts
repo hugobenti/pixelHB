@@ -1,11 +1,15 @@
+/** Paint tools the picker can be armed from (pan is never restored). */
+export type TPickerReturnTool = "brush" | "bucket" | "eraser";
+
 /** Which editor tool is on. Brush is the state with every flag off. */
 export interface IEditorToolState {
   panMode: boolean;
   bucketMode: boolean;
+  eraserMode: boolean;
   pickerArmed: boolean;
-  /** The picker was armed from bucket mode, so disarming turns bucket back on. */
-  pickerReturnsToBucket: boolean;
+  /** The paint tool the picker was armed from; cancelling the picker turns it back on. */
+  pickerReturnTool: TPickerReturnTool;
 }
 
 /** `pickApplied`: a pick hold ended on a color. */
-export type TEditorToolAction = "togglePan" | "toggleBucket" | "togglePicker" | "pickApplied";
+export type TEditorToolAction = "togglePan" | "toggleBucket" | "toggleEraser" | "togglePicker" | "pickApplied";

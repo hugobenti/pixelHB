@@ -31,6 +31,8 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     onTogglePanMode,
     bucketMode,
     onToggleBucketMode,
+    eraserMode,
+    onToggleEraserMode,
     pickerPressed,
     onTogglePicker,
     canZoomOut,
@@ -86,6 +88,13 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
           label={toolbar.bucket.label}
           pressed={bucketMode}
           onClick={onToggleBucketMode}
+        />
+        <IconButton
+          icon={PUBLIC_ICONS.eraser}
+          label={toolbar.eraser.label}
+          shortcut={toolbar.eraser.shortcut}
+          pressed={eraserMode}
+          onClick={onToggleEraserMode}
         />
         <IconButton
           icon={PUBLIC_ICONS.pipette}

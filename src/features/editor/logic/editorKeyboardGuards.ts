@@ -41,6 +41,9 @@ export function editorShortcutForKey(
   if (lower === "g" && !e.ctrlKey && !e.metaKey && !e.altKey) {
     return "toggleGrid";
   }
+  if (lower === "e" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    return "toggleEraser";
+  }
   if ((e.ctrlKey || e.metaKey) && lower === "z") {
     return e.shiftKey ? "redo" : "undo";
   }

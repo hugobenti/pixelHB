@@ -4,7 +4,7 @@ export interface IKeyboardTargetLike {
   isContentEditable?: boolean;
 }
 
-export type TEditorShortcut = "toggleGrid" | "undo" | "redo";
+export type TEditorShortcut = "toggleGrid" | "toggleEraser" | "undo" | "redo";
 
 export interface IShortcutKeyLike {
   key: string;

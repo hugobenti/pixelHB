@@ -295,6 +295,7 @@ export interface IEditorContent {
     redo: IIconControl;
     pan: IIconControl;
     bucket: IIconControl;
+    eraser: IIconControl;
     picker: IIconControl;
     zoomOut: IIconControl;
     zoomIn: IIconControl;
@@ -541,7 +542,7 @@ export interface IKeyCombo {
 export interface IHelpShortcut {
   action: string;
   combo: IKeyCombo;
-  effect: "undo" | "redo" | "toggleGrid" | "spacePan" | "arrowPan" | "altPick";
+  effect: "undo" | "redo" | "toggleGrid" | "toggleEraser" | "spacePan" | "arrowPan" | "altPick";
   note?: string;
 }
 

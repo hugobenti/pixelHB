@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Global key bindings for the pixel editor (toggle grid, undo/redo).
+ * Global key bindings for the pixel editor (toggle grid, toggle eraser, undo/redo).
  *
  * Notes:
  * Key → shortcut mapping lives in editorKeyboardGuards.ts: keys typed into text fields
@@ -18,6 +18,7 @@ import type { IUseEditorKeyboardShortcutsParams } from "./useEditorKeyboardShort
 
 export function useEditorKeyboardShortcuts({
   onTogglePixelGrid,
+  onToggleEraser,
   undo,
   redo,
 }: IUseEditorKeyboardShortcutsParams) {
@@ -33,6 +34,8 @@ export function useEditorKeyboardShortcuts({
       e.preventDefault();
       if (shortcut === "toggleGrid") {
         onTogglePixelGrid();
+      } else if (shortcut === "toggleEraser") {
+        onToggleEraser();
       } else if (shortcut === "redo") {
         redo();
       } else {
@@ -41,5 +44,5 @@ export function useEditorKeyboardShortcuts({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onTogglePixelGrid, undo, redo]);
+  }, [onTogglePixelGrid, onToggleEraser, undo, redo]);
 }
