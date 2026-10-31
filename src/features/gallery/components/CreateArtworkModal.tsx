@@ -127,8 +127,8 @@ export function CreateArtworkModal({ open, onClose, onCreate }: ICreateArtworkMo
         onValueChange={setBackgroundColor}
         onValidityChange={setBackgroundColorValid}
         disabled={transparentBackground}
+        hint={backgroundHint}
       />
-      <p className={createArtworkModal.hint}>{backgroundHint}</p>
       {errors.form ? (
         <p role="alert" className={createArtworkModal.formError}>
           {errors.form}

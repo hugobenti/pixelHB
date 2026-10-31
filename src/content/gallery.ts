@@ -39,7 +39,7 @@ export const gallery: IGalleryContent = {
     sizePresetsLabel: "Size presets",
     sizePresetLabel: (size) => `${size} × ${size} pixels`,
     sizeHint: (max) => `Up to ${max} × ${max} px.`,
-    backgroundHint: "New pixels use this color. Turn on Transparent background for sprites.",
+    backgroundHint: "Fills the new canvas. Turn on Transparent background for sprites.",
     transparentLabel: "Transparent background",
     submit: "Create",
     submitting: "Creating…",

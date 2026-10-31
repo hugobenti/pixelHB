@@ -5,7 +5,8 @@
  *
  * Notes:
  * New artworks honor `backgroundColor`: pixels are filled with that palette index, appending the
- * color to the palette when it is not already present (up to MAX_PALETTE_ENTRIES).
+ * color to the palette when it is not already present (up to MAX_PALETTE_ENTRIES). A `null`
+ * `backgroundColor` fills with TRANSPARENT_PIXEL_INDEX and leaves the palette untouched.
  */
 import { shared } from "@/content/shared";
 import { db } from "@/features/shared/db/dexie.config";
