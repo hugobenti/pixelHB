@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Classes for the EditorToolBar: a bottom bar on phones (one row, safe-area padding), the right half of the top row from `sm`.
+ * Classes for the EditorToolBar: a bottom bar on phones (one row, safe-area padding), the right half of the top row from `md`.
  */
 
 export const editorToolBar = {

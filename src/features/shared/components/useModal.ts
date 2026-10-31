@@ -8,7 +8,7 @@
 import { useEffect, useId, useRef, useState, type MouseEvent } from "react";
 
 import { useFocusTrap } from "@/features/shared/hooks/useFocusTrap";
-import { shouldAutofocusTarget } from "@/features/shared/logic/modalAutofocus";
+import { isTextEntryField, shouldAutofocusTarget } from "@/features/shared/logic/modalAutofocus";
 import type { IUseModalInput } from "./Modal.type";
 
 /** Matches `duration-200` on the overlay and panel in Modal.style.ts. */
@@ -38,9 +38,13 @@ export function useModal({ open, closeOnEscape, onClose }: IUseModalInput) {
     }
     const target = panelRef.current?.querySelector<HTMLElement>(AUTOFOCUS_SELECTOR);
     const isTextEntry =
-      target instanceof HTMLInputElement ||
-      target instanceof HTMLTextAreaElement ||
-      target?.isContentEditable === true;
+      target !== null &&
+      target !== undefined &&
+      isTextEntryField({
+        tagName: target.tagName,
+        inputType: target instanceof HTMLInputElement ? target.type : undefined,
+        isContentEditable: target.isContentEditable,
+      });
     const coarsePointer = window.matchMedia(COARSE_POINTER_QUERY).matches;
     if (!shouldAutofocusTarget({ coarsePointer, isTextEntry })) {
       panelRef.current?.focus();

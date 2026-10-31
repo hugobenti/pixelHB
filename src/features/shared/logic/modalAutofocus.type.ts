@@ -4,3 +4,10 @@ export interface IModalAutofocusInput {
   /** The `data-autofocus` target accepts typed text. */
   isTextEntry: boolean;
 }
+
+export interface IAutofocusTargetLike {
+  tagName: string;
+  /** `type` attribute value of an input; ignored for other elements. */
+  inputType?: string;
+  isContentEditable?: boolean;
+}
