@@ -30,6 +30,8 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     secondaryColor,
     activeSlot,
     onToggleActiveSlot,
+    brushMode,
+    onSelectBrush,
     panMode,
     onTogglePanMode,
     bucketMode,
@@ -51,6 +53,7 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     historyRevision,
     layersDrawerOpen,
     onToggleLayersDrawer,
+    onOpenExport,
     settingsDrawerOpen,
     onToggleSettingsDrawer,
   } = props;
@@ -85,6 +88,13 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
           onClick={onRedo}
         />
         <IconButton
+          icon={PUBLIC_ICONS.pencil}
+          label={toolbar.brush.label}
+          shortcut={toolbar.brush.shortcut}
+          pressed={brushMode}
+          onClick={onSelectBrush}
+        />
+        <IconButton
           icon={PUBLIC_ICONS.pan}
           label={toolbar.pan.label}
           shortcut={toolbar.pan.shortcut}
@@ -94,6 +104,7 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
         <IconButton
           icon={PUBLIC_ICONS.bucket}
           label={toolbar.bucket.label}
+          shortcut={toolbar.bucket.shortcut}
           pressed={bucketMode}
           onClick={onToggleBucketMode}
         />
@@ -114,12 +125,14 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
         <IconButton
           icon={PUBLIC_ICONS.zoomOut}
           label={toolbar.zoomOut.label}
+          shortcut={toolbar.zoomOut.shortcut}
           disabled={!canZoomOut}
           onClick={onZoomOut}
         />
         <IconButton
           icon={PUBLIC_ICONS.zoomIn}
           label={toolbar.zoomIn.label}
+          shortcut={toolbar.zoomIn.shortcut}
           disabled={!canZoomIn}
           onClick={onZoomIn}
         />
@@ -145,6 +158,11 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
           secondaryColor={secondaryColor}
           activeSlot={activeSlot}
           onToggle={onToggleActiveSlot}
+        />
+        <IconButton
+          icon={PUBLIC_ICONS.download}
+          label={toolbar.export.label}
+          onClick={onOpenExport}
         />
         <IconButton
           icon={PUBLIC_ICONS.cog}

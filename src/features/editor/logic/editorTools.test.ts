@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { applyToolAction } from "@/features/editor/logic/editorTools";
+import { applyToolAction, isBrushTool, toolsAfterSwatchPick } from "@/features/editor/logic/editorTools";
 import type { IEditorToolState } from "@/features/editor/logic/editorTools.type";
 
 const BRUSH: IEditorToolState = {
@@ -93,5 +93,42 @@ describe("applyToolAction", () => {
 
   it("returns to the brush after a quick pick made while erasing", () => {
     expect(applyToolAction({ ...BRUSH, eraserMode: true }, "pickApplied")).toEqual(BRUSH);
+  });
+});
+
+describe("selectBrush", () => {
+  it("gives the brush from the eraser, bucket, pan and an armed picker", () => {
+    expect(applyToolAction({ ...BRUSH, eraserMode: true }, "selectBrush")).toEqual(BRUSH);
+    expect(applyToolAction({ ...BRUSH, bucketMode: true }, "selectBrush")).toEqual(BRUSH);
+    expect(applyToolAction({ ...BRUSH, panMode: true }, "selectBrush")).toEqual(BRUSH);
+    expect(
+      applyToolAction({ ...BRUSH, pickerArmed: true, pickerReturnTool: "bucket" }, "selectBrush"),
+    ).toEqual(BRUSH);
+  });
+});
+
+describe("toolsAfterSwatchPick", () => {
+  it("turns the eraser off so the next stroke paints", () => {
+    expect(toolsAfterSwatchPick({ ...BRUSH, eraserMode: true })).toEqual(BRUSH);
+  });
+
+  it("clears a pending eraser return so cancelling the picker gives the brush", () => {
+    const armed = applyToolAction({ ...BRUSH, eraserMode: true }, "togglePicker");
+    expect(applyToolAction(toolsAfterSwatchPick(armed), "togglePicker")).toEqual(BRUSH);
+  });
+
+  it("keeps the bucket", () => {
+    const bucket = { ...BRUSH, bucketMode: true };
+    expect(toolsAfterSwatchPick(bucket)).toEqual(bucket);
+  });
+});
+
+describe("isBrushTool", () => {
+  it("is true only when no tool flag is on", () => {
+    expect(isBrushTool(BRUSH)).toBe(true);
+    expect(isBrushTool({ ...BRUSH, panMode: true })).toBe(false);
+    expect(isBrushTool({ ...BRUSH, bucketMode: true })).toBe(false);
+    expect(isBrushTool({ ...BRUSH, eraserMode: true })).toBe(false);
+    expect(isBrushTool({ ...BRUSH, pickerArmed: true })).toBe(false);
   });
 });

@@ -29,6 +29,23 @@ export function isTextEntryTarget(
   return TEXT_ENTRY_TAGS[target.tagName?.toUpperCase() ?? ""] === true;
 }
 
+/**
+ * Keys claimed with no Ctrl, Cmd or Alt. Zoom accepts + and = (US layouts need Shift for +) and -, with or without Shift;
+ * with a modifier held they stay the browser's page zoom. Toggles and tool picks fire once per press; only the zoom
+ * keys `repeats` while held.
+ */
+const BARE_KEY_SHORTCUTS = new Map<string, { shortcut: TEditorShortcut; repeats: boolean }>([
+  ["g", { shortcut: "toggleGrid", repeats: false }],
+  ["e", { shortcut: "toggleEraser", repeats: false }],
+  ["x", { shortcut: "switchSlot", repeats: false }],
+  ["b", { shortcut: "selectBrush", repeats: false }],
+  ["f", { shortcut: "toggleBucket", repeats: false }],
+  ["i", { shortcut: "togglePicker", repeats: false }],
+  ["+", { shortcut: "zoomIn", repeats: true }],
+  ["=", { shortcut: "zoomIn", repeats: true }],
+  ["-", { shortcut: "zoomOut", repeats: true }],
+]);
+
 /** Editor shortcut for a key press, or null when the key must be left to the browser. */
 export function editorShortcutForKey(
   e: IShortcutKeyLike,
@@ -38,17 +55,9 @@ export function editorShortcutForKey(
     return null;
   }
   const lower = e.key.toLowerCase();
-  if (e.repeat && (lower === "g" || lower === "e" || lower === "x")) {
-    return null;
-  }
-  if (lower === "g" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    return "toggleGrid";
-  }
-  if (lower === "e" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    return "toggleEraser";
-  }
-  if (lower === "x" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-    return "switchSlot";
+  const bareKey = e.ctrlKey || e.metaKey || e.altKey ? undefined : BARE_KEY_SHORTCUTS.get(lower);
+  if (bareKey) {
+    return e.repeat && !bareKey.repeats ? null : bareKey.shortcut;
   }
   if ((e.ctrlKey || e.metaKey) && lower === "z") {
     return e.shiftKey ? "redo" : "undo";
