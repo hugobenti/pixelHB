@@ -4,7 +4,7 @@
  */
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { editor } from "@/content/editor";
 import { shared } from "@/content/shared";
@@ -74,6 +74,9 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     writeStoredExportCredit(() => localStorage, on);
   }, []);
 
+  const [downloading, setDownloading] = useState(false);
+  // A ref too: two clicks in one tick both see the same rendered state.
+  const downloadingRef = useRef(false);
   const { share: shareImage, sharing } = useShareImage({ from: "editor" });
   const shareOptions = useMemo(() => shareExportOptions(artwork), [artwork]);
   const shareSize = exportSize(artwork, shareOptions.scale, creditStripHeight);
@@ -106,6 +109,11 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
   }, [artwork, showToast]);
 
   const downloadPng = useCallback(async () => {
+    if (downloadingRef.current) {
+      return;
+    }
+    downloadingRef.current = true;
+    setDownloading(true);
     try {
       const { credit: drawn } = await exportArtworkAsPng(artwork, { scale, credit });
       capture("export_png", { scale, credit: drawn });
@@ -113,6 +121,9 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     } catch (error) {
       const message = error instanceof Error ? error.message : editor.settings.export.pngFailed;
       showToast({ message, tone: "error" });
+    } finally {
+      downloadingRef.current = false;
+      setDownloading(false);
     }
   }, [artwork, scale, credit, showToast]);
 
@@ -121,6 +132,7 @@ export function useImportExportPanel({ artwork, active }: IUseImportExportPanelP
     creditHint,
     exportJson,
     downloadPng,
+    downloading,
     scale,
     scaleOptions,
     selectScale,

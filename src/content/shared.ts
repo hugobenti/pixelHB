@@ -6,7 +6,7 @@ export const shared: ISharedContent = {
     label: "Share image",
     preparing: "Preparing…",
     copied: "Image copied. Paste it into your post.",
-    downloaded: "PNG file exported.",
+    downloaded: "PNG file downloaded.",
   },
   sync: {
     thisBrowserOnly: "Saved in this browser only.",

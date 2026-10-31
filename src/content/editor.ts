@@ -108,7 +108,7 @@ export const editor: IEditorContent = {
       json: "Download JSON (editable)",
       jsonDone: "JSON file downloaded.",
       pngDone: "PNG file downloaded.",
-      pngFailed: "Failed to export PNG.",
+      pngFailed: "Couldn't create the PNG. Try again.",
       scaleLabel: "Size",
       scaleOption: (scale, width, height) => `×${scale} · ${width} × ${height}`,
       scaleTooLarge: "Too large to export",

@@ -21,6 +21,7 @@ export function EditorSettingsImportExportPanel({
   shareDisabled,
   shareLabel,
   shareSizeLabel,
+  downloading,
   onDownloadPng,
   onExportJson,
 }: IEditorSettingsImportExportPanelProps) {
@@ -72,6 +73,7 @@ export function EditorSettingsImportExportPanel({
             type="button"
             variant="primary"
             className={editorSettingsImportExportPanel.button}
+            disabled={downloading}
             onClick={onDownloadPng}
           >
             {editor.settings.export.downloadPng}
