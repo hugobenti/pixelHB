@@ -37,6 +37,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
     toggleBucketMode,
     eraserMode,
     toggleEraserMode,
+    brushMode,
     pickerPressed,
     togglePicker,
     pickHold,
@@ -95,7 +96,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           secondaryColor={secondaryColor}
           activeSlot={paletteUi.activeSlot}
           onToggleActiveSlot={paletteUi.toggleActiveSlot}
-          brushMode={!panMode && !bucketMode && !eraserMode && !pickerPressed}
+          brushMode={brushMode}
           onSelectBrush={selectBrush}
           panMode={panMode}
           onTogglePanMode={togglePanMode}

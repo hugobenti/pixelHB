@@ -61,3 +61,8 @@ export function applyToolAction(state: IEditorToolState, action: TEditorToolActi
 export function toolsAfterSwatchPick(state: IEditorToolState): IEditorToolState {
   return state.eraserMode ? BRUSH : state;
 }
+
+/** The brush is the tool when no other tool flag is on. */
+export function isBrushTool(state: IEditorToolState): boolean {
+  return !state.panMode && !state.bucketMode && !state.eraserMode && !state.pickerArmed;
+}

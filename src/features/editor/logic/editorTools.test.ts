@@ -6,7 +6,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { applyToolAction, toolsAfterSwatchPick } from "@/features/editor/logic/editorTools";
+import { applyToolAction, isBrushTool, toolsAfterSwatchPick } from "@/features/editor/logic/editorTools";
 import type { IEditorToolState } from "@/features/editor/logic/editorTools.type";
 
 const BRUSH: IEditorToolState = {
@@ -115,5 +115,15 @@ describe("toolsAfterSwatchPick", () => {
   it("keeps the bucket", () => {
     const bucket = { ...BRUSH, bucketMode: true };
     expect(toolsAfterSwatchPick(bucket)).toEqual(bucket);
+  });
+});
+
+describe("isBrushTool", () => {
+  it("is true only when no tool flag is on", () => {
+    expect(isBrushTool(BRUSH)).toBe(true);
+    expect(isBrushTool({ ...BRUSH, panMode: true })).toBe(false);
+    expect(isBrushTool({ ...BRUSH, bucketMode: true })).toBe(false);
+    expect(isBrushTool({ ...BRUSH, eraserMode: true })).toBe(false);
+    expect(isBrushTool({ ...BRUSH, pickerArmed: true })).toBe(false);
   });
 });

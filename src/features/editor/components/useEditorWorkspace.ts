@@ -30,7 +30,7 @@ import { useToolbarCenterZoom } from "@/features/editor/hooks/useToolbarCenterZo
 import { useViewportKeyboardPan } from "@/features/editor/hooks/useViewportKeyboardPan";
 import { useViewportNavigation } from "@/features/editor/hooks/useViewportNavigation";
 import { useViewportWheelAndPinch } from "@/features/editor/hooks/useViewportWheelAndPinch";
-import { applyToolAction, toolsAfterSwatchPick } from "@/features/editor/logic/editorTools";
+import { applyToolAction, isBrushTool, toolsAfterSwatchPick } from "@/features/editor/logic/editorTools";
 import type { IEditorToolState, TEditorToolAction, TPickerReturnTool } from "@/features/editor/logic/editorTools.type";
 import { clampPaletteIndex } from "@/features/editor/logic/paletteMutations";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
@@ -350,6 +350,9 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     eraserMode,
     toggleEraserMode,
     onSwatchPick,
+    brushMode:
+      isBrushTool({ panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool }) &&
+      !picker.altHeld,
     pickerPressed: pickerArmed || picker.altHeld,
     togglePicker,
     pickHold: picker.hold,
