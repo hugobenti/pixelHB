@@ -57,9 +57,18 @@ export function applyToolAction(state: IEditorToolState, action: TEditorToolActi
   }
 }
 
-/** Picking a swatch while erasing means you want to paint: the eraser turns off. Other tools stay. */
+/**
+ * Picking a swatch means you want to paint: the eraser turns off, and an eraser the picker would hand back is
+ * forgotten. Other tools stay.
+ */
 export function toolsAfterSwatchPick(state: IEditorToolState): IEditorToolState {
-  return state.eraserMode ? BRUSH : state;
+  if (state.eraserMode) {
+    return BRUSH;
+  }
+  if (state.pickerArmed && state.pickerReturnTool === "eraser") {
+    return { ...state, pickerReturnTool: "brush" };
+  }
+  return state;
 }
 
 /** The brush is the tool when no other tool flag is on. */

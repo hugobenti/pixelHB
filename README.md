@@ -20,6 +20,7 @@ PixelHB is a local-first pixel-art editor that runs in the browser. You don't ne
 ### Editor (`/editor/[id]`)
 
 - Paint with a primary and a secondary color slot. The main button (or touch) paints with the active slot, and on desktop the right mouse button paints with the other one.
+- Brush (toolbar button or `B`) is the default tool. The toolbar also has an Export & share button that opens Settings straight on Export.
 - Eraser (toolbar button or `E`): paints transparent with either mouse button, ignoring the color slots. Paint bucket mode, plus pan mode (or hold Space and drag).
 - Color picker: press and drag on the canvas to pick a palette color from what you see, with a loupe that compares it with your current color; release to paint with it. Toolbar button, or hold Alt (Option on a Mac).
 - Zoom with the toolbar buttons, the mouse wheel or a pinch gesture. Pan by dragging, or with the arrow keys while the canvas is focused.

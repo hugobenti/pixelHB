@@ -112,6 +112,11 @@ describe("toolsAfterSwatchPick", () => {
     expect(toolsAfterSwatchPick({ ...BRUSH, eraserMode: true })).toEqual(BRUSH);
   });
 
+  it("clears a pending eraser return so cancelling the picker gives the brush", () => {
+    const armed = applyToolAction({ ...BRUSH, eraserMode: true }, "togglePicker");
+    expect(applyToolAction(toolsAfterSwatchPick(armed), "togglePicker")).toEqual(BRUSH);
+  });
+
   it("keeps the bucket", () => {
     const bucket = { ...BRUSH, bucketMode: true };
     expect(toolsAfterSwatchPick(bucket)).toEqual(bucket);
