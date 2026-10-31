@@ -60,8 +60,9 @@ export function renderPixelGrid(
   }
   ctx.stroke();
 
-  const guideWidth = 1 / viewport.scale;
-  const haloWidth = 3 / viewport.scale;
+  const centerFactor = options.centerLineWidthFactor ?? 1.45;
+  const guideWidth = Math.max(baseLineWidth * centerFactor, 1e-6);
+  const haloWidth = guideWidth + 2 / viewport.scale;
   const strokeGuide = (color: string, x0: number, y0: number, x1: number, y1: number) => {
     if (options.centerHaloColor && options.centerHaloColor !== "transparent") {
       ctx.beginPath();
