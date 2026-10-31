@@ -8,7 +8,7 @@ import { cx } from "@/features/shared/utils/cx";
 
 export const sortableLayerItem = {
   wrap: "motion-reduce:transition-none!",
-  row: "flex w-full min-w-0 items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors sm:gap-3 sm:px-3",
+  row: "flex w-full flex-wrap sm:flex-nowrap min-w-0 items-center gap-2 rounded-lg border px-2 py-2 text-left transition-colors sm:gap-3 sm:px-3",
   rowState: {
     active: "border-accent bg-surface-muted",
     idle: "border-line bg-surface hover:bg-surface-subtle",
@@ -26,5 +26,5 @@ export const sortableLayerItem = {
     "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line-strong bg-surface-muted sm:h-14 sm:w-14",
   metadata: "min-w-0 flex-1",
   layerName: "block min-w-0 truncate text-sm font-semibold text-fg",
-  actions: "ml-auto flex shrink-0 items-center gap-1 sm:gap-2",
+  actions: "ml-auto flex w-full justify-end sm:w-auto shrink-0 items-center gap-1 sm:gap-2",
 };
