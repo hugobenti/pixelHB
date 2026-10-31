@@ -87,6 +87,8 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           canRedo={canRedo}
           onUndo={undo}
           onRedo={redo}
+          primaryColor={primaryColor}
+          secondaryColor={secondaryColor}
           activeSlot={paletteUi.activeSlot}
           onToggleActiveSlot={paletteUi.toggleActiveSlot}
           panMode={panMode}
@@ -117,6 +119,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           palette={artwork.palette}
           primaryIndex={primaryPaint}
           secondaryIndex={secondaryPaint}
+          activeSlot={paletteUi.activeSlot}
           focusedSwatchIndex={rowFocusedSwatchIndex}
           onSwatchPick={paletteUi.assignSwatchToActiveSlot}
           onOpenPaletteModal={openPaletteModal}

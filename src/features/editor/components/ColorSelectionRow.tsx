@@ -12,7 +12,7 @@ import type { IColorSelectionRowProps } from "./ColorSelectionRow.type";
 import { useColorSelectionRow } from "./useColorSelectionRow";
 
 export function ColorSelectionRow(props: IColorSelectionRowProps) {
-  const { palette, primaryIndex, secondaryIndex, onSwatchPick, onOpenPaletteModal } = props;
+  const { palette, primaryIndex, secondaryIndex, activeSlot, onSwatchPick, onOpenPaletteModal } = props;
   const { focusedIndex, scrollerRef } = useColorSelectionRow(props);
 
   return (
@@ -32,6 +32,7 @@ export function ColorSelectionRow(props: IColorSelectionRowProps) {
                 index={index}
                 isPrimary={index === primaryIndex}
                 isSecondary={index === secondaryIndex}
+                activeSlot={activeSlot}
                 isFocused={index === focusedIndex}
                 onClick={() => onSwatchPick(index)}
               />

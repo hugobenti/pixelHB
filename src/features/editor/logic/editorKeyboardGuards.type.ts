@@ -4,7 +4,7 @@ export interface IKeyboardTargetLike {
   isContentEditable?: boolean;
 }
 
-export type TEditorShortcut = "toggleGrid" | "toggleEraser" | "undo" | "redo";
+export type TEditorShortcut = "toggleGrid" | "toggleEraser" | "switchSlot" | "undo" | "redo";
 
 export interface IShortcutKeyLike {
   key: string;
@@ -12,6 +12,8 @@ export interface IShortcutKeyLike {
   metaKey: boolean;
   altKey: boolean;
   shiftKey: boolean;
+  /** True for auto-repeat keydowns while the key is held. */
+  repeat?: boolean;
 }
 
 export interface ISpacePanClaimInput {

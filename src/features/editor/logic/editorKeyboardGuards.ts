@@ -38,11 +38,17 @@ export function editorShortcutForKey(
     return null;
   }
   const lower = e.key.toLowerCase();
+  if (e.repeat && (lower === "g" || lower === "e" || lower === "x")) {
+    return null;
+  }
   if (lower === "g" && !e.ctrlKey && !e.metaKey && !e.altKey) {
     return "toggleGrid";
   }
   if (lower === "e" && !e.ctrlKey && !e.metaKey && !e.altKey) {
     return "toggleEraser";
+  }
+  if (lower === "x" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    return "switchSlot";
   }
   if ((e.ctrlKey || e.metaKey) && lower === "z") {
     return e.shiftKey ? "redo" : "undo";

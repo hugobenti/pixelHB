@@ -1,16 +1,17 @@
 /**
  * Purpose:
- * ColorSwatch view model: 1-based title and accessible name, pressed/current state, and which ring to show.
+ * ColorSwatch view model: 1-based title and accessible name, pressed/current state, which ring to show and which slot markers.
  */
 "use client";
 
 import { shared } from "@/content/shared";
-import { colorSwatchRing } from "@/features/shared/logic/colorSwatchRing";
+import { colorSwatchMarkers, colorSwatchRing } from "@/features/shared/logic/colorSwatchRing";
 import type { IColorSwatchView, TColorSwatchProps } from "./ColorSwatch.type";
 
 export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
   const n = props.index + 1;
   const ring = colorSwatchRing(props);
+  const markers = colorSwatchMarkers(props);
 
   if (props.density === "compact") {
     return {
@@ -20,6 +21,8 @@ export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
       ariaCurrent: undefined,
       ring,
       focused: false,
+      showTopLeftMarker: markers.topLeft,
+      showBottomRightMarker: markers.bottomRight,
     };
   }
 
@@ -33,5 +36,7 @@ export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
     ariaCurrent: props.isFocused ? "true" : undefined,
     ring,
     focused: props.isFocused,
+    showTopLeftMarker: markers.topLeft,
+    showBottomRightMarker: markers.bottomRight,
   };
 }

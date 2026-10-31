@@ -11,7 +11,16 @@ import { useColorSwatch } from "./useColorSwatch";
 
 export function ColorSwatch(props: TColorSwatchProps) {
   const { color, density, onClick } = props;
-  const { title, ariaLabel, ariaPressed, ariaCurrent, ring, focused } = useColorSwatch(props);
+  const {
+    title,
+    ariaLabel,
+    ariaPressed,
+    ariaCurrent,
+    ring,
+    focused,
+    showTopLeftMarker,
+    showBottomRightMarker,
+  } = useColorSwatch(props);
 
   return (
     <button
@@ -27,6 +36,9 @@ export function ColorSwatch(props: TColorSwatchProps) {
       )}
       style={{ backgroundColor: color }}
       onClick={onClick}
-    />
+    >
+      {showTopLeftMarker ? <span aria-hidden className={colorSwatch.marker.topLeft} /> : null}
+      {showBottomRightMarker ? <span aria-hidden className={colorSwatch.marker.bottomRight} /> : null}
+    </button>
   );
 }

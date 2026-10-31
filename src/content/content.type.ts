@@ -305,10 +305,9 @@ export interface IEditorContent {
       chipLabel: (name: string) => string;
     };
     settings: IIconControl;
-    slot: {
-      primary: string;
-      secondary: string;
-      label: (slot: string) => string;
+    colors: {
+      /** Accessible name of the color-pair chip: the color painting now and the one the other button paints. */
+      label: (activeHex: string, otherHex: string) => string;
       title: string;
     };
   };
@@ -547,7 +546,7 @@ export interface IKeyCombo {
 export interface IHelpShortcut {
   action: string;
   combo: IKeyCombo;
-  effect: "undo" | "redo" | "toggleGrid" | "toggleEraser" | "spacePan" | "arrowPan" | "altPick";
+  effect: "undo" | "redo" | "toggleGrid" | "toggleEraser" | "switchSlot" | "spacePan" | "arrowPan" | "altPick";
   note?: string;
 }
 
