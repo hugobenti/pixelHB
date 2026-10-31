@@ -4,7 +4,7 @@
  *
  * Notes (optional):
  * Grid and symmetry-guide colors are read from the design-token CSS variables on :root (src/app/globals.css);
- * the render effect depends on the resolved theme so a light/dark switch repaints them.
+ * the render effect (backdrop checkerboard and edge included) depends on the resolved theme so a light/dark switch repaints them.
  */
 "use client";
 
@@ -12,6 +12,7 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import { EDITOR_ROOT_CSS_VARS } from "@/features/editor/constants/editorRootCssVars";
 import { renderCanvas } from "@/features/shared/artwork/canvasRender";
+import { drawCanvasBackdrop, drawCanvasEdge } from "@/features/editor/logic/canvasBackdrop";
 import { renderPixelGrid } from "@/features/editor/logic/gridRender";
 import { renderReferenceImage } from "@/features/editor/logic/referenceImageRender";
 import { useResolvedTheme } from "@/features/shared/theme/useThemePreference";
@@ -86,7 +87,19 @@ export function useCanvasEngine({
       return;
     }
 
-    renderCanvas(actx, artwork, viewport);
+    actx.clearRect(0, 0, ac.width, ac.height);
+    drawCanvasBackdrop(
+      actx,
+      artwork,
+      viewport,
+      {
+        light: readRootCssColor(EDITOR_ROOT_CSS_VARS.checkerLight),
+        dark: readRootCssColor(EDITOR_ROOT_CSS_VARS.checkerDark),
+      },
+      { w: cssSize.w, h: cssSize.h }
+    );
+    renderCanvas(actx, artwork, viewport, { clear: false });
+    drawCanvasEdge(actx, artwork, viewport, readRootCssColor(EDITOR_ROOT_CSS_VARS.canvasEdge));
     if (showReferenceImage && referenceImage) {
       renderReferenceImage(
         rctx,

@@ -141,11 +141,11 @@
   --color-success-fg: #8fdca7;
 
   /* Editor canvas */
-  --color-checker-light: #3a3835;
-  --color-checker-dark: #2d2b29;
+  --color-checker-light: #757370;
+  --color-checker-dark: #6b6965;
   --color-grid-line: color-mix(in srgb, var(--color-muted) 34%, transparent);
-  --color-guide-horizontal: #ff5c5c;
-  --color-guide-vertical: #5fa8ff;
+  --color-guide-horizontal: #ffc2c2;
+  --color-guide-vertical: #b8d8ff;
   --color-loupe-edge-dark: #000000;
   --color-loupe-edge-light: #ffffff;
 

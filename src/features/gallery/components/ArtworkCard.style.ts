@@ -10,7 +10,7 @@ export const artworkCard = {
   body: "flex flex-col gap-1 p-3",
   thumbnailLink:
     "relative block aspect-square w-full overflow-hidden rounded-t-xl bg-surface-muted",
-  thumbnail: "object-contain [image-rendering:pixelated]",
+  thumbnail: "pixel-checkerboard object-contain [image-rendering:pixelated]",
   renameForm: "flex gap-2",
   meta: "text-xs text-muted",
   size: "font-mono",

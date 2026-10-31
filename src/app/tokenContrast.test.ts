@@ -70,6 +70,8 @@ const uiPairs = [
   ["google-btn-stroke", "surface"],
 ];
 
+const SWEETIE_DARKEST = "#1a1c2c";
+
 describe.each(themes)("%s theme tokens meet WCAG 2.2 AA", (_name, tokens) => {
   function ratio(foreground: string, background: string): number {
     const fg = tokens[foreground];
@@ -86,6 +88,21 @@ describe.each(themes)("%s theme tokens meet WCAG 2.2 AA", (_name, tokens) => {
 
   test.each(uiPairs)("UI %s on %s ≥ 3:1", (foreground, background) => {
     expect(ratio(foreground, background)).toBeGreaterThanOrEqual(3);
+  });
+
+  test.each(["checker-light", "checker-dark"])(
+    "the darkest palette color (#1A1C2C) on %s ≥ 3:1",
+    (checker) => {
+      const tone = tokens[checker];
+      if (!tone) {
+        throw new Error(`missing color token: ${checker}`);
+      }
+      expect(contrastRatio(SWEETIE_DARKEST, tone)).toBeGreaterThanOrEqual(3);
+    }
+  );
+
+  test("the two checker tones stay distinct", () => {
+    expect(tokens["checker-light"]).not.toBe(tokens["checker-dark"]);
   });
 });
 
