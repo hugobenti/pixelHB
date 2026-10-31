@@ -23,7 +23,7 @@ Local first, yours always: artworks live in the browser's IndexedDB with no acco
 
 ## Operating Context
 
-- Surfaces: the **home** page (`/`), **Help** (`/help`, including keyboard shortcuts), **About** (`/about`), **Privacy** (`/privacy`), **Feedback & contact** (`/contact`), a **404** page and an **error** page, all inside a shared site header (with the optional Google account control) and footer; the **gallery** (`/gallery`: list, create, rename, clone, delete, import JSON); and the **editor** (`/editor/[id]`: canvas, palette, tools (brush, bucket, color picker, pan), layers drawer, settings drawer with canvas size, image detail and import/export). The editor has no site header or footer.
+- Surfaces: the **home** page (`/`), **Help** (`/help`, including keyboard shortcuts), **About** (`/about`), **Privacy** (`/privacy`), **Feedback & contact** (`/contact`), a **404** page and an **error** page, all inside a shared site header (with the optional Google account control) and footer; the **gallery** (`/gallery`: list, create, rename, clone, delete, import JSON); and the **editor** (`/editor/[id]`: canvas, palette, tools (brush, eraser, bucket, color picker, pan), layers drawer, settings drawer with canvas size, image detail and import/export). The editor has no site header or footer.
 - The artwork is the focus; the interface frames it. Users stare at saturated, arbitrary palette colors for long stretches, so chrome must not compete with or tint the perception of those colors.
 - Input: mouse/trackpad plus keyboard shortcuts on desktop; touch (pinch, drag) on phones. The canvas viewport owns wheel, pinch and drag; nothing else may hijack scrolling.
 

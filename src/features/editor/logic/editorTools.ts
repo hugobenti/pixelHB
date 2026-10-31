@@ -2,6 +2,7 @@
  * Purpose:
  * Switching between the editor's tools: pan, bucket, eraser and the color picker are exclusive (brush is none of
  * them), and the picker gives back the paint tool it was armed from: bucket, or the brush (never pan).
+ * A quick Alt pick turns the eraser off (back to the brush): picking a color means you want to paint.
  */
 
 import type { IEditorToolState, TEditorToolAction } from "./editorTools.type";
