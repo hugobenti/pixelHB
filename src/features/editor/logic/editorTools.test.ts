@@ -1,7 +1,7 @@
 /**
  * Purpose:
- * Tests for switching between the editor's tools: pan, bucket and the color picker are exclusive, and
- * the picker hands back the paint tool it was armed from.
+ * Tests for switching between the editor's tools: pan, bucket, eraser and the color picker are exclusive, and
+ * the picker hands back the paint tool it was armed from; picking from the eraser returns to the brush.
  */
 
 import { describe, expect, it } from "vitest";
@@ -14,7 +14,7 @@ const BRUSH: IEditorToolState = {
   bucketMode: false,
   eraserMode: false,
   pickerArmed: false,
-  pickerReturnsToBucket: false,
+  pickerReturnTool: "brush",
 };
 
 describe("applyToolAction", () => {
@@ -24,13 +24,13 @@ describe("applyToolAction", () => {
       bucketMode: false,
       eraserMode: false,
       pickerArmed: true,
-      pickerReturnsToBucket: false,
+      pickerReturnTool: "brush",
     });
   });
 
   it("turns bucket off while the picker is armed and back on when it is disarmed", () => {
     const armed = applyToolAction({ ...BRUSH, bucketMode: true }, "togglePicker");
-    expect(armed).toMatchObject({ pickerArmed: true, bucketMode: false, pickerReturnsToBucket: true });
+    expect(armed).toMatchObject({ pickerArmed: true, bucketMode: false, pickerReturnTool: "bucket" });
     expect(applyToolAction(armed, "togglePicker")).toMatchObject({ pickerArmed: false, bucketMode: true });
   });
 
@@ -83,6 +83,12 @@ describe("applyToolAction", () => {
   it("returns to the brush, not the eraser, after a pick armed from the eraser", () => {
     const armed = applyToolAction({ ...BRUSH, eraserMode: true }, "togglePicker");
     expect(applyToolAction(armed, "pickApplied")).toEqual(BRUSH);
+  });
+
+  it("restores the eraser when the picker is armed from it and cancelled without a pick", () => {
+    const armed = applyToolAction({ ...BRUSH, eraserMode: true }, "togglePicker");
+    expect(armed).toMatchObject({ pickerArmed: true, eraserMode: false, pickerReturnTool: "eraser" });
+    expect(applyToolAction(armed, "togglePicker")).toEqual({ ...BRUSH, eraserMode: true });
   });
 
   it("returns to the brush after a quick pick made while erasing", () => {

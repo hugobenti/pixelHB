@@ -54,7 +54,7 @@ Success: while drawing, the artist arms the picker, presses on the canvas, drags
 
 - The picker button is a toggle using `IconButton` with `pressed`, like pan and bucket.
 - The tools are mutually exclusive: arming the picker turns off pan mode, bucket mode and the eraser, and arming pan, bucket or the eraser disarms the picker. The workspace already clears pan/bucket pairwise in `togglePanMode` / `toggleBucketMode`; the picker joins that.
-- The picker remembers which paint tool was on when it was armed: brush (no mode) or bucket. Arming it while pan mode is on remembers brush; pan mode is never restored.
+- The picker remembers which paint tool was on when it was armed: brush (no mode), bucket or eraser. Arming it while pan mode is on remembers brush; pan mode is never restored.
 - Disarming without picking: press the button again, or press `Escape` while armed and not holding. Either returns to the remembered paint tool.
 - **Quick pick (desktop):** while `Alt` (`Option` on macOS) is held and the editor claims keys (same rule as Space for pan: viewport focused, or the body focused with the pointer over the canvas, `shouldClaimSpaceForCanvasPan`), a press on the canvas starts a pick hold even when the picker is not armed. Releasing applies the same release rules; the tool that was on (brush or bucket) stays on. The exception is the eraser: a quick pick turns it off, back to the brush, because picking a color means you want to paint. The toolbar button shows pressed while `Alt` is held. Key choice is my call: Alt is the eyedropper modifier in Aseprite and Photoshop.
   - `Alt` only decides whether a press starts a hold. Once a hold has started, releasing `Alt` does not end it; the pointer release does.

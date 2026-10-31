@@ -31,7 +31,7 @@ import { useViewportKeyboardPan } from "@/features/editor/hooks/useViewportKeybo
 import { useViewportNavigation } from "@/features/editor/hooks/useViewportNavigation";
 import { useViewportWheelAndPinch } from "@/features/editor/hooks/useViewportWheelAndPinch";
 import { applyToolAction } from "@/features/editor/logic/editorTools";
-import type { TEditorToolAction } from "@/features/editor/logic/editorTools.type";
+import type { TEditorToolAction, TPickerReturnTool } from "@/features/editor/logic/editorTools.type";
 import { clampPaletteIndex } from "@/features/editor/logic/paletteMutations";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
 import type { IHistoryCommand } from "@/features/editor/types/editor.type";
@@ -52,7 +52,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const [bucketMode, setBucketMode] = useState(false);
   const [eraserMode, setEraserMode] = useState(false);
   const [pickerArmed, setPickerArmed] = useState(false);
-  const [pickerReturnsToBucket, setPickerReturnsToBucket] = useState(false);
+  const [pickerReturnTool, setPickerReturnTool] = useState<TPickerReturnTool>("brush");
 
   const artworkRef = useRef(artwork);
   useEffect(() => {
@@ -202,16 +202,16 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const runToolAction = useCallback(
     (action: TEditorToolAction) => {
       const next = applyToolAction(
-        { panMode, bucketMode, eraserMode, pickerArmed, pickerReturnsToBucket },
+        { panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool },
         action,
       );
       setPanMode(next.panMode);
       setBucketMode(next.bucketMode);
       setEraserMode(next.eraserMode);
       setPickerArmed(next.pickerArmed);
-      setPickerReturnsToBucket(next.pickerReturnsToBucket);
+      setPickerReturnTool(next.pickerReturnTool);
     },
-    [panMode, bucketMode, eraserMode, pickerArmed, pickerReturnsToBucket, setPanMode],
+    [panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool, setPanMode],
   );
 
   const togglePanMode = useCallback(() => runToolAction("togglePan"), [runToolAction]);
