@@ -5,7 +5,7 @@ export interface IPixelGridRenderOptions {
   centerHorizontalColor?: string;
   /** Stroke color for the vertical mid-line (symmetry guide). */
   centerVerticalColor?: string;
-  /** Halo stroked 3px wide under each 1px center guide, read from `--color-loupe-edge-dark`. */
+  /** Halo stroked 3px wide under each 1px center guide, read from `--color-guide-halo` (transparent in light: no halo). */
   centerHaloColor?: string;
   lineWidthWorld?: number;
 }

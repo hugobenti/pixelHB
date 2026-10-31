@@ -54,7 +54,6 @@ const uiPairs = [
   ["danger", "surface"],
   ["pick-primary", "surface"],
   ["pick-secondary", "surface"],
-  ["guide-horizontal", "loupe-edge-dark"],
   ["loupe-edge-light", "loupe-edge-dark"],
   ["brand-hb", "bg"],
   ["brand-hb", "surface"],
@@ -87,9 +86,12 @@ describe.each(themes)("%s theme tokens meet WCAG 2.2 AA", (_name, tokens) => {
     expect(ratio(foreground, background)).toBeGreaterThanOrEqual(3);
   });
 
-  // Light-theme vertical guide (#2b3a9e) is 2.20:1 on the black halo: known gap, awaiting a design decision.
-  test.runIf(_name === "dark")("UI guide-vertical on loupe-edge-dark ≥ 3:1", () => {
-    expect(ratio("guide-vertical", "loupe-edge-dark")).toBeGreaterThanOrEqual(3);
+  // Light guides sit directly on the checkerboard; dark guides sit on their halo.
+  const guideBackdrops = _name === "light" ? ["checker-light", "checker-dark"] : ["guide-halo"];
+  test.each(
+    ["guide-horizontal", "guide-vertical"].flatMap((g) => guideBackdrops.map((b) => [g, b]))
+  )("UI %s on %s ≥ 3:1", (foreground, background) => {
+    expect(ratio(foreground, background)).toBeGreaterThanOrEqual(3);
   });
 
   test.each(["checker-light", "checker-dark"])(
