@@ -4,7 +4,17 @@ export interface IKeyboardTargetLike {
   isContentEditable?: boolean;
 }
 
-export type TEditorShortcut = "toggleGrid" | "toggleEraser" | "switchSlot" | "undo" | "redo";
+export type TEditorShortcut =
+  | "toggleGrid"
+  | "toggleEraser"
+  | "switchSlot"
+  | "selectBrush"
+  | "toggleBucket"
+  | "togglePicker"
+  | "zoomIn"
+  | "zoomOut"
+  | "undo"
+  | "redo";
 
 export interface IShortcutKeyLike {
   key: string;

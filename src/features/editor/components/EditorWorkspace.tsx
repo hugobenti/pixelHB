@@ -32,6 +32,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
     redo,
     panMode,
     togglePanMode,
+    selectBrush,
     bucketMode,
     toggleBucketMode,
     eraserMode,
@@ -64,8 +65,11 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
     closeLayersDrawer,
     maxLayersReached,
     addLayer,
+    onSwatchPick,
     settingsDrawerOpen,
+    settingsInitialView,
     toggleSettingsDrawer,
+    openExportDrawer,
     closeSettingsDrawer,
     handleApplyCanvasSize,
     viewport,
@@ -91,6 +95,8 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           secondaryColor={secondaryColor}
           activeSlot={paletteUi.activeSlot}
           onToggleActiveSlot={paletteUi.toggleActiveSlot}
+          brushMode={!panMode && !bucketMode && !eraserMode && !pickerPressed}
+          onSelectBrush={selectBrush}
           panMode={panMode}
           onTogglePanMode={togglePanMode}
           bucketMode={bucketMode}
@@ -113,6 +119,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           layersDrawerOpen={layersDrawerOpen}
           onToggleLayersDrawer={toggleLayersDrawer}
           settingsDrawerOpen={settingsDrawerOpen}
+          onOpenExport={openExportDrawer}
           onToggleSettingsDrawer={toggleSettingsDrawer}
         />
         <ColorSelectionRow
@@ -121,7 +128,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           secondaryIndex={secondaryPaint}
           activeSlot={paletteUi.activeSlot}
           focusedSwatchIndex={rowFocusedSwatchIndex}
-          onSwatchPick={paletteUi.assignSwatchToActiveSlot}
+          onSwatchPick={onSwatchPick}
           onOpenPaletteModal={openPaletteModal}
         />
       </header>
@@ -173,6 +180,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
       {settingsDrawerOpen ? (
         <EditorSettingsDrawer
           artwork={artwork}
+          initialView={settingsInitialView}
           onApplyCanvasSize={handleApplyCanvasSize}
           viewport={viewport}
           viewportCssWidth={cssSize.w}

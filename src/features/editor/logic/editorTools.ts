@@ -35,6 +35,8 @@ function returnToolFor(state: IEditorToolState): TPickerReturnTool {
 
 export function applyToolAction(state: IEditorToolState, action: TEditorToolAction): IEditorToolState {
   switch (action) {
+    case "selectBrush":
+      return BRUSH;
     case "togglePan":
       return state.panMode ? BRUSH : { ...BRUSH, panMode: true };
     case "toggleBucket":
@@ -53,4 +55,9 @@ export function applyToolAction(state: IEditorToolState, action: TEditorToolActi
       // A quick (Alt-hold) pick while erasing: the user picked a color to paint with.
       return state.eraserMode ? BRUSH : state;
   }
+}
+
+/** Picking a swatch while erasing means you want to paint: the eraser turns off. Other tools stay. */
+export function toolsAfterSwatchPick(state: IEditorToolState): IEditorToolState {
+  return state.eraserMode ? BRUSH : state;
 }

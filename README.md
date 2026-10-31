@@ -65,6 +65,11 @@ PixelHB is a local-first pixel-art editor that runs in the browser. You don't ne
 | `Ctrl+Z` / `Cmd+Z`             | Undo                                                                                                                        |
 | `Ctrl+Shift+Z` / `Cmd+Shift+Z` | Redo                                                                                                                        |
 | `G`                            | Toggle the pixel grid                                                                                                       |
+| `B`                            | Use the brush                                                                                                               |
+| `F`                            | Toggle the paint bucket                                                                                                     |
+| `I`                            | Toggle the color picker                                                                                                     |
+| `+` / `=` / `-`                | Zoom in / zoom in / zoom out (not with Ctrl or Cmd: that stays the browser zoom)                                            |
+| `X`                            | Switch between the two colors                                                                                               |
 | `E`                            | Toggle the eraser                                                                                                           |
 | `Space` (hold) + drag          | Pan the canvas (while the pointer is over the canvas or it has focus)                                                       |
 | `Alt` / `Option` (hold) + drag | Pick a color from the canvas; release over a color to use it                                                                |

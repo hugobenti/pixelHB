@@ -29,6 +29,19 @@ export function isTextEntryTarget(
   return TEXT_ENTRY_TAGS[target.tagName?.toUpperCase() ?? ""] === true;
 }
 
+/**
+ * Keys claimed with no Ctrl, Cmd or Alt. Zoom accepts + and = (US layouts need Shift for +) and -, with or without Shift;
+ * with a modifier held they stay the browser's page zoom.
+ */
+const BARE_KEY_SHORTCUTS = new Map<string, TEditorShortcut>([
+  ["b", "selectBrush"],
+  ["f", "toggleBucket"],
+  ["i", "togglePicker"],
+  ["+", "zoomIn"],
+  ["=", "zoomIn"],
+  ["-", "zoomOut"],
+]);
+
 /** Editor shortcut for a key press, or null when the key must be left to the browser. */
 export function editorShortcutForKey(
   e: IShortcutKeyLike,
@@ -38,6 +51,17 @@ export function editorShortcutForKey(
     return null;
   }
   const lower = e.key.toLowerCase();
+  const bare = !e.ctrlKey && !e.metaKey && !e.altKey;
+  if (bare) {
+    const bareShortcut = BARE_KEY_SHORTCUTS.get(lower);
+    // Toggles and tool picks fire once per press; only zoom auto-repeats while the key is held.
+    if (bareShortcut && (!e.repeat || bareShortcut === "zoomIn" || bareShortcut === "zoomOut")) {
+      return bareShortcut;
+    }
+    if (bareShortcut) {
+      return null;
+    }
+  }
   if (e.repeat && (lower === "g" || lower === "e" || lower === "x")) {
     return null;
   }

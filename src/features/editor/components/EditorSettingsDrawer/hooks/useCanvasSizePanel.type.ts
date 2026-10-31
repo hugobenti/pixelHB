@@ -7,5 +7,6 @@ export type TEditorSettingsView =
 
 export interface IUseCanvasSizePanelParams {
   artwork: IArtwork;
+  initialView?: TEditorSettingsView;
   onApplyResized: (next: IArtwork) => void;
 }

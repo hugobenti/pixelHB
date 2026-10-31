@@ -30,11 +30,12 @@ import { useToolbarCenterZoom } from "@/features/editor/hooks/useToolbarCenterZo
 import { useViewportKeyboardPan } from "@/features/editor/hooks/useViewportKeyboardPan";
 import { useViewportNavigation } from "@/features/editor/hooks/useViewportNavigation";
 import { useViewportWheelAndPinch } from "@/features/editor/hooks/useViewportWheelAndPinch";
-import { applyToolAction } from "@/features/editor/logic/editorTools";
-import type { TEditorToolAction, TPickerReturnTool } from "@/features/editor/logic/editorTools.type";
+import { applyToolAction, toolsAfterSwatchPick } from "@/features/editor/logic/editorTools";
+import type { IEditorToolState, TEditorToolAction, TPickerReturnTool } from "@/features/editor/logic/editorTools.type";
 import { clampPaletteIndex } from "@/features/editor/logic/paletteMutations";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
 import { isStrokeHidden } from "@/features/editor/logic/strokeOcclusion";
+import type { TEditorSettingsView } from "@/features/editor/components/EditorSettingsDrawer/hooks/useCanvasSizePanel.type";
 import type { IHistoryCommand } from "@/features/editor/types/editor.type";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import { canAddLayer, MAX_PALETTE_ENTRIES } from "@/features/shared/artwork/artworkLimits";
@@ -50,6 +51,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const [paletteModalOpen, setPaletteModalOpen] = useState(false);
   const [layersDrawerOpen, setLayersDrawerOpen] = useState(false);
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
+  const [settingsInitialView, setSettingsInitialView] = useState<TEditorSettingsView>("menu");
   const [bucketMode, setBucketMode] = useState(false);
   const [eraserMode, setEraserMode] = useState(false);
   const [pickerArmed, setPickerArmed] = useState(false);
@@ -208,21 +210,39 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     [schedulePaintBump],
   );
 
-  const runToolAction = useCallback(
-    (action: TEditorToolAction) => {
-      const next = applyToolAction(
-        { panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool },
-        action,
-      );
+  const { assignSwatchToActiveSlot } = paletteUi;
+
+  const applyTools = useCallback(
+    (next: IEditorToolState) => {
       setPanMode(next.panMode);
       setBucketMode(next.bucketMode);
       setEraserMode(next.eraserMode);
       setPickerArmed(next.pickerArmed);
       setPickerReturnTool(next.pickerReturnTool);
     },
-    [panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool, setPanMode],
+    [setPanMode],
   );
 
+  const runToolAction = useCallback(
+    (action: TEditorToolAction) => {
+      const current: IEditorToolState = { panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool };
+      applyTools(applyToolAction(current, action));
+    },
+    [panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool, applyTools],
+  );
+
+  /** Picking a swatch from the palette row while erasing turns the eraser off, so the next stroke paints. */
+  const onSwatchPick = useCallback(
+    (index: number) => {
+      assignSwatchToActiveSlot(index);
+      applyTools(
+        toolsAfterSwatchPick({ panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool }),
+      );
+    },
+    [assignSwatchToActiveSlot, panMode, bucketMode, eraserMode, pickerArmed, pickerReturnTool, applyTools],
+  );
+
+  const selectBrush = useCallback(() => runToolAction("selectBrush"), [runToolAction]);
   const togglePanMode = useCallback(() => runToolAction("togglePan"), [runToolAction]);
   const toggleBucketMode = useCallback(() => runToolAction("toggleBucket"), [runToolAction]);
   const toggleEraserMode = useCallback(() => runToolAction("toggleEraser"), [runToolAction]);
@@ -232,6 +252,11 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     onTogglePixelGrid: togglePixelGrid,
     onToggleEraser: toggleEraserMode,
     onSwitchSlot: paletteUi.toggleActiveSlot,
+    onSelectBrush: selectBrush,
+    onToggleBucket: toggleBucketMode,
+    onTogglePicker: togglePicker,
+    onZoomIn,
+    onZoomOut,
     undo,
     redo,
   });
@@ -319,10 +344,12 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     redo,
     panMode,
     togglePanMode,
+    selectBrush,
     bucketMode,
     toggleBucketMode,
     eraserMode,
     toggleEraserMode,
+    onSwatchPick,
     pickerPressed: pickerArmed || picker.altHeld,
     togglePicker,
     pickHold: picker.hold,
@@ -354,7 +381,15 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
       layersState.addLayer();
     },
     settingsDrawerOpen,
-    toggleSettingsDrawer: () => setSettingsDrawerOpen((v) => !v),
+    settingsInitialView,
+    toggleSettingsDrawer: () => {
+      setSettingsInitialView("menu");
+      setSettingsDrawerOpen((v) => !v);
+    },
+    openExportDrawer: () => {
+      setSettingsInitialView("importExport");
+      setSettingsDrawerOpen(true);
+    },
     closeSettingsDrawer: () => setSettingsDrawerOpen(false),
     handleApplyCanvasSize,
     viewport,

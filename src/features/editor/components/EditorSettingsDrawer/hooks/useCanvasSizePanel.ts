@@ -11,9 +11,9 @@ import { resizeArtworkDimensions } from "@/features/editor/logic/resizeCanvas";
 import { useConfirm } from "@/features/shared/components/useConfirm";
 import type { TEditorSettingsView, IUseCanvasSizePanelParams } from "./useCanvasSizePanel.type";
 
-export function useCanvasSizePanel({ artwork, onApplyResized }: IUseCanvasSizePanelParams) {
+export function useCanvasSizePanel({ artwork, onApplyResized, initialView }: IUseCanvasSizePanelParams) {
   const { confirm, dialog: shrinkDialog } = useConfirm();
-  const [settingsView, setSettingsView] = useState<TEditorSettingsView>("menu");
+  const [settingsView, setSettingsView] = useState<TEditorSettingsView>(initialView ?? "menu");
   const [widthStr, setWidthStr] = useState(String(artwork.width));
   const [heightStr, setHeightStr] = useState(String(artwork.height));
 
