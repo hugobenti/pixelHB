@@ -31,8 +31,8 @@ export interface IEditorActionsBarProps {
   palette: string[];
   width: number;
   height: number;
-  /** Bumps on every paint, so the chip preview follows in-place strokes. */
-  paintRevision: number;
+  /** Bumps on stroke commit, undo and redo, so the chip preview follows in-place edits. */
+  historyRevision: number;
   layersDrawerOpen: boolean;
   onToggleLayersDrawer: () => void;
   settingsDrawerOpen: boolean;

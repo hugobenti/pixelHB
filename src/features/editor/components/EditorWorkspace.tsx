@@ -71,6 +71,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
     viewport,
     cssSize,
     paintRevision,
+    historyRevision,
     showPixelGrid,
     togglePixelGrid,
     referenceImage,
@@ -106,7 +107,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           palette={artwork.palette}
           width={artwork.width}
           height={artwork.height}
-          paintRevision={paintRevision}
+          historyRevision={historyRevision}
           layersDrawerOpen={layersDrawerOpen}
           onToggleLayersDrawer={toggleLayersDrawer}
           settingsDrawerOpen={settingsDrawerOpen}

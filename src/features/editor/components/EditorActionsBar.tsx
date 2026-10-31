@@ -46,7 +46,7 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     palette,
     width,
     height,
-    paintRevision,
+    historyRevision,
     layersDrawerOpen,
     onToggleLayersDrawer,
     settingsDrawerOpen,
@@ -133,7 +133,7 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
             palette={palette}
             width={width}
             height={height}
-            revision={paintRevision}
+            revision={historyRevision}
             pressed={layersDrawerOpen}
             onClick={onToggleLayersDrawer}
           />

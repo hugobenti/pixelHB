@@ -15,6 +15,6 @@ export const activeLayerChip = {
     focusRing,
     pressedState,
   ),
-  well: "pixel-checkerboard flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-sm ring-1 ring-line-strong ring-inset",
+  well: "pixel-checkerboard [--checker-size:12px] [&_img]:shadow-none [&_img]:[image-rendering:pixelated] flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-sm ring-1 ring-line-strong ring-inset",
   layerName: "max-w-[14ch] truncate",
 };

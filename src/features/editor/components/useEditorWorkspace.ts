@@ -360,6 +360,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
     viewport,
     cssSize,
     paintRevision,
+    historyRevision,
     showPixelGrid,
     togglePixelGrid,
     referenceImage,

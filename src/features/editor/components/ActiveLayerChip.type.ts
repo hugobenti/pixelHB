@@ -5,7 +5,7 @@ export interface IActiveLayerChipProps {
   palette: string[];
   width: number;
   height: number;
-  /** Bumps on every paint, so the preview follows strokes that mutate the buffer in place. */
+  /** Bumps when a stroke commits, undoes or redoes, so the preview follows in-place edits. */
   revision: number;
   /** The Layers drawer is open. */
   pressed: boolean;
