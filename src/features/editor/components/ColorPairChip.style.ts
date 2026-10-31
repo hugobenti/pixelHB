@@ -16,6 +16,6 @@ export const colorPairChip = {
   /** 32px box: 20px squares overlapping by 8px. */
   stack: "relative block size-8",
   square: "absolute block size-5 rounded-sm ring-1 ring-control-border",
-  front: "top-0 left-0 z-10",
+  front: "top-0 left-0",
   back: "right-0 bottom-0",
 };

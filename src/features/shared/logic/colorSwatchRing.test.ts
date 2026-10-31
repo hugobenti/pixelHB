@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { colorSwatchRing } from "@/features/shared/logic/colorSwatchRing";
+import { colorSwatchMarkers, colorSwatchRing } from "@/features/shared/logic/colorSwatchRing";
 
 describe("colorSwatchRing", () => {
   it("marks a compact swatch as selected or idle", () => {
@@ -27,5 +27,29 @@ describe("colorSwatchRing", () => {
     expect(colorSwatchRing({ density: "comfortable", isPrimary: false, isSecondary: false })).toBe(
       "idle",
     );
+  });
+});
+
+describe("colorSwatchMarkers", () => {
+  it("shows no marker on a compact swatch", () => {
+    expect(colorSwatchMarkers({ density: "compact", selected: true })).toEqual({
+      primary: false,
+      secondary: false,
+    });
+  });
+
+  it("marks the primary, the secondary or both slots on a comfortable swatch", () => {
+    expect(colorSwatchMarkers({ density: "comfortable", isPrimary: true, isSecondary: false })).toEqual({
+      primary: true,
+      secondary: false,
+    });
+    expect(colorSwatchMarkers({ density: "comfortable", isPrimary: false, isSecondary: true })).toEqual({
+      primary: false,
+      secondary: true,
+    });
+    expect(colorSwatchMarkers({ density: "comfortable", isPrimary: true, isSecondary: true })).toEqual({
+      primary: true,
+      secondary: true,
+    });
   });
 });

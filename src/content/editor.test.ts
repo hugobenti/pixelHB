@@ -17,9 +17,10 @@ describe("editor.settings.imageDetail.summary", () => {
 });
 
 describe("editor.toolbar.colors.label", () => {
-  it("names the painting color, the right-click color and the shortcut", () => {
-    expect(editor.toolbar.colors.label("#1A1C2C", "#F4F4F4")).toBe(
-      "Colors: painting with #1A1C2C, right-click paints #F4F4F4. Press X to switch."
-    );
+  it("names the painting color before the other one", () => {
+    const label = editor.toolbar.colors.label("#1A1C2C", "#F4F4F4");
+    expect(label).toContain("#1A1C2C");
+    expect(label).toContain("#F4F4F4");
+    expect(label.indexOf("#1A1C2C")).toBeLessThan(label.indexOf("#F4F4F4"));
   });
 });

@@ -23,3 +23,11 @@ export function colorSwatchRing(swatch: TColorSwatchRingInput): TColorSwatchRing
   }
   return "idle";
 }
+
+/** Which non-hue corner markers a swatch shows: only the comfortable row marks its slots. */
+export function colorSwatchMarkers(swatch: TColorSwatchRingInput): { primary: boolean; secondary: boolean } {
+  if (swatch.density === "compact") {
+    return { primary: false, secondary: false };
+  }
+  return { primary: swatch.isPrimary, secondary: swatch.isSecondary };
+}

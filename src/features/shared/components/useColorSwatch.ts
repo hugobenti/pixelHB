@@ -5,12 +5,13 @@
 "use client";
 
 import { shared } from "@/content/shared";
-import { colorSwatchRing } from "@/features/shared/logic/colorSwatchRing";
+import { colorSwatchMarkers, colorSwatchRing } from "@/features/shared/logic/colorSwatchRing";
 import type { IColorSwatchView, TColorSwatchProps } from "./ColorSwatch.type";
 
 export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
   const n = props.index + 1;
   const ring = colorSwatchRing(props);
+  const markers = colorSwatchMarkers(props);
 
   if (props.density === "compact") {
     return {
@@ -20,8 +21,8 @@ export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
       ariaCurrent: undefined,
       ring,
       focused: false,
-      showPrimaryMarker: false,
-      showSecondaryMarker: false,
+      showPrimaryMarker: markers.primary,
+      showSecondaryMarker: markers.secondary,
     };
   }
 
@@ -35,7 +36,7 @@ export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
     ariaCurrent: props.isFocused ? "true" : undefined,
     ring,
     focused: props.isFocused,
-    showPrimaryMarker: props.isPrimary,
-    showSecondaryMarker: props.isSecondary,
+    showPrimaryMarker: markers.primary,
+    showSecondaryMarker: markers.secondary,
   };
 }
