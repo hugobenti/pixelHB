@@ -9,7 +9,12 @@ import { cx } from "@/features/shared/utils/cx";
 export const artworkCard = {
   body: "flex flex-col gap-1 p-3",
   thumbnailLink:
-    "relative block aspect-square w-full overflow-hidden rounded-t-xl bg-surface-muted",
+    "relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-t-xl bg-surface-muted",
+  frame: {
+    base: "pixel-checkerboard relative max-h-full max-w-full",
+    wide: "w-full",
+    tall: "h-full",
+  },
   thumbnail: "object-contain [image-rendering:pixelated]",
   renameForm: "flex gap-2",
   meta: "text-xs text-muted",

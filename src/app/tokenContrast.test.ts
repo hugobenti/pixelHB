@@ -54,10 +54,6 @@ const uiPairs = [
   ["danger", "surface"],
   ["pick-primary", "surface"],
   ["pick-secondary", "surface"],
-  ["guide-horizontal", "checker-light"],
-  ["guide-horizontal", "checker-dark"],
-  ["guide-vertical", "checker-light"],
-  ["guide-vertical", "checker-dark"],
   ["loupe-edge-light", "loupe-edge-dark"],
   ["brand-hb", "bg"],
   ["brand-hb", "surface"],
@@ -69,6 +65,8 @@ const uiPairs = [
   ["google-btn-stroke", "bg"],
   ["google-btn-stroke", "surface"],
 ];
+
+const SWEETIE_DARKEST = "#1a1c2c";
 
 describe.each(themes)("%s theme tokens meet WCAG 2.2 AA", (_name, tokens) => {
   function ratio(foreground: string, background: string): number {
@@ -86,6 +84,29 @@ describe.each(themes)("%s theme tokens meet WCAG 2.2 AA", (_name, tokens) => {
 
   test.each(uiPairs)("UI %s on %s ≥ 3:1", (foreground, background) => {
     expect(ratio(foreground, background)).toBeGreaterThanOrEqual(3);
+  });
+
+  // Light guides sit directly on the checkerboard; dark guides sit on their halo.
+  const guideBackdrops = _name === "light" ? ["checker-light", "checker-dark"] : ["guide-halo"];
+  test.each(
+    ["guide-horizontal", "guide-vertical"].flatMap((g) => guideBackdrops.map((b) => [g, b]))
+  )("UI %s on %s ≥ 3:1", (foreground, background) => {
+    expect(ratio(foreground, background)).toBeGreaterThanOrEqual(3);
+  });
+
+  test.each(["checker-light", "checker-dark"])(
+    "the darkest palette color (#1A1C2C) on %s ≥ 3:1",
+    (checker) => {
+      const tone = tokens[checker];
+      if (!tone) {
+        throw new Error(`missing color token: ${checker}`);
+      }
+      expect(contrastRatio(SWEETIE_DARKEST, tone)).toBeGreaterThanOrEqual(3);
+    }
+  );
+
+  test("the two checker tones stay distinguishable (≥ 1.1:1)", () => {
+    expect(ratio("checker-light", "checker-dark")).toBeGreaterThanOrEqual(1.1);
   });
 });
 

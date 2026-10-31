@@ -61,36 +61,34 @@ export function renderPixelGrid(
   ctx.stroke();
 
   const centerFactor = options.centerLineWidthFactor ?? 1.45;
-  const centerLineWidth = Math.max(baseLineWidth * centerFactor, 1e-6);
+  const guideWidth = Math.max(baseLineWidth * centerFactor, 1e-6);
+  const haloWidth = guideWidth + 2 / viewport.scale;
   const cx = worldWidth / 2;
   const cy = worldHeight / 2;
 
-  if (
-    options.centerVerticalColor &&
-    worldWidth > 0 &&
-    cx >= startX &&
-    cx <= endX
-  ) {
-    ctx.beginPath();
-    ctx.strokeStyle = options.centerVerticalColor;
-    ctx.lineWidth = centerLineWidth;
-    ctx.moveTo(cx, startY);
-    ctx.lineTo(cx, endY);
-    ctx.stroke();
+  const guides: Array<{ color: string; x0: number; y0: number; x1: number; y1: number }> = [];
+  if (options.centerVerticalColor && worldWidth > 0 && cx >= startX && cx <= endX) {
+    guides.push({ color: options.centerVerticalColor, x0: cx, y0: startY, x1: cx, y1: endY });
+  }
+  if (options.centerHorizontalColor && worldHeight > 0 && cy >= startY && cy <= endY) {
+    guides.push({ color: options.centerHorizontalColor, x0: startX, y0: cy, x1: endX, y1: cy });
   }
 
-  if (
-    options.centerHorizontalColor &&
-    worldHeight > 0 &&
-    cy >= startY &&
-    cy <= endY
-  ) {
-    ctx.beginPath();
-    ctx.strokeStyle = options.centerHorizontalColor;
-    ctx.lineWidth = centerLineWidth;
-    ctx.moveTo(startX, cy);
-    ctx.lineTo(endX, cy);
-    ctx.stroke();
+  // Halos first, then guides, so one guide's halo never cuts into the other where they cross.
+  const passes: Array<[boolean, number]> = [];
+  if (options.centerHaloColor && options.centerHaloColor !== "transparent") {
+    passes.push([true, haloWidth]);
+  }
+  passes.push([false, guideWidth]);
+  for (const [isHalo, width] of passes) {
+    ctx.lineWidth = width;
+    for (const g of guides) {
+      ctx.beginPath();
+      ctx.strokeStyle = isHalo ? (options.centerHaloColor as string) : g.color;
+      ctx.moveTo(g.x0, g.y0);
+      ctx.lineTo(g.x1, g.y1);
+      ctx.stroke();
+    }
   }
 
   ctx.restore();
