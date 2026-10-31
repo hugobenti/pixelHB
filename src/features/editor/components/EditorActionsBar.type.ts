@@ -1,3 +1,4 @@
+import type { IArtworkLayer } from "@/features/shared/artwork/artwork.type";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
 
 export interface IEditorActionsBarProps {
@@ -25,6 +26,13 @@ export interface IEditorActionsBarProps {
   onZoomIn: () => void;
   shiftOverlayOpen: boolean;
   onToggleShiftOverlay: () => void;
+  /** Layer shown in the chip; null while the artwork has none. */
+  activeLayer: IArtworkLayer | null;
+  palette: string[];
+  width: number;
+  height: number;
+  /** Bumps on every paint, so the chip preview follows in-place strokes. */
+  paintRevision: number;
   layersDrawerOpen: boolean;
   onToggleLayersDrawer: () => void;
   settingsDrawerOpen: boolean;

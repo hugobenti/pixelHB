@@ -28,7 +28,7 @@ export const editor: IEditorContent = {
     zoomOut: { label: "Zoom out" },
     zoomIn: { label: "Zoom in" },
     shift: { label: "Shift pixels" },
-    layers: { label: "Layers" },
+    layers: { label: "Layers", chipLabel: (name) => `Layers. Active layer: ${name}` },
     settings: { label: "Editor settings" },
     slot: {
       primary: "Primary",
@@ -150,6 +150,8 @@ export const editor: IEditorContent = {
   },
   toasts: {
     hiddenLayer: "The active layer is hidden. Show the layer to paint.",
+    strokeHidden:
+      "That stroke is behind another layer. Open Layers to move this layer up or hide the one above.",
   },
   referenceImage: {
     errors: {

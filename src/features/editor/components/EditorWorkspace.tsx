@@ -102,6 +102,11 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           onZoomIn={onZoomIn}
           shiftOverlayOpen={pixelShift.shiftOverlayOpen}
           onToggleShiftOverlay={pixelShift.toggleShiftOverlay}
+          activeLayer={layersState.activeLayer}
+          palette={artwork.palette}
+          width={artwork.width}
+          height={artwork.height}
+          paintRevision={paintRevision}
           layersDrawerOpen={layersDrawerOpen}
           onToggleLayersDrawer={toggleLayersDrawer}
           settingsDrawerOpen={settingsDrawerOpen}

@@ -5,4 +5,6 @@ export interface ILayerPreviewProps {
   palette: string[];
   width: number;
   height: number;
+  /** Bumps when the buffer was mutated in place, so the preview redraws. */
+  revision?: number;
 }

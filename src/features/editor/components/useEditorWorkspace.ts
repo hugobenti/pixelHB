@@ -31,9 +31,13 @@ import { useViewportKeyboardPan } from "@/features/editor/hooks/useViewportKeybo
 import { useViewportNavigation } from "@/features/editor/hooks/useViewportNavigation";
 import { useViewportWheelAndPinch } from "@/features/editor/hooks/useViewportWheelAndPinch";
 import { applyToolAction } from "@/features/editor/logic/editorTools";
-import type { TEditorToolAction, TPickerReturnTool } from "@/features/editor/logic/editorTools.type";
+import type {
+  TEditorToolAction,
+  TPickerReturnTool,
+} from "@/features/editor/logic/editorTools.type";
 import { clampPaletteIndex } from "@/features/editor/logic/paletteMutations";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
+import { isStrokeHidden } from "@/features/editor/logic/strokeOcclusion";
 import type { IHistoryCommand } from "@/features/editor/types/editor.type";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
 import { canAddLayer, MAX_PALETTE_ENTRIES } from "@/features/shared/artwork/artworkLimits";
@@ -80,19 +84,11 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
 
   const getDocument = useCallback(() => artworkRef.current, []);
 
-  const {
-    pushCommand,
-    discardRedo,
-    undo,
-    undoCommand,
-    redo,
-    canUndo,
-    canRedo,
-    historyRevision,
-  } = useHistory({
-    documentKey: `${artwork.id}:${artwork.width}x${artwork.height}`,
-    getDocument,
-  });
+  const { pushCommand, discardRedo, undo, undoCommand, redo, canUndo, canRedo, historyRevision } =
+    useHistory({
+      documentKey: `${artwork.id}:${artwork.width}x${artwork.height}`,
+      getDocument,
+    });
 
   const paletteUi = useEditorPalette({
     artwork,
@@ -187,8 +183,22 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const onCommitStroke = useCallback(
     (cmd: IHistoryCommand) => {
       pushCommand(cmd);
+      const current = artworkRef.current;
+      if (
+        isStrokeHidden(
+          current,
+          current.activeLayerId,
+          cmd.deltas.map((delta) => delta.index),
+        )
+      ) {
+        showToast({
+          message: editor.toasts.strokeHidden,
+          tone: "error",
+          skipDuplicateActiveToast: true,
+        });
+      }
     },
-    [pushCommand],
+    [pushCommand, showToast],
   );
 
   const handleApplyCanvasSize = useCallback(
