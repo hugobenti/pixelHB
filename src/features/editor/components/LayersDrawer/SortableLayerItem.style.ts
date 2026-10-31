@@ -25,6 +25,6 @@ export const sortableLayerItem = {
   previewWrap:
     "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line-strong bg-surface-muted sm:h-14 sm:w-14",
   metadata: "min-w-0 flex-1",
-  layerName: "truncate text-sm font-semibold text-fg",
+  layerName: "block min-w-0 truncate text-sm font-semibold text-fg",
   actions: "ml-auto flex shrink-0 items-center gap-1 sm:gap-2",
 };
