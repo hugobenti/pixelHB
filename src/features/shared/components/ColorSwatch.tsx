@@ -18,8 +18,8 @@ export function ColorSwatch(props: TColorSwatchProps) {
     ariaCurrent,
     ring,
     focused,
-    showPrimaryMarker,
-    showSecondaryMarker,
+    showTopLeftMarker,
+    showBottomRightMarker,
   } = useColorSwatch(props);
 
   return (
@@ -37,8 +37,8 @@ export function ColorSwatch(props: TColorSwatchProps) {
       style={{ backgroundColor: color }}
       onClick={onClick}
     >
-      {showPrimaryMarker ? <span aria-hidden className={colorSwatch.marker.primary} /> : null}
-      {showSecondaryMarker ? <span aria-hidden className={colorSwatch.marker.secondary} /> : null}
+      {showTopLeftMarker ? <span aria-hidden className={colorSwatch.marker.topLeft} /> : null}
+      {showBottomRightMarker ? <span aria-hidden className={colorSwatch.marker.bottomRight} /> : null}
     </button>
   );
 }

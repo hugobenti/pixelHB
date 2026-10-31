@@ -13,6 +13,7 @@ const key = (
     metaKey: boolean;
     altKey: boolean;
     shiftKey: boolean;
+    repeat: boolean;
   }> = {}
 ) => ({
   key: k,
@@ -81,6 +82,12 @@ describe("editorShortcutForKey", () => {
     expect(editorShortcutForKey(key("x", { metaKey: true }), false)).toBeNull();
     expect(editorShortcutForKey(key("x", { altKey: true }), false)).toBeNull();
     expect(editorShortcutForKey(key("x"), true)).toBeNull();
+  });
+
+  it("ignores auto-repeat of the bare-letter shortcuts", () => {
+    for (const letter of ["g", "e", "x"]) {
+      expect(editorShortcutForKey(key(letter, { repeat: true }), false)).toBeNull();
+    }
   });
 
   it("maps Ctrl/Cmd+Z to undo and with Shift to redo", () => {

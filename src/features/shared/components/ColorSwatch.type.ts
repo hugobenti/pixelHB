@@ -10,6 +10,8 @@ export interface IColorSwatchRowProps {
   index: number;
   isPrimary: boolean;
   isSecondary: boolean;
+  /** The slot the left button paints; its swatch carries the top-left marker. */
+  activeSlot: "primary" | "secondary";
   isFocused: boolean;
   onClick: () => void;
 }
@@ -29,6 +31,11 @@ export type TColorSwatchRingInput =
   | Pick<IColorSwatchGridProps, "density" | "selected">
   | Pick<IColorSwatchRowProps, "density" | "isPrimary" | "isSecondary">;
 
+/** The fields of either swatch shape that decide its corner markers. */
+export type TColorSwatchMarkerInput =
+  | Pick<IColorSwatchGridProps, "density">
+  | Pick<IColorSwatchRowProps, "density" | "isPrimary" | "isSecondary" | "activeSlot">;
+
 export interface IColorSwatchView {
   title: string;
   ariaLabel: string;
@@ -37,6 +44,6 @@ export interface IColorSwatchView {
   ring: TColorSwatchRing;
   focused: boolean;
   /** Corner markers that tell the slots apart without relying on hue. */
-  showPrimaryMarker: boolean;
-  showSecondaryMarker: boolean;
+  showTopLeftMarker: boolean;
+  showBottomRightMarker: boolean;
 }

@@ -18,10 +18,10 @@ export const colorSwatch = {
     secondary: "ring-2 ring-pick-secondary ring-offset-2 ring-offset-bg",
     both: "ring-2 ring-accent ring-offset-2 ring-offset-bg",
   },
-  /** Non-hue corner markers (comfortable density): primary top-left, secondary bottom-right. */
+  /** Non-hue corner markers (comfortable density): active slot top-left, other slot bottom-right. */
   marker: {
-    primary: "pointer-events-none absolute top-0.5 left-0.5 size-1.5 bg-fg ring-1 ring-bg",
-    secondary: "pointer-events-none absolute right-0.5 bottom-0.5 size-1.5 bg-fg ring-1 ring-bg",
+    topLeft: "pointer-events-none absolute top-0.5 left-0.5 size-1.5 bg-fg ring-1 ring-bg",
+    bottomRight: "pointer-events-none absolute right-0.5 bottom-0.5 size-1.5 bg-fg ring-1 ring-bg",
   },
   /** Roving keyboard position in the comfortable row. */
   focused: "outline outline-2 outline-offset-2 outline-dashed outline-focus",

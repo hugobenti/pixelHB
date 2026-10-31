@@ -12,6 +12,8 @@ export interface IShortcutKeyLike {
   metaKey: boolean;
   altKey: boolean;
   shiftKey: boolean;
+  /** True for auto-repeat keydowns while the key is held. */
+  repeat?: boolean;
 }
 
 export interface ISpacePanClaimInput {

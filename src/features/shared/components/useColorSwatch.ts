@@ -21,8 +21,8 @@ export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
       ariaCurrent: undefined,
       ring,
       focused: false,
-      showPrimaryMarker: markers.primary,
-      showSecondaryMarker: markers.secondary,
+      showTopLeftMarker: markers.topLeft,
+      showBottomRightMarker: markers.bottomRight,
     };
   }
 
@@ -36,7 +36,7 @@ export function useColorSwatch(props: TColorSwatchProps): IColorSwatchView {
     ariaCurrent: props.isFocused ? "true" : undefined,
     ring,
     focused: props.isFocused,
-    showPrimaryMarker: markers.primary,
-    showSecondaryMarker: markers.secondary,
+    showTopLeftMarker: markers.topLeft,
+    showBottomRightMarker: markers.bottomRight,
   };
 }

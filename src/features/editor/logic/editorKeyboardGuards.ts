@@ -38,6 +38,9 @@ export function editorShortcutForKey(
     return null;
   }
   const lower = e.key.toLowerCase();
+  if (e.repeat && (lower === "g" || lower === "e" || lower === "x")) {
+    return null;
+  }
   if (lower === "g" && !e.ctrlKey && !e.metaKey && !e.altKey) {
     return "toggleGrid";
   }

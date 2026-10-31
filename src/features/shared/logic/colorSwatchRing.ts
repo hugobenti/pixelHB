@@ -4,6 +4,7 @@
  */
 
 import type {
+  TColorSwatchMarkerInput,
   TColorSwatchRing,
   TColorSwatchRingInput,
 } from "@/features/shared/components/ColorSwatch.type";
@@ -24,10 +25,15 @@ export function colorSwatchRing(swatch: TColorSwatchRingInput): TColorSwatchRing
   return "idle";
 }
 
-/** Which non-hue corner markers a swatch shows: only the comfortable row marks its slots. */
-export function colorSwatchMarkers(swatch: TColorSwatchRingInput): { primary: boolean; secondary: boolean } {
+/**
+ * Which non-hue corner markers a swatch shows: only the comfortable row marks its slots. The active slot's
+ * swatch gets the top-left marker and the other slot's swatch the bottom-right one, like the color-pair chip.
+ */
+export function colorSwatchMarkers(swatch: TColorSwatchMarkerInput): { topLeft: boolean; bottomRight: boolean } {
   if (swatch.density === "compact") {
-    return { primary: false, secondary: false };
+    return { topLeft: false, bottomRight: false };
   }
-  return { primary: swatch.isPrimary, secondary: swatch.isSecondary };
+  const activeHere = swatch.activeSlot === "primary" ? swatch.isPrimary : swatch.isSecondary;
+  const otherHere = swatch.activeSlot === "primary" ? swatch.isSecondary : swatch.isPrimary;
+  return { topLeft: activeHere, bottomRight: otherHere };
 }

@@ -31,25 +31,26 @@ describe("colorSwatchRing", () => {
 });
 
 describe("colorSwatchMarkers", () => {
+  const row = (activeSlot: "primary" | "secondary", isPrimary: boolean, isSecondary: boolean) =>
+    colorSwatchMarkers({ density: "comfortable", activeSlot, isPrimary, isSecondary });
+
   it("shows no marker on a compact swatch", () => {
-    expect(colorSwatchMarkers({ density: "compact", selected: true })).toEqual({
-      primary: false,
-      secondary: false,
-    });
+    expect(colorSwatchMarkers({ density: "compact" })).toEqual({ topLeft: false, bottomRight: false });
   });
 
-  it("marks the primary, the secondary or both slots on a comfortable swatch", () => {
-    expect(colorSwatchMarkers({ density: "comfortable", isPrimary: true, isSecondary: false })).toEqual({
-      primary: true,
-      secondary: false,
-    });
-    expect(colorSwatchMarkers({ density: "comfortable", isPrimary: false, isSecondary: true })).toEqual({
-      primary: false,
-      secondary: true,
-    });
-    expect(colorSwatchMarkers({ density: "comfortable", isPrimary: true, isSecondary: true })).toEqual({
-      primary: true,
-      secondary: true,
-    });
+  it("puts the top-left marker on the primary swatch while primary is active", () => {
+    expect(row("primary", true, false)).toEqual({ topLeft: true, bottomRight: false });
+    expect(row("primary", false, true)).toEqual({ topLeft: false, bottomRight: true });
+  });
+
+  it("puts the top-left marker on the secondary swatch while secondary is active", () => {
+    expect(row("secondary", false, true)).toEqual({ topLeft: true, bottomRight: false });
+    expect(row("secondary", true, false)).toEqual({ topLeft: false, bottomRight: true });
+  });
+
+  it("shows both markers on a swatch holding both slots, and none on others", () => {
+    expect(row("primary", true, true)).toEqual({ topLeft: true, bottomRight: true });
+    expect(row("secondary", true, true)).toEqual({ topLeft: true, bottomRight: true });
+    expect(row("primary", false, false)).toEqual({ topLeft: false, bottomRight: false });
   });
 });

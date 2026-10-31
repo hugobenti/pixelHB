@@ -119,6 +119,7 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           palette={artwork.palette}
           primaryIndex={primaryPaint}
           secondaryIndex={secondaryPaint}
+          activeSlot={paletteUi.activeSlot}
           focusedSwatchIndex={rowFocusedSwatchIndex}
           onSwatchPick={paletteUi.assignSwatchToActiveSlot}
           onOpenPaletteModal={openPaletteModal}

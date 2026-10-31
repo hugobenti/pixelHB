@@ -32,7 +32,7 @@ export const editor: IEditorContent = {
     settings: { label: "Editor settings" },
     colors: {
       label: (activeHex, otherHex) =>
-        `Colors: painting with ${activeHex}, right-click paints ${otherHex}. Press X to switch.`,
+        `Colors: painting with ${activeHex}, other color ${otherHex}. Press X to switch.`,
       title: "Switch colors (X)",
     },
   },
