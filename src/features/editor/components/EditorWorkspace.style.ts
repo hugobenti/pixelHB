@@ -9,7 +9,7 @@
 
 export const editorWorkspace = {
   shell:
-    "mx-auto grid h-[calc(min(100dvh,100vh)-var(--consent-banner-height,0px))] min-h-0 w-full max-w-6xl grid-cols-[minmax(0,1fr)] grid-rows-[auto_auto_1fr_auto] gap-x-2 [reading-flow:grid-rows] [grid-template-areas:'title'_'palette'_'canvas'_'tools'] px-4 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[auto_auto_1fr] md:[grid-template-areas:'title_tools'_'palette_palette'_'canvas_canvas']",
+    "mx-auto grid h-[calc(min(100dvh,100vh)-var(--consent-banner-height,0px))] min-h-0 w-full max-w-6xl grid-cols-[minmax(0,1fr)] grid-rows-[auto_auto_1fr_auto] gap-x-2 [grid-template-areas:'title'_'palette'_'canvas'_'tools'] px-4 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:grid-rows-[auto_auto_1fr] md:[grid-template-areas:'title_tools'_'palette_palette'_'canvas_canvas']",
   chrome: "contents",
   main: "flex min-h-0 flex-col pt-2 [grid-area:canvas]",
 };
