@@ -16,6 +16,24 @@ beforeEach(async () => {
 });
 afterEach(() => vi.restoreAllMocks());
 
+describe("createArtwork background", () => {
+  test("a null background fills the base layer with the transparent index and leaves the palette alone", async () => {
+    const art = await artworkService.createArtwork({ ...input, backgroundColor: null });
+    expect(art.layers[0].name).toBe("Background");
+    expect(Array.from(art.layers[0].pixelData)).toEqual(
+      new Array(4).fill(artworkService.TRANSPARENT_PIXEL_INDEX),
+    );
+    expect(art.palette).toEqual(artworkService.DEFAULT_PALETTE);
+  });
+
+  test("a hex background still fills with its palette index", async () => {
+    const art = await artworkService.createArtwork(input);
+    const index = art.palette.indexOf("#1A1C2C");
+    expect(index).toBeGreaterThanOrEqual(0);
+    expect(Array.from(art.layers[0].pixelData)).toEqual(new Array(4).fill(index));
+  });
+});
+
 describe("signed out (no owner)", () => {
   test("new art is local, listed, stays local on save, and deleting leaves no tombstone", async () => {
     const art = await artworkService.createArtwork(input);
