@@ -13,7 +13,7 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
 ## Goals
 
 1. Export PNG at a chosen scale (×1, ×4, ×8, ×16, ×32), nearest-neighbour, so pixels stay sharp.
-2. A "Made with PixelHB" credit strip added to exported and shared images, **on by default**, with a switch to turn it off (Hugo's decision).
+2. A "Made with PixelHB" credit strip always added to shared images; for Download PNG it is **off by default**, with a switch to turn it on (Hugo's decision, updated 2026-10-31).
 3. One Share button, on every device (Hugo's decision):
    - **The system share sheet** wherever the browser can share image files: phones, and Chrome/Safari on macOS and Windows. It hands the image to Instagram, WhatsApp, X, Discord, TikTok, Mail and others.
    - **Otherwise,** copy the image so it can be pasted into any post.
@@ -90,12 +90,12 @@ PixelHB has almost no users yet. Pixel art is shared constantly, so every image 
   3. Otherwise, download it with the existing PNG toast.
 
 **Pre-render.**
-- While the Export panel is open, the PNG is rendered ahead of time: when the panel opens, and again (debounced) when the scale, credit or artwork changes.
+- While the Export panel is open, the PNG is rendered ahead of time: when the panel opens, and again (debounced) when the artwork changes. The share render depends only on the artwork, not on the Download PNG scale or strip (2026-10-31).
 - Share uses that ready image, so a click never waits on rendering. Waiting would break the share sheet (the tap stops counting) and the clipboard (Safari needs the write inside the click).
 - The button shows "Preparing…" and stays disabled until the image is ready.
 
 **Placement.**
-- Share goes next to Export PNG in the editor's Export panel (settings → Export). That menu entry becomes "Export & share".
+- The editor's Export panel (settings → Export) has separate Download PNG and Share sections (2026-10-31). That menu entry becomes "Export & share".
 - A toolbar shortcut is deferred until PostHog shows whether people use Share.
 
 **Analytics.**

@@ -34,11 +34,12 @@ export function useArtworkCard({ artwork, now, onRename, onClone, onDelete }: IA
   const [loadFailed, setLoadFailed] = useState(false);
   const { share, sharing } = useShareImage({ from: "gallery" });
   // Share always uses the shared rule (strip on, smallest scale reaching 1024 px), never a saved choice.
-  const shareScale = fullArtwork ? shareExportOptions(fullArtwork).scale : 1;
+  const shareOptions = fullArtwork ? shareExportOptions(fullArtwork) : null;
+  const shareScale = shareOptions?.scale ?? 1;
   const { png, failed: renderFailed } = usePreparedPng({
     artwork: fullArtwork,
     scale: shareScale,
-    credit: true,
+    credit: shareOptions?.credit ?? true,
     active: menuOpen,
   });
   const shareState = cardShareState({ rendered: png !== null, failed: loadFailed || renderFailed });
