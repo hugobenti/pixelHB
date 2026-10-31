@@ -15,10 +15,10 @@ import { useEffect, useRef } from "react";
 import { screenToWorldCoordinates } from "@/features/editor/logic/coordinateMath";
 import { mergeStrokeDeltas } from "@/features/editor/logic/mergeStrokeDeltas";
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import type {
-  IPixelDelta
-} from "@/features/editor/types/editor.type";
+import type { IPixelDelta } from "@/features/editor/types/editor.type";
 import type { TColorSlot } from "@/features/editor/logic/paletteMutations.type";
+import { cellsInBounds, cellsOnLine } from "@/features/editor/logic/strokeLine";
+import type { IGridPoint } from "@/features/editor/logic/strokeLine.type";
 import type { IUsePixelPaintingParams } from "./usePixelPainting.type";
 
 /**
@@ -28,7 +28,7 @@ function paletteIndexForButtons(
   buttons: number,
   activeSlot: TColorSlot,
   primary: number,
-  secondary: number
+  secondary: number,
 ) {
   if (buttons === 2) {
     return activeSlot === "primary" ? secondary : primary;
@@ -36,12 +36,34 @@ function paletteIndexForButtons(
   return activeSlot === "primary" ? primary : secondary;
 }
 
+/** Writes `pi` at `index` and records a delta; returns false when the pixel already matched. */
+function paintCell(
+  pixelData: Uint8Array,
+  deltas: IPixelDelta[],
+  layerId: string,
+  index: number,
+  pi: number,
+): boolean {
+  const prev = pixelData[index];
+  if (prev === pi) {
+    return false;
+  }
+  pixelData[index] = pi;
+  deltas.push({
+    layerId,
+    index,
+    previousPaletteIndex: prev,
+    newPaletteIndex: pi,
+  });
+  return true;
+}
+
 function sameCompositeColor(
   artwork: IArtwork,
   activeLayerId: string,
   originalActivePixels: Uint8Array,
   pixelOffset: number,
-  targetCompositePaletteIndex: number | null
+  targetCompositePaletteIndex: number | null,
 ): boolean {
   for (let i = 0; i < artwork.layers.length; i++) {
     const layer = artwork.layers[i];
@@ -49,9 +71,7 @@ function sameCompositeColor(
       continue;
     }
     const paletteIndex =
-      layer.id === activeLayerId
-        ? originalActivePixels[pixelOffset]
-        : layer.pixelData[pixelOffset];
+      layer.id === activeLayerId ? originalActivePixels[pixelOffset] : layer.pixelData[pixelOffset];
     const color = artwork.palette[paletteIndex] ?? "transparent";
     if (color !== "transparent") {
       return paletteIndex === targetCompositePaletteIndex;
@@ -92,6 +112,8 @@ export function usePixelPainting({
   }, [artwork, activeLayerId, activeLayerVisible, activeLayerPixelData, viewport]);
 
   const strokeRaw = useRef<IPixelDelta[]>([]);
+  /** Last grid cell of the active stroke (may be off-canvas); null when idle. */
+  const lastCell = useRef<IGridPoint | null>(null);
   /** True while a paint stroke is active for the captured pointer (draw permission). */
   const painting = useRef(false);
   const activePaintingPointerId = useRef<number | null>(null);
@@ -125,35 +147,33 @@ export function usePixelPainting({
         return;
       }
       const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      const { x, y } = screenToWorldCoordinates(
-        mx,
-        my,
-        viewportRef.current
-      );
       const pi = paletteIndexForButtons(
         e.buttons,
         activeSlotRef.current,
         primaryPaletteIndex,
-        secondaryPaletteIndex
+        secondaryPaletteIndex,
       );
-      if (x < 0 || y < 0 || x >= art.width || y >= art.height) {
-        return;
+      const samples = e.getCoalescedEvents?.();
+      const events = samples && samples.length > 0 ? samples : [e];
+      let changed = false;
+      for (const sample of events) {
+        const cell = screenToWorldCoordinates(
+          sample.clientX - rect.left,
+          sample.clientY - rect.top,
+          viewportRef.current,
+        );
+        const from = lastCell.current ?? cell;
+        const path = cellsInBounds(cellsOnLine(from, cell).slice(1), art.width, art.height);
+        for (const p of path) {
+          if (paintCell(pixelData, strokeRaw.current, layerId, p.x + p.y * art.width, pi)) {
+            changed = true;
+          }
+        }
+        lastCell.current = { x: cell.x, y: cell.y };
       }
-      const index = x + y * art.width;
-      const prev = pixelData[index];
-      if (prev === pi) {
-        return;
+      if (changed) {
+        onPixelsChanged();
       }
-      pixelData[index] = pi;
-      strokeRaw.current.push({
-        layerId,
-        index,
-        previousPaletteIndex: prev,
-        newPaletteIndex: pi,
-      });
-      onPixelsChanged();
     };
 
     const endStroke = () => {
@@ -162,6 +182,7 @@ export function usePixelPainting({
       }
       painting.current = false;
       activePaintingPointerId.current = null;
+      lastCell.current = null;
       const merged = mergeStrokeDeltas(strokeRaw.current);
       strokeRaw.current = [];
       if (merged.length > 0) {
@@ -191,11 +212,7 @@ export function usePixelPainting({
     window.addEventListener("pointerup", onPointerFinish);
     window.addEventListener("pointercancel", onPointerFinish);
     return () => {
-      window.removeEventListener(
-        "pointerdown",
-        onTouchPointerDownEndStrokeIfMulti,
-        true
-      );
+      window.removeEventListener("pointerdown", onTouchPointerDownEndStrokeIfMulti, true);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onPointerFinish);
       window.removeEventListener("pointercancel", onPointerFinish);
@@ -257,7 +274,7 @@ export function usePixelPainting({
       e.buttons,
       activeSlotRef.current,
       primaryPaletteIndex,
-      secondaryPaletteIndex
+      secondaryPaletteIndex,
     );
     if (x >= 0 && y >= 0 && x < art.width && y < art.height) {
       const index = x + y * art.width;
@@ -299,7 +316,7 @@ export function usePixelPainting({
               layerId,
               originalActivePixels,
               current,
-              targetCompositePaletteIndex
+              targetCompositePaletteIndex,
             )
           ) {
             continue;
@@ -338,15 +355,8 @@ export function usePixelPainting({
       activePaintingPointerId.current = e.pointerId;
       painting.current = true;
       strokeRaw.current = [];
-      const prev = pixelData[index];
-      if (prev !== pi) {
-        pixelData[index] = pi;
-        strokeRaw.current.push({
-          layerId,
-          index,
-          previousPaletteIndex: prev,
-          newPaletteIndex: pi,
-        });
+      lastCell.current = { x, y };
+      if (paintCell(pixelData, strokeRaw.current, layerId, index, pi)) {
         onPixelsChanged();
       }
     }
