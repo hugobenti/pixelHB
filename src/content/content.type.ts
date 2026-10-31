@@ -234,8 +234,12 @@ export interface IGalleryContent {
     sizePresetsLabel: string;
     /** Accessible name of one square preset. */
     sizePresetLabel: (size: number) => string;
-    /** The form's one hint: size limit and what happens to a new background color. */
-    hint: (max: number) => string;
+    /** Hint under the size fields: the size limit. */
+    sizeHint: (max: number) => string;
+    /** Hint under the background field. */
+    backgroundHint: string;
+    /** Label of the switch that makes the new canvas transparent. */
+    transparentLabel: string;
     submit: string;
     submitting: string;
   };

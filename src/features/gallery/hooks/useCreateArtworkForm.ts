@@ -26,6 +26,7 @@ export function useCreateArtworkForm({ open, onCreate }: TUseCreateArtworkFormOp
   const [width, setWidth] = useState("64");
   const [height, setHeight] = useState("64");
   const [backgroundColor, setBackgroundColor] = useState(DEFAULT_PALETTE[1] ?? "#FFFFFF");
+  const [transparentBackground, setTransparentBackground] = useState(false);
   const [backgroundColorValid, setBackgroundColorValid] = useState(true);
   const [wasOpen, setWasOpen] = useState(open);
   /** Bumped on every open; keys the ColorField so it remounts even if reopened mid exit-fade. */
@@ -45,7 +46,7 @@ export function useCreateArtworkForm({ open, onCreate }: TUseCreateArtworkFormOp
   const handleSubmit = useCallback(
     async (e: FormEvent) => {
       e.preventDefault();
-      if (!backgroundColorValid) return;
+      if (!transparentBackground && !backgroundColorValid) return;
       const { size, errors: fieldErrors } = parseCanvasSizeFields(
         width,
         height,
@@ -59,7 +60,11 @@ export function useCreateArtworkForm({ open, onCreate }: TUseCreateArtworkFormOp
       }
       setBusy(true);
       try {
-        const createError = await onCreate({ title, backgroundColor, ...size });
+        const createError = await onCreate({
+          title,
+          backgroundColor: transparentBackground ? null : backgroundColor,
+          ...size,
+        });
         if (createError) {
           setErrors({ form: createError });
         }
@@ -67,7 +72,7 @@ export function useCreateArtworkForm({ open, onCreate }: TUseCreateArtworkFormOp
         setBusy(false);
       }
     },
-    [title, width, height, backgroundColor, backgroundColorValid, onCreate],
+    [title, width, height, backgroundColor, transparentBackground, backgroundColorValid, onCreate],
   );
 
   const changeWidth = (value: string) => {
@@ -99,13 +104,16 @@ export function useCreateArtworkForm({ open, onCreate }: TUseCreateArtworkFormOp
     backgroundColor,
     setBackgroundColor,
     setBackgroundColorValid,
+    transparentBackground,
+    setTransparentBackground,
     colorFieldKey: openCount,
     busy,
     errors,
     widthRef,
     heightRef,
     maxDimension: MAX_CANVAS_DIMENSION,
-    hint: gallery.create.hint(MAX_CANVAS_DIMENSION),
+    sizeHint: gallery.create.sizeHint(MAX_CANVAS_DIMENSION),
+    backgroundHint: gallery.create.backgroundHint,
     handleSubmit,
   };
 }

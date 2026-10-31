@@ -5,7 +5,8 @@
  *
  * Notes:
  * New artworks honor `backgroundColor`: pixels are filled with that palette index, appending the
- * color to the palette when it is not already present (up to MAX_PALETTE_ENTRIES).
+ * color to the palette when it is not already present (up to MAX_PALETTE_ENTRIES). A `null`
+ * `backgroundColor` fills with TRANSPARENT_PIXEL_INDEX and leaves the palette untouched.
  */
 import { shared } from "@/content/shared";
 import { db } from "@/features/shared/db/dexie.config";
@@ -167,21 +168,21 @@ export function hydrateArtwork<T extends IArtwork>(row: T): T {
 
 export async function createArtwork(input: ICreateArtworkInput): Promise<IArtwork> {
   validateDimensions(input.width, input.height);
-  const bgHex = normalizeHexColor(input.backgroundColor.trim());
-  if (!CANON_HEX6.test(bgHex)) {
-    throw new Error(shared.artwork.errors.invalidBackgroundColor);
-  }
-
   let palette = DEFAULT_PALETTE.slice(0, MAX_PALETTE_ENTRIES);
-  let bgIndex = palette.findIndex(
-    (entry) => normalizeHexColor(entry) === bgHex
-  );
-  if (bgIndex === -1) {
-    if (palette.length >= MAX_PALETTE_ENTRIES) {
-      throw new Error(shared.artwork.errors.backgroundPaletteFull);
+  let bgIndex = TRANSPARENT_PIXEL_INDEX;
+  if (input.backgroundColor !== null) {
+    const bgHex = normalizeHexColor(input.backgroundColor.trim());
+    if (!CANON_HEX6.test(bgHex)) {
+      throw new Error(shared.artwork.errors.invalidBackgroundColor);
     }
-    palette = [...palette, bgHex];
-    bgIndex = palette.length - 1;
+    bgIndex = palette.findIndex((entry) => normalizeHexColor(entry) === bgHex);
+    if (bgIndex === -1) {
+      if (palette.length >= MAX_PALETTE_ENTRIES) {
+        throw new Error(shared.artwork.errors.backgroundPaletteFull);
+      }
+      palette = [...palette, bgHex];
+      bgIndex = palette.length - 1;
+    }
   }
 
   const owner = activeOwner;

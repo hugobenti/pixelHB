@@ -38,8 +38,9 @@ export const gallery: IGalleryContent = {
     sizeLabel: "Canvas size",
     sizePresetsLabel: "Size presets",
     sizePresetLabel: (size) => `${size} × ${size} pixels`,
-    hint: (max) =>
-      `Up to ${max} × ${max} px. A background color not in the palette is added to it.`,
+    sizeHint: (max) => `Up to ${max} × ${max} px.`,
+    backgroundHint: "Fills the new canvas. Turn on Transparent background for sprites.",
+    transparentLabel: "Transparent background",
     submit: "Create",
     submitting: "Creating…",
   },

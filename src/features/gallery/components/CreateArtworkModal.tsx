@@ -14,6 +14,7 @@ import { FormField } from "@/features/shared/components/FormField";
 import { Input } from "@/features/shared/components/Input";
 import { Modal } from "@/features/shared/components/Modal";
 import { NumberField } from "@/features/shared/components/NumberField";
+import { Switch } from "@/features/shared/components/Switch";
 import { useCreateArtworkForm } from "@/features/gallery/hooks/useCreateArtworkForm";
 import { createArtworkModal } from "./CreateArtworkModal.style";
 import type { ICreateArtworkModalProps } from "./CreateArtworkModal.type";
@@ -31,13 +32,16 @@ export function CreateArtworkModal({ open, onClose, onCreate }: ICreateArtworkMo
     backgroundColor,
     setBackgroundColor,
     setBackgroundColorValid,
+    transparentBackground,
+    setTransparentBackground,
     colorFieldKey,
     busy,
     errors,
     widthRef,
     heightRef,
     maxDimension,
-    hint,
+    sizeHint,
+    backgroundHint,
     handleSubmit,
   } = useCreateArtworkForm({ open, onCreate });
 
@@ -110,14 +114,21 @@ export function CreateArtworkModal({ open, onClose, onCreate }: ICreateArtworkMo
           />
         </div>
       </fieldset>
+      <p className={createArtworkModal.hint}>{sizeHint}</p>
+      <Switch
+        checked={transparentBackground}
+        onCheckedChange={setTransparentBackground}
+        label={gallery.create.transparentLabel}
+      />
       <ColorField
         key={colorFieldKey}
         label={gallery.create.backgroundLabel}
         value={backgroundColor}
         onValueChange={setBackgroundColor}
         onValidityChange={setBackgroundColorValid}
+        disabled={transparentBackground}
+        hint={backgroundHint}
       />
-      <p className={createArtworkModal.hint}>{hint}</p>
       {errors.form ? (
         <p role="alert" className={createArtworkModal.formError}>
           {errors.form}
