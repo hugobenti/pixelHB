@@ -69,6 +69,7 @@ export const help: IHelpContent = {
     { action: "Undo", combo: { key: "z", mod: true }, effect: "undo" },
     { action: "Redo", combo: { key: "z", mod: true, shift: true }, effect: "redo" },
     { action: "Turn the eraser on or off (paints transparent)", combo: { key: "e" }, effect: "toggleEraser" },
+    { action: "Switch between your two colors", combo: { key: "x" }, effect: "switchSlot" },
     { action: "Show or hide the pixel grid", combo: { key: "g" }, effect: "toggleGrid" },
     { action: "Pan while dragging", combo: { key: "Space" }, effect: "spacePan", note: "hold" },
     {

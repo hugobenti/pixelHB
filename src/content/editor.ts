@@ -30,11 +30,10 @@ export const editor: IEditorContent = {
     shift: { label: "Shift pixels" },
     layers: { label: "Layers", chipLabel: (name) => `Layers. Active layer: ${name}` },
     settings: { label: "Editor settings" },
-    slot: {
-      primary: "Primary",
-      secondary: "Secondary",
-      label: (slot) => `Painting slot: ${slot}. Click to switch.`,
-      title: "Switch primary / secondary painting slot",
+    colors: {
+      label: (activeHex, otherHex) =>
+        `Colors: painting with ${activeHex}, other color ${otherHex}. Press X to switch.`,
+      title: "Switch colors (X)",
     },
   },
   paletteRow: {

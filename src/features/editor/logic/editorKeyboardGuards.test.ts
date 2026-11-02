@@ -13,6 +13,7 @@ const key = (
     metaKey: boolean;
     altKey: boolean;
     shiftKey: boolean;
+    repeat: boolean;
   }> = {}
 ) => ({
   key: k,
@@ -69,6 +70,24 @@ describe("editorShortcutForKey", () => {
     expect(editorShortcutForKey(key("e", { metaKey: true }), false)).toBeNull();
     expect(editorShortcutForKey(key("e", { altKey: true }), false)).toBeNull();
     expect(editorShortcutForKey(key("e"), true)).toBeNull();
+  });
+
+  it("maps bare x to the slot switch", () => {
+    expect(editorShortcutForKey(key("x"), false)).toBe("switchSlot");
+    expect(editorShortcutForKey(key("X"), false)).toBe("switchSlot");
+  });
+
+  it("leaves Ctrl/Cmd/Alt+X to the browser (cut) and ignores x in a text field", () => {
+    expect(editorShortcutForKey(key("x", { ctrlKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("x", { metaKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("x", { altKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("x"), true)).toBeNull();
+  });
+
+  it("ignores auto-repeat of the bare-letter shortcuts", () => {
+    for (const letter of ["g", "e", "x"]) {
+      expect(editorShortcutForKey(key(letter, { repeat: true }), false)).toBeNull();
+    }
   });
 
   it("maps Ctrl/Cmd+Z to undo and with Shift to redo", () => {

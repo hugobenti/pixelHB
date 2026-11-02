@@ -44,7 +44,7 @@ Success: while drawing, the artist arms the picker, presses on the canvas, drags
 
 ### Terms
 
-- **Paint slot:** the slot a pick writes to. With the left button or touch, it is the active slot (`Primary` or `Secondary`, the toolbar slot button). With the right mouse button it is the other slot, matching how the right button paints with the other slot today (`paletteIndexForButtons` in `usePixelPainting.ts`).
+- **Paint slot:** the slot a pick writes to. With the left button or touch, it is the active slot (`Primary` or `Secondary`, the color-pair chip). With the right mouse button it is the other slot, matching how the right button paints with the other slot today (`paletteIndexForButtons` in `usePixelPainting.ts`).
 - **Target pixel:** the artwork pixel under the pointer, `screenToWorldCoordinates` on the artwork canvas, the same mapping painting uses.
 - **Picked index:** `compositeOpaquePaletteIndexAt(artwork, x, y)` (`logic/visibleCompositePixelCounts.ts`): the topmost visible layer's palette index at the target pixel, or `null`.
 - **Empty spot:** the picked index is `null`. That covers a target outside the artwork bounds and a pixel where every visible layer is transparent (index at or above the palette length, `TRANSPARENT_PIXEL_INDEX`). Hidden layers are ignored: the picker picks what the artist sees.

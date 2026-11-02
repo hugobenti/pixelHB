@@ -9,6 +9,8 @@ export interface IEditorActionsBarProps {
   canRedo: boolean;
   onUndo: () => void;
   onRedo: () => void;
+  primaryColor: string;
+  secondaryColor: string;
   activeSlot: TColorSlot;
   onToggleActiveSlot: () => void;
   panMode: boolean;
