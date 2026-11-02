@@ -14,6 +14,7 @@ import { Card } from "@/features/shared/components/Card";
 import { ConfirmDialog } from "@/features/shared/components/ConfirmDialog";
 import { Input } from "@/features/shared/components/Input";
 import { Menu } from "@/features/shared/components/Menu";
+import { cx } from "@/features/shared/utils/cx";
 import { artworkCard } from "./ArtworkCard.style";
 import type { IArtworkCardProps } from "./ArtworkCard.type";
 import { useArtworkCard } from "./useArtworkCard";
@@ -23,6 +24,8 @@ export function ArtworkCard(props: IArtworkCardProps) {
   const {
     href,
     thumbnail,
+    frameOrientation,
+    frameStyle,
     openable,
     marker,
     size,
@@ -38,14 +41,19 @@ export function ArtworkCard(props: IArtworkCardProps) {
   } = useArtworkCard(props);
 
   const image = (
-    <Image
-      src={thumbnail.src}
-      alt=""
-      fill
-      className={artworkCard.thumbnail}
-      sizes="(min-width: 1280px) 270px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-      unoptimized={thumbnail.unoptimized}
-    />
+    <div
+      className={cx(artworkCard.frame.base, artworkCard.frame[frameOrientation])}
+      style={frameStyle}
+    >
+      <Image
+        src={thumbnail.src}
+        alt=""
+        fill
+        className={artworkCard.thumbnail}
+        sizes="(min-width: 1280px) 270px, (min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+        unoptimized={thumbnail.unoptimized}
+      />
+    </div>
   );
 
   return (

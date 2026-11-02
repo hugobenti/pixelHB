@@ -4,16 +4,19 @@
  */
 
 import type { IArtwork } from "@/features/shared/artwork/artwork.type";
-import type { IRenderViewport } from "./canvasRender.type";
+import type { IRenderOptions, IRenderViewport } from "./canvasRender.type";
 
 export function renderCanvas(
   ctx: CanvasRenderingContext2D,
   artwork: Pick<IArtwork, "width" | "height" | "layers" | "palette">,
-  viewport: IRenderViewport
+  viewport: IRenderViewport,
+  { clear = true }: IRenderOptions = {}
 ): void {
   const { width, height, layers, palette } = artwork;
 
-  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  if (clear) {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  }
 
   ctx.save();
   ctx.imageSmoothingEnabled = false;

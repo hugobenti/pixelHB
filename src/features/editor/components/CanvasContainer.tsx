@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Viewport wrapper with checkerboard backdrop and stacked artwork + reference + grid canvases.
+ * Viewport wrapper with stacked artwork + reference + grid canvases.
  */
 "use client";
 import { editor } from "@/content/editor";
@@ -22,7 +22,6 @@ export function CanvasContainer({
 
   return (
     <div className={canvasContainer.shell}>
-      <div className={canvasContainer.checker} aria-hidden />
       <div
         ref={wrapRef}
         className={canvasContainer.stack}

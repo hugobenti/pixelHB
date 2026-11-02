@@ -4,7 +4,7 @@
  */
 
 export const layerPreview = {
-  image: "max-h-full max-w-full rounded-sm object-contain shadow-sm",
+  image: "pixel-checkerboard max-h-full max-w-full rounded-sm object-contain shadow-sm",
   placeholder:
     "h-full min-h-[2.25rem] w-full min-w-[2.25rem] rounded-sm border border-dashed border-line-strong bg-surface-subtle sm:min-h-[2.75rem] sm:min-w-[2.75rem]",
 };
