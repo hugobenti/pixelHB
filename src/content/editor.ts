@@ -18,7 +18,8 @@ export const editor: IEditorContent = {
   },
   toolbar: {
     back: "Gallery",
-    groupLabel: "Editor tools",
+    groupLabel: "Editor actions",
+    toolsGroupLabel: "Drawing tools",
     undo: { label: "Undo", shortcut: "Ctrl+Z" },
     redo: { label: "Redo", shortcut: "Ctrl+Shift+Z" },
     brush: { label: "Brush", shortcut: "B" },

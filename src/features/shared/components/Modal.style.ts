@@ -30,7 +30,7 @@ export const modal = {
   /** Full-overlay dismiss target behind the panel (pointer only; Escape covers keyboard). */
   backdrop: "absolute inset-0 cursor-default",
   panel: cx(
-    "relative flex max-h-[85dvh] w-full flex-col gap-4 overflow-y-auto overscroll-contain bg-surface p-5 shadow-xl",
+    "relative flex max-h-[85dvh] w-full flex-col gap-4 overflow-y-auto overscroll-contain bg-surface p-5 shadow-xl outline-none",
     "rounded-t-xl border-t border-line pb-[max(1.25rem,env(safe-area-inset-bottom))]",
     "sm:rounded-xl sm:border sm:pb-5",
     "transition-[opacity,translate] duration-200 ease-out motion-reduce:transition-opacity",

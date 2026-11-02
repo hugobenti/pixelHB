@@ -13,6 +13,7 @@ import { ColorPickerOverlay } from "@/features/editor/components/ColorPickerOver
 import { ColorSelectionRow } from "@/features/editor/components/ColorSelectionRow";
 import { EditorActionsBar } from "@/features/editor/components/EditorActionsBar";
 import { EditorSettingsDrawer } from "@/features/editor/components/EditorSettingsDrawer";
+import { EditorToolBar } from "@/features/editor/components/EditorToolBar";
 import { LayersDrawer } from "@/features/editor/components/LayersDrawer";
 import { PaletteEditModal } from "@/features/editor/components/PaletteEditModal";
 import { ShiftDirectionOverlay } from "@/features/editor/components/ShiftDirectionOverlay";
@@ -92,6 +93,18 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           canRedo={canRedo}
           onUndo={undo}
           onRedo={redo}
+          activeLayer={layersState.activeLayer}
+          palette={artwork.palette}
+          width={artwork.width}
+          height={artwork.height}
+          historyRevision={historyRevision}
+          layersDrawerOpen={layersDrawerOpen}
+          onToggleLayersDrawer={toggleLayersDrawer}
+          settingsDrawerOpen={settingsDrawerOpen}
+          onOpenExport={openExportDrawer}
+          onToggleSettingsDrawer={toggleSettingsDrawer}
+        />
+        <EditorToolBar
           primaryColor={primaryColor}
           secondaryColor={secondaryColor}
           activeSlot={paletteUi.activeSlot}
@@ -112,16 +125,6 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           onZoomIn={onZoomIn}
           shiftOverlayOpen={pixelShift.shiftOverlayOpen}
           onToggleShiftOverlay={pixelShift.toggleShiftOverlay}
-          activeLayer={layersState.activeLayer}
-          palette={artwork.palette}
-          width={artwork.width}
-          height={artwork.height}
-          historyRevision={historyRevision}
-          layersDrawerOpen={layersDrawerOpen}
-          onToggleLayersDrawer={toggleLayersDrawer}
-          settingsDrawerOpen={settingsDrawerOpen}
-          onOpenExport={openExportDrawer}
-          onToggleSettingsDrawer={toggleSettingsDrawer}
         />
         <ColorSelectionRow
           palette={artwork.palette}

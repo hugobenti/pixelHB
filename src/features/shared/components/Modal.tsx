@@ -65,6 +65,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        tabIndex={-1}
         className={cx(
           modal.panel,
           modal.size[size],

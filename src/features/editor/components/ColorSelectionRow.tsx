@@ -7,6 +7,8 @@
 import { editor } from "@/content/editor";
 import { Button } from "@/features/shared/components/Button";
 import { ColorSwatch } from "@/features/shared/components/ColorSwatch";
+import { PublicMaskIcon } from "@/features/shared/components/PublicMaskIcon";
+import { PUBLIC_ICONS } from "@/features/shared/constants/publicIcons";
 import { colorSelectionRow } from "./ColorSelectionRow.style";
 import type { IColorSelectionRowProps } from "./ColorSelectionRow.type";
 import { useColorSelectionRow } from "./useColorSelectionRow";
@@ -46,7 +48,8 @@ export function ColorSelectionRow(props: IColorSelectionRowProps) {
         className={colorSelectionRow.editButton}
         onClick={onOpenPaletteModal}
       >
-        {editor.paletteRow.edit}
+        <PublicMaskIcon src={PUBLIC_ICONS.swatch} />
+        <span className={colorSelectionRow.editLabel}>{editor.paletteRow.edit}</span>
       </Button>
     </div>
   );
