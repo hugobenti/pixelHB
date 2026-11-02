@@ -20,7 +20,21 @@ function eventFor(combo: { key: string; mod?: boolean; shift?: boolean }, modifi
 describe("help shortcuts match the editor's key handling", () => {
   it("documents every effect", () => {
     expect(help.shortcuts.map((s) => s.effect).sort()).toEqual(
-      ["altPick", "arrowPan", "redo", "spacePan", "switchSlot", "toggleEraser", "toggleGrid", "undo"],
+      [
+        "altPick",
+        "arrowPan",
+        "redo",
+        "selectBrush",
+        "spacePan",
+        "switchSlot",
+        "toggleBucket",
+        "toggleEraser",
+        "toggleGrid",
+        "togglePicker",
+        "undo",
+        "zoomIn",
+        "zoomOut",
+      ],
     );
   });
 
@@ -32,6 +46,11 @@ describe("help shortcuts match the editor's key handling", () => {
         case "toggleGrid":
         case "toggleEraser":
         case "switchSlot":
+        case "selectBrush":
+        case "toggleBucket":
+        case "togglePicker":
+        case "zoomIn":
+        case "zoomOut":
           for (const modifier of ["ctrlKey", "metaKey"] as const) {
             expect(editorShortcutForKey(eventFor(shortcut.combo, modifier), false)).toBe(shortcut.effect);
           }

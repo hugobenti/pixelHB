@@ -11,5 +11,11 @@ export interface IEditorToolState {
   pickerReturnTool: TPickerReturnTool;
 }
 
-/** `pickApplied`: a pick hold ended on a color. */
-export type TEditorToolAction = "togglePan" | "toggleBucket" | "toggleEraser" | "togglePicker" | "pickApplied";
+/** `selectBrush`: back to the brush from any tool. `pickApplied`: a pick hold ended on a color. */
+export type TEditorToolAction =
+  | "selectBrush"
+  | "togglePan"
+  | "toggleBucket"
+  | "toggleEraser"
+  | "togglePicker"
+  | "pickApplied";

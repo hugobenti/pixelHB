@@ -16,6 +16,7 @@ import type { IEditorSettingsDrawerProps } from "../EditorSettingsDrawer.type";
 
 export function useEditorSettingsDrawer({
   artwork,
+  initialView,
   onApplyCanvasSize,
   onToggleGrid,
   hasReferenceImage,
@@ -23,7 +24,7 @@ export function useEditorSettingsDrawer({
   onLoadReferenceImage,
   onClose,
 }: IEditorSettingsDrawerProps) {
-  const canvasSize = useCanvasSizePanel({ artwork, onApplyResized: onApplyCanvasSize });
+  const canvasSize = useCanvasSizePanel({ artwork, onApplyResized: onApplyCanvasSize, initialView });
   const { settingsView, backToMenu } = canvasSize;
   const {
     credit,

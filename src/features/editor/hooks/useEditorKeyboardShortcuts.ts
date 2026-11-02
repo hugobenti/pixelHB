@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Global key bindings for the pixel editor (toggle grid, toggle eraser, switch color slot, undo/redo).
+ * Global key bindings for the pixel editor (toggle grid, brush/eraser/bucket/picker tools, switch color slot, zoom, undo/redo).
  *
  * Notes:
  * Key → shortcut mapping lives in editorKeyboardGuards.ts: keys typed into text fields
@@ -20,6 +20,11 @@ export function useEditorKeyboardShortcuts({
   onTogglePixelGrid,
   onToggleEraser,
   onSwitchSlot,
+  onSelectBrush,
+  onToggleBucket,
+  onTogglePicker,
+  onZoomIn,
+  onZoomOut,
   undo,
   redo,
 }: IUseEditorKeyboardShortcutsParams) {
@@ -39,6 +44,16 @@ export function useEditorKeyboardShortcuts({
         onToggleEraser();
       } else if (shortcut === "switchSlot") {
         onSwitchSlot();
+      } else if (shortcut === "selectBrush") {
+        onSelectBrush();
+      } else if (shortcut === "toggleBucket") {
+        onToggleBucket();
+      } else if (shortcut === "togglePicker") {
+        onTogglePicker();
+      } else if (shortcut === "zoomIn") {
+        onZoomIn();
+      } else if (shortcut === "zoomOut") {
+        onZoomOut();
       } else if (shortcut === "redo") {
         redo();
       } else {
@@ -47,5 +62,16 @@ export function useEditorKeyboardShortcuts({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onTogglePixelGrid, onToggleEraser, onSwitchSlot, undo, redo]);
+  }, [
+    onTogglePixelGrid,
+    onToggleEraser,
+    onSwitchSlot,
+    onSelectBrush,
+    onToggleBucket,
+    onTogglePicker,
+    onZoomIn,
+    onZoomOut,
+    undo,
+    redo,
+  ]);
 }

@@ -13,6 +13,9 @@ export interface IEditorActionsBarProps {
   secondaryColor: string;
   activeSlot: TColorSlot;
   onToggleActiveSlot: () => void;
+  /** No tool flag is on: the brush is the active tool. */
+  brushMode: boolean;
+  onSelectBrush: () => void;
   panMode: boolean;
   onTogglePanMode: () => void;
   bucketMode: boolean;
@@ -37,6 +40,7 @@ export interface IEditorActionsBarProps {
   historyRevision: number;
   layersDrawerOpen: boolean;
   onToggleLayersDrawer: () => void;
+  onOpenExport: () => void;
   settingsDrawerOpen: boolean;
   onToggleSettingsDrawer: () => void;
 }

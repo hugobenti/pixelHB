@@ -84,10 +84,40 @@ describe("editorShortcutForKey", () => {
     expect(editorShortcutForKey(key("x"), true)).toBeNull();
   });
 
+  it("maps b, f and i to the brush, bucket and picker", () => {
+    expect(editorShortcutForKey(key("b"), false)).toBe("selectBrush");
+    expect(editorShortcutForKey(key("B"), false)).toBe("selectBrush");
+    expect(editorShortcutForKey(key("f"), false)).toBe("toggleBucket");
+    expect(editorShortcutForKey(key("i"), false)).toBe("togglePicker");
+  });
+
+  it("maps + and = to zoom in and - to zoom out, with or without Shift", () => {
+    expect(editorShortcutForKey(key("+", { shiftKey: true }), false)).toBe("zoomIn");
+    expect(editorShortcutForKey(key("+"), false)).toBe("zoomIn");
+    expect(editorShortcutForKey(key("="), false)).toBe("zoomIn");
+    expect(editorShortcutForKey(key("-"), false)).toBe("zoomOut");
+    expect(editorShortcutForKey(key("-", { shiftKey: true }), false)).toBe("zoomOut");
+  });
+
+  it("leaves Ctrl/Cmd/Alt combos and text fields alone for the new keys", () => {
+    for (const k of ["b", "f", "i", "+", "=", "-"]) {
+      expect(editorShortcutForKey(key(k, { ctrlKey: true }), false)).toBeNull();
+      expect(editorShortcutForKey(key(k, { metaKey: true }), false)).toBeNull();
+      expect(editorShortcutForKey(key(k, { altKey: true }), false)).toBeNull();
+      expect(editorShortcutForKey(key(k), true)).toBeNull();
+    }
+  });
+
   it("ignores auto-repeat of the bare-letter shortcuts", () => {
-    for (const letter of ["g", "e", "x"]) {
+    for (const letter of ["g", "e", "x", "b", "f", "i"]) {
       expect(editorShortcutForKey(key(letter, { repeat: true }), false)).toBeNull();
     }
+  });
+
+  it("lets the zoom keys auto-repeat so holding + or - keeps zooming", () => {
+    expect(editorShortcutForKey(key("+", { repeat: true }), false)).toBe("zoomIn");
+    expect(editorShortcutForKey(key("=", { repeat: true }), false)).toBe("zoomIn");
+    expect(editorShortcutForKey(key("-", { repeat: true }), false)).toBe("zoomOut");
   });
 
   it("maps Ctrl/Cmd+Z to undo and with Shift to redo", () => {

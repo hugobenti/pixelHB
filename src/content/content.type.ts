@@ -293,6 +293,7 @@ export interface IEditorContent {
     groupLabel: string;
     undo: IIconControl;
     redo: IIconControl;
+    brush: IIconControl;
     pan: IIconControl;
     bucket: IIconControl;
     eraser: IIconControl;
@@ -304,6 +305,7 @@ export interface IEditorContent {
       /** Accessible name of the active-layer chip that opens the Layers drawer. */
       chipLabel: (name: string) => string;
     };
+    export: IIconControl;
     settings: IIconControl;
     colors: {
       /** Accessible name of the color-pair chip: the color painting now and the one the other button paints. */
@@ -546,7 +548,20 @@ export interface IKeyCombo {
 export interface IHelpShortcut {
   action: string;
   combo: IKeyCombo;
-  effect: "undo" | "redo" | "toggleGrid" | "toggleEraser" | "switchSlot" | "spacePan" | "arrowPan" | "altPick";
+  effect:
+    | "undo"
+    | "redo"
+    | "toggleGrid"
+    | "toggleEraser"
+    | "switchSlot"
+    | "selectBrush"
+    | "toggleBucket"
+    | "togglePicker"
+    | "zoomIn"
+    | "zoomOut"
+    | "spacePan"
+    | "arrowPan"
+    | "altPick";
   note?: string;
 }
 
