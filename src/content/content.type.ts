@@ -487,7 +487,6 @@ export interface IHomeContent {
     pauseLabel: string;
     playLabel: string;
     caption: string;
-    size: (pixels: number) => string;
   };
   promises: IHomeBlurb[];
   insideLabel: string;

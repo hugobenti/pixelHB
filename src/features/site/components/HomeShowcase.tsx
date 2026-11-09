@@ -37,7 +37,6 @@ export function HomeShowcase() {
     pauseLabel,
     togglePause,
     caption,
-    size,
   } = useHomeShowcase();
 
   return (
@@ -111,9 +110,7 @@ export function HomeShowcase() {
           aria-hidden
           className={cx(homeShowcase.export, exported && homeShowcase.exportShown)}
         />
-        <span>
-          {caption} <span className={homeShowcase.size}>{size}</span>
-        </span>
+        <span>{caption}</span>
       </figcaption>
     </figure>
   );

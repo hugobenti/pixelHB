@@ -22,8 +22,7 @@ export const home: IHomeContent = {
     play: "Play",
     pauseLabel: "Pause the drawing",
     playLabel: "Play the drawing",
-    caption: "Illustrative samples. Exported at ×1, each PNG is",
-    size: (pixels) => `${pixels} × ${pixels} px`,
+    caption: "Illustrative samples",
   },
   promises: [
     {

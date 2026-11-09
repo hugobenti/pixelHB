@@ -239,6 +239,5 @@ export function useHomeShowcase() {
       setPaused(pausedRef.current);
     },
     caption: showcase.caption,
-    size: showcase.size(FIRST.rows.length),
   };
 }

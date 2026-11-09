@@ -52,5 +52,4 @@ export const homeShowcase = {
   caption: "flex items-center gap-3 text-sm text-muted",
   export: "size-12 shrink-0 opacity-0 transition-opacity duration-500 [image-rendering:pixelated]",
   exportShown: "opacity-100",
-  size: "font-mono text-xs font-medium whitespace-nowrap text-fg",
 };
