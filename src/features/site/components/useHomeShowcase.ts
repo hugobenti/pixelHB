@@ -1,7 +1,7 @@
 /**
  * Purpose:
  * HomeShowcase behavior: plays the live drawings on the canvas, one after another, and exposes what
- * the miniature editor around it shows (pressed tool, palette slot, status line, cursor, export).
+ * the miniature editor around it shows (pressed tool, palette slot, status line, cursor).
  *
  * Notes:
  * Pixels and the cursor are written straight to the DOM every frame; React state changes only when
@@ -34,7 +34,6 @@ const IDLE_VIEW: IShowcaseView = {
   color: 0,
   status: "",
   cursorVisible: false,
-  exported: false,
   faded: false,
 };
 
@@ -46,7 +45,6 @@ function subscribeReducedMotion(onChange: () => void) {
 
 export function useHomeShowcase() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const exportRef = useRef<HTMLCanvasElement>(null);
   const cursorRef = useRef<HTMLSpanElement>(null);
   const pausedRef = useRef(false);
   const [paused, setPaused] = useState(false);
@@ -70,20 +68,11 @@ export function useHomeShowcase() {
         0,
         0,
       );
-    const copyToExport = () => {
-      const target = exportRef.current?.getContext("2d");
-      target?.clearRect(0, 0, canvas.width, canvas.height);
-      target?.drawImage(canvas, 0, 0);
-    };
 
     if (reducedMotion) {
       const still = drawings[0];
       paint(still.pixels, still.size, null);
-      copyToExport();
-      const id = requestAnimationFrame(() =>
-        setView({ ...IDLE_VIEW, drawingId: still.id, exported: true }),
-      );
-      return () => cancelAnimationFrame(id);
+      return;
     }
 
     let drawingIndex = 0;
@@ -121,8 +110,7 @@ export function useHomeShowcase() {
       } else if (action.kind === "rest" || action.kind === "alive") {
         setView((v) => ({ ...v, tool: null, status: "", cursorVisible: false }));
       } else if (action.kind === "export") {
-        copyToExport();
-        setView((v) => ({ ...v, status: showcase.exporting, exported: true }));
+        setView((v) => ({ ...v, status: showcase.exporting }));
       } else if (action.kind === "fade") {
         setView((v) => ({ ...v, status: "", faded: true }));
       }
@@ -204,7 +192,6 @@ export function useHomeShowcase() {
   const { showcase } = home;
   return {
     canvasRef,
-    exportRef,
     cursorRef,
     label: showcase.label,
     title: showcase.drawings[view.drawingId],
@@ -228,7 +215,6 @@ export function useHomeShowcase() {
     cursorVisible: view.cursorVisible,
     status: view.status,
     hex: view.cursorVisible ? DEFAULT_PALETTE[view.color] : "",
-    exported: view.exported,
     faded: view.faded,
     canvasSize: FIRST.rows.length,
     showPause: !reducedMotion,

@@ -1,7 +1,7 @@
 /**
  * Purpose:
  * Classes for HomeShowcase: a miniature of the editor (toolbar, palette row, canvas well) with the
- * live canvas, its cursor and status line, and the caption showing each export at its real size.
+ * live canvas and its cursor, and one caption row (status line, label, Pause).
  *
  * Notes:
  * The 48 × 48 drawings show at a whole-number scale (5×, 6× from `sm`, 7× from `lg`) on a
@@ -45,11 +45,10 @@ export const homeShowcase = {
   cursorHidden: "opacity-0",
   cursorPixel:
     "absolute inset-0 shadow-[0_0_0_1px_var(--color-loupe-edge-light),0_0_0_2px_var(--color-loupe-edge-dark)]",
-  statusRow: "flex min-h-10 items-center justify-between gap-3 text-xs text-muted",
-  status: "min-w-0 truncate text-fg-secondary",
+  /** One compact row under the frame: the status takes the free width and truncates first. */
+  caption: "flex min-h-10 items-center gap-3 text-xs text-muted",
+  status: "min-w-0 flex-1 truncate text-fg-secondary",
   hex: "ml-1.5 font-mono font-medium text-fg",
-  pause: cx(button.base, button.size.default, button.variant.ghost),
-  caption: "flex items-center gap-3 text-sm text-muted",
-  export: "size-12 shrink-0 opacity-0 transition-opacity duration-500 [image-rendering:pixelated]",
-  exportShown: "opacity-100",
+  label: "shrink-0 text-subtle",
+  pause: cx(button.base, button.size.default, button.variant.ghost, "-mr-3"),
 };

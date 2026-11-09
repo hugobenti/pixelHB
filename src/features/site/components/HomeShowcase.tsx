@@ -1,7 +1,8 @@
 /**
  * Purpose:
  * Home hero illustration: a miniature of the editor drawing illustrative pieces live, one after
- * another, with a caption showing each exported PNG at its real size.
+ * another, with one caption row under it: the step being drawn, the "Illustrative samples" label
+ * and the Pause button.
  *
  * Notes:
  * The miniature is one image to assistive tech (its parts are presentational); the status line is
@@ -19,7 +20,6 @@ import { useHomeShowcase } from "./useHomeShowcase";
 export function HomeShowcase() {
   const {
     canvasRef,
-    exportRef,
     cursorRef,
     label,
     title,
@@ -29,7 +29,6 @@ export function HomeShowcase() {
     cursorVisible,
     status,
     hex,
-    exported,
     faded,
     canvasSize,
     showPause,
@@ -86,11 +85,12 @@ export function HomeShowcase() {
           </div>
         </div>
       </div>
-      <div className={homeShowcase.statusRow}>
+      <figcaption className={homeShowcase.caption}>
         <span aria-hidden className={homeShowcase.status}>
           {status}
           <span className={homeShowcase.hex}>{hex}</span>
         </span>
+        <span className={homeShowcase.label}>{caption}</span>
         {showPause ? (
           <button
             type="button"
@@ -101,16 +101,6 @@ export function HomeShowcase() {
             {pauseText}
           </button>
         ) : null}
-      </div>
-      <figcaption className={homeShowcase.caption}>
-        <canvas
-          ref={exportRef}
-          width={canvasSize}
-          height={canvasSize}
-          aria-hidden
-          className={cx(homeShowcase.export, exported && homeShowcase.exportShown)}
-        />
-        <span>{caption}</span>
       </figcaption>
     </figure>
   );

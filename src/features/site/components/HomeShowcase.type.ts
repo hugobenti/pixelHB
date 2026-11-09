@@ -14,6 +14,5 @@ export interface IShowcaseView {
   color: number;
   status: string;
   cursorVisible: boolean;
-  exported: boolean;
   faded: boolean;
 }
