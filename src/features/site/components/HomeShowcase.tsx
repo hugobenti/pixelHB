@@ -20,13 +20,11 @@ import { useHomeShowcase } from "./useHomeShowcase";
 export function HomeShowcase() {
   const {
     canvasRef,
-    cursorRef,
     label,
     title,
     tools,
     swatches,
     pair,
-    cursorVisible,
     status,
     hex,
     faded,
@@ -76,12 +74,6 @@ export function HomeShowcase() {
               height={canvasSize}
               className={cx(homeShowcase.canvas, faded && homeShowcase.canvasFaded)}
             />
-            <span
-              ref={cursorRef}
-              className={cx(homeShowcase.cursor, !cursorVisible && homeShowcase.cursorHidden)}
-            >
-              <span className={homeShowcase.cursorPixel} />
-            </span>
           </div>
         </div>
       </div>

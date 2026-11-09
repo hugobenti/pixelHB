@@ -1,13 +1,12 @@
 /**
  * Purpose:
  * Classes for HomeShowcase: a miniature of the editor (toolbar, palette row, canvas well) with the
- * live canvas and its cursor, and one caption row (status line, label, Pause).
+ * live canvas, and one caption row (status line, label, Pause).
  *
  * Notes:
  * The 48 × 48 drawings show at a whole-number scale (5×, 6× from `sm`, 7× from `lg`) on a
  * checkerboard of one cell per art pixel, as in the editor. Pressed tool and swatch rings follow the
- * editor's own treatment; the accent never marks a pressed tool. The cursor is one art pixel wide and
- * is moved with a percentage translate, so it lands on pixels at every scale.
+ * editor's own treatment; the accent never marks a pressed tool.
  */
 
 import { cx } from "@/features/shared/utils/cx";
@@ -40,11 +39,6 @@ export const homeShowcase = {
   ),
   canvas: "block size-full transition-opacity duration-700 [image-rendering:pixelated]",
   canvasFaded: "opacity-0",
-  cursor:
-    "pointer-events-none absolute top-0 left-0 size-[calc(100%/48)] transition-[transform,opacity] duration-100 ease-linear",
-  cursorHidden: "opacity-0",
-  cursorPixel:
-    "absolute inset-0 shadow-[0_0_0_1px_var(--color-loupe-edge-light),0_0_0_2px_var(--color-loupe-edge-dark)]",
   /** One compact row under the frame: the status takes the free width and truncates first. */
   caption: "flex min-h-10 items-center gap-3 text-xs text-muted",
   status: "min-w-0 flex-1 truncate text-fg-secondary",

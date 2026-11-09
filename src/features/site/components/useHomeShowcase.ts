@@ -1,10 +1,10 @@
 /**
  * Purpose:
  * HomeShowcase behavior: plays the live drawings on the canvas, one after another, and exposes what
- * the miniature editor around it shows (pressed tool, palette slot, status line, cursor).
+ * the miniature editor around it shows (pressed tool, palette slot, status line).
  *
  * Notes:
- * Pixels and the cursor are written straight to the DOM every frame; React state changes only when
+ * Pixels are written straight to the canvas every frame; React state changes only when
  * an action starts. Playback stops while paused, offscreen or in a hidden tab. Under
  * prefers-reduced-motion the finished drawing shows still, with no loop and no pause button.
  */
@@ -33,7 +33,6 @@ const IDLE_VIEW: IShowcaseView = {
   tool: null,
   color: 0,
   status: "",
-  cursorVisible: false,
   faded: false,
 };
 
@@ -45,7 +44,6 @@ function subscribeReducedMotion(onChange: () => void) {
 
 export function useHomeShowcase() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cursorRef = useRef<HTMLSpanElement>(null);
   const pausedRef = useRef(false);
   const [paused, setPaused] = useState(false);
   const [view, setView] = useState<IShowcaseView>(IDLE_VIEW);
@@ -86,13 +84,6 @@ export function useHomeShowcase() {
     let last = 0;
     let rafId = 0;
 
-    const moveCursor = (index: number) => {
-      const cursor = cursorRef.current;
-      if (!cursor) return;
-      const x = index % drawing.size;
-      cursor.style.transform = `translate(${x * 100}%, ${((index - x) / drawing.size) * 100}%)`;
-    };
-
     const begin = (action: TLiveAction) => {
       frame = 0;
       painted = 0;
@@ -104,11 +95,9 @@ export function useHomeShowcase() {
           tool: step.tool,
           color: step.color,
           status: showcase.status(showcase.tools[step.tool], part),
-          cursorVisible: true,
         }));
-        if (step.seed !== undefined) moveCursor(step.seed);
       } else if (action.kind === "rest" || action.kind === "alive") {
-        setView((v) => ({ ...v, tool: null, status: "", cursorVisible: false }));
+        setView((v) => ({ ...v, tool: null, status: "" }));
       } else if (action.kind === "export") {
         setView((v) => ({ ...v, status: showcase.exporting }));
       } else if (action.kind === "fade") {
@@ -142,7 +131,6 @@ export function useHomeShowcase() {
             Math.ceil((frame / action.frames) * step.pixels.length),
           );
           for (; painted < target; painted += 1) pixels[step.pixels[painted]] = step.color;
-          if (painted > 0) moveCursor(step.pixels[painted - 1]);
           paint(pixels, drawing.size, null);
         }
         return frame >= action.frames;
@@ -192,7 +180,6 @@ export function useHomeShowcase() {
   const { showcase } = home;
   return {
     canvasRef,
-    cursorRef,
     label: showcase.label,
     title: showcase.drawings[view.drawingId],
     tools: SHOWCASE_TOOLS.map((item) => ({
@@ -212,9 +199,8 @@ export function useHomeShowcase() {
       primary: { backgroundColor: DEFAULT_PALETTE[view.color] },
       secondary: { backgroundColor: DEFAULT_PALETTE[SHOWCASE_SECONDARY] },
     },
-    cursorVisible: view.cursorVisible,
     status: view.status,
-    hex: view.cursorVisible ? DEFAULT_PALETTE[view.color] : "",
+    hex: view.tool ? DEFAULT_PALETTE[view.color] : "",
     faded: view.faded,
     canvasSize: FIRST.rows.length,
     showPause: !reducedMotion,

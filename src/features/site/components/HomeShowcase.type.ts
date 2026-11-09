@@ -13,6 +13,5 @@ export interface IShowcaseView {
   /** Palette index in the primary slot. */
   color: number;
   status: string;
-  cursorVisible: boolean;
   faded: boolean;
 }
