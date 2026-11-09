@@ -470,14 +470,23 @@ export interface IHomeContent {
   lead: string;
   primary: string;
   secondary: string;
-  /** The hero's editor illustration: an illustrative sprite on a miniature of the editor. */
+  /** The hero's live canvas: illustrative drawings drawn one after another in a miniature editor. */
   showcase: {
     /** Accessible name of the illustration as a whole. */
     label: string;
-    artworkTitle: string;
+    /** Toolbar title of each drawing. */
+    drawings: { cat: string; robin: string; pitbull: string; plant: string; cactus: string };
+    /** Status-line name of each drawing's final touch. */
+    touch: { cat: string; robin: string; pitbull: string; plant: string; cactus: string };
+    tools: { brush: string; bucket: string };
+    parts: { outline: string; fill: string; shadow: string; color: string; light: string };
+    status: (tool: string, part: string) => string;
+    exporting: string;
+    pause: string;
+    play: string;
+    pauseLabel: string;
+    playLabel: string;
     caption: string;
-    size: string;
-    spriteAlt: string;
   };
   promises: IHomeBlurb[];
   insideLabel: string;

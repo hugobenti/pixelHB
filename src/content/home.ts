@@ -10,11 +10,19 @@ export const home: IHomeContent = {
   primary: "Start drawing",
   secondary: "Read the guide",
   showcase: {
-    label: "Illustration: a slime sprite open in the PixelHB editor, with the palette above the canvas.",
-    artworkTitle: "Slime",
-    caption: "Illustrative sample. Exported at ×1, the PNG is",
-    size: "32 × 32 px",
-    spriteAlt: "The slime sprite at its real size",
+    label:
+      "Illustration: the PixelHB editor drawing a cat, a pitbull, a robin, a cactus and a plant, one after another, then exporting each as a PNG.",
+    drawings: { cat: "Cat", robin: "Robin", pitbull: "Pitbull", plant: "Plant", cactus: "Cactus" },
+    touch: { cat: "Eyes", robin: "Eye", pitbull: "Eyes", plant: "Last leaf", cactus: "Flower" },
+    tools: { brush: "Brush", bucket: "Paint bucket" },
+    parts: { outline: "Outline", fill: "Fill", shadow: "Shadow", color: "Color", light: "Light" },
+    status: (tool, part) => `${tool} · ${part}`,
+    exporting: "Download PNG · ×1",
+    pause: "Pause",
+    play: "Play",
+    pauseLabel: "Pause the drawing",
+    playLabel: "Play the drawing",
+    caption: "Illustrative samples",
   },
   promises: [
     {

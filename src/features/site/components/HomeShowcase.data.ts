@@ -1,7 +1,6 @@
 /**
  * Purpose:
- * What the Home hero's editor illustration shows: the sample sprite, the toolbar tools and the
- * starter palette with its painting slots.
+ * Static parts of the Home live canvas: the toolbar's tools and the starter palette.
  *
  * Notes:
  * The swatch colors are artwork data (Sweetie 16, the palette every new artwork starts with), not
@@ -10,30 +9,20 @@
 
 import { DEFAULT_PALETTE } from "@/features/shared/artwork/defaultPalette";
 import { PUBLIC_ICONS } from "@/features/shared/constants/publicIcons";
-import type { IShowcaseSwatch, IShowcaseTool } from "./HomeShowcase.type";
-
-/** An illustrative 32 × 32 sprite drawn with the starter palette only (`public/showcase/slime.png`). */
-export const SHOWCASE_SPRITE = { src: "/showcase/slime.png", width: 32, height: 32 };
+import type { IShowcaseTool } from "./HomeShowcase.type";
 
 export const SHOWCASE_TOOLS: IShowcaseTool[] = [
-  { icon: PUBLIC_ICONS.pencil, pressed: true },
-  { icon: PUBLIC_ICONS.eraser, pressed: false },
-  { icon: PUBLIC_ICONS.bucket, pressed: false },
-  { icon: PUBLIC_ICONS.pipette, pressed: false },
-  { icon: PUBLIC_ICONS.pan, pressed: false },
+  { tool: "brush", icon: PUBLIC_ICONS.pencil },
+  { tool: null, icon: PUBLIC_ICONS.eraser },
+  { tool: "bucket", icon: PUBLIC_ICONS.bucket },
+  { tool: null, icon: PUBLIC_ICONS.pipette },
+  { tool: null, icon: PUBLIC_ICONS.pan },
 ];
 
-/** The slime's body green paints; the lightest color sits in the other slot, as in a new artwork. */
-const PRIMARY_INDEX = 7;
-const SECONDARY_INDEX = 1;
-
-export const SHOWCASE_SWATCHES: IShowcaseSwatch[] = DEFAULT_PALETTE.map((color, index) => ({
+export const SHOWCASE_SWATCH_STYLES = DEFAULT_PALETTE.map((color) => ({
   key: color,
   style: { backgroundColor: color },
-  ring: index === PRIMARY_INDEX ? "primary" : index === SECONDARY_INDEX ? "secondary" : "idle",
 }));
 
-export const SHOWCASE_COLOR_PAIR = {
-  primary: { backgroundColor: DEFAULT_PALETTE[PRIMARY_INDEX] },
-  secondary: { backgroundColor: DEFAULT_PALETTE[SECONDARY_INDEX] },
-};
+/** The lightest color, the secondary slot of every new artwork. */
+export const SHOWCASE_SECONDARY = 1;
