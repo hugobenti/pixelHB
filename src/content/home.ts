@@ -11,9 +11,9 @@ export const home: IHomeContent = {
   secondary: "Read the guide",
   showcase: {
     label:
-      "Illustration: the PixelHB editor drawing a cat, a pitbull, a robin, a cactus and a monstera leaf, one after another, then exporting each as a PNG.",
-    drawings: { cat: "Cat", robin: "Robin", pitbull: "Pitbull", monstera: "Monstera", cactus: "Cactus" },
-    touch: { cat: "Eyes", robin: "Eye", pitbull: "Eyes", monstera: "Veins", cactus: "Flower" },
+      "Illustration: the PixelHB editor drawing a cat, a pitbull, a robin and a cactus, one after another, then exporting each as a PNG.",
+    drawings: { cat: "Cat", robin: "Robin", pitbull: "Pitbull", cactus: "Cactus" },
+    touch: { cat: "Eyes", robin: "Eye", pitbull: "Eyes", cactus: "Flower" },
     tools: { brush: "Brush", bucket: "Paint bucket" },
     parts: { outline: "Outline", fill: "Fill", shadow: "Shadow", color: "Color", light: "Light" },
     status: (tool, part) => `${tool} · ${part}`,
@@ -43,9 +43,15 @@ export const home: IHomeContent = {
   inside: [
     { title: "Layers", text: "Add, hide, reorder and duplicate." },
     { title: "Reference image", text: "Load a picture to draw from, right on the canvas." },
-    { title: "Indexed palette", text: "Up to 256 colors. Change one and every pixel using it follows." },
+    {
+      title: "Indexed palette",
+      text: "Up to 256 colors. Change one and every pixel using it follows.",
+    },
     { title: "Fill", text: "Fill a connected area in one tap." },
-    { title: "Shift pixels", text: "Nudge your art. Edges wrap, so you can check a tile repeats cleanly." },
+    {
+      title: "Shift pixels",
+      text: "Nudge your art. Edges wrap, so you can check a tile repeats cleanly.",
+    },
     { title: "Grid and guides", text: "A pixel grid (press G) and center lines for symmetry." },
     { title: "Undo and redo", text: "Step back and forth through your edits." },
     { title: "PNG export", text: "The visible layers as one image, at 1× or scaled up." },
