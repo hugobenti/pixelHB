@@ -45,12 +45,13 @@ describe("isTextEntryTarget", () => {
 });
 
 describe("editorShortcutForKey", () => {
-  it("claims Shift+/ only outside text entry and without other modifiers or repeat", () => {
+  it("claims ? only outside text entry and without Ctrl, Cmd, Alt or repeat", () => {
     expect(editorShortcutForKey(key("?", { shiftKey: true }), false)).toBe("toggleShortcuts");
+    expect(editorShortcutForKey(key("?"), false)).toBe("toggleShortcuts");
     expect(editorShortcutForKey(key("?", { shiftKey: true }), true)).toBeNull();
     expect(editorShortcutForKey(key("?", { shiftKey: true, repeat: true }), false)).toBeNull();
     expect(editorShortcutForKey(key("?", { shiftKey: true, ctrlKey: true }), false)).toBeNull();
-    expect(editorShortcutForKey(key("?"), false)).toBeNull();
+    expect(editorShortcutForKey(key("/", { shiftKey: false }), false)).toBeNull();
   });
 
   it("maps bare g to the grid toggle", () => {

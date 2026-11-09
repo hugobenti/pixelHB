@@ -66,11 +66,6 @@ export const help: IHelpContent = {
   shortcutColumns: { action: "Action", keys: "Keys" },
   keyNames: { ctrl: "Ctrl", shift: "Shift", space: "Space", arrows: "Arrow keys", alt: "Alt" },
   shortcuts: [
-    {
-      action: "Show or hide keyboard shortcuts",
-      combo: { key: "?", shift: true },
-      effect: "toggleShortcuts",
-    },
     { action: "Undo", combo: { key: "z", mod: true }, effect: "undo" },
     { action: "Redo", combo: { key: "z", mod: true, shift: true }, effect: "redo" },
     {
@@ -98,6 +93,7 @@ export const help: IHelpContent = {
       effect: "arrowPan",
       note: "Shift for bigger steps; click the canvas first",
     },
+    { action: "Show or hide the shortcuts list", combo: { key: "?" }, effect: "toggleShortcuts" },
   ],
   contactPrompt: "Something not working, or missing?",
   privacyLink: "How PixelHB handles your data",

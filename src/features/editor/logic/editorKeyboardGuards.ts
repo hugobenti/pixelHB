@@ -55,7 +55,8 @@ export function editorShortcutForKey(
     return null;
   }
   const lower = e.key.toLowerCase();
-  if (!e.ctrlKey && !e.metaKey && !e.altKey && e.shiftKey && lower === "?" && !e.repeat) {
+  // `?` is typed with Shift on most layouts, so the key value alone decides; Shift is not required.
+  if (!e.ctrlKey && !e.metaKey && !e.altKey && lower === "?" && !e.repeat) {
     return "toggleShortcuts";
   }
   const bareKey = e.ctrlKey || e.metaKey || e.altKey ? undefined : BARE_KEY_SHORTCUTS.get(lower);

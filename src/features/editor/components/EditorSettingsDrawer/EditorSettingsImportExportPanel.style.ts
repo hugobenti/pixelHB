@@ -17,7 +17,9 @@ export const editorSettingsImportExportPanel = {
   scaleOption: cx("min-h-10 px-2.5 text-xs sm:min-h-9", pressedState),
   creditRow: "mt-3",
   srOnly: "sr-only",
-  shareHint: "mt-1 text-xs leading-relaxed text-subtle",
+  /** Share is its own row under a hairline, so its larger size line never reads as Download PNG's. */
+  shareRow: "mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-line pt-3",
+  shareHint: "text-xs leading-relaxed text-subtle",
   actions: "mt-3 flex flex-wrap gap-2",
   button: settingsPanel.actionButton,
 };

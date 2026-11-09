@@ -80,8 +80,7 @@ export function EditorSettingsImportExportPanel({
             {editor.settings.export.downloadPng}
           </Button>
         </div>
-        <p className={editorSettingsImportExportPanel.shareHint}>{shareSizeLabel}</p>
-        <div className={editorSettingsImportExportPanel.actions}>
+        <div className={editorSettingsImportExportPanel.shareRow}>
           <Button
             type="button"
             variant="outline"
@@ -91,6 +90,7 @@ export function EditorSettingsImportExportPanel({
           >
             {shareLabel}
           </Button>
+          <p className={editorSettingsImportExportPanel.shareHint}>{shareSizeLabel}</p>
         </div>
       </section>
 
