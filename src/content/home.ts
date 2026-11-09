@@ -11,9 +11,9 @@ export const home: IHomeContent = {
   secondary: "Read the guide",
   showcase: {
     label:
-      "Illustration: the PixelHB editor drawing a cat, a pitbull, a robin, a cactus and a plant, one after another, then exporting each as a PNG.",
-    drawings: { cat: "Cat", robin: "Robin", pitbull: "Pitbull", plant: "Plant", cactus: "Cactus" },
-    touch: { cat: "Eyes", robin: "Eye", pitbull: "Eyes", plant: "Last leaf", cactus: "Flower" },
+      "Illustration: the PixelHB editor drawing a cat, a pitbull, a robin, a cactus and a monstera leaf, one after another, then exporting each as a PNG.",
+    drawings: { cat: "Cat", robin: "Robin", pitbull: "Pitbull", monstera: "Monstera", cactus: "Cactus" },
+    touch: { cat: "Eyes", robin: "Eye", pitbull: "Eyes", monstera: "Veins", cactus: "Flower" },
     tools: { brush: "Brush", bucket: "Paint bucket" },
     parts: { outline: "Outline", fill: "Fill", shadow: "Shadow", color: "Color", light: "Light" },
     status: (tool, part) => `${tool} · ${part}`,

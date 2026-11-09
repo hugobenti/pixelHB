@@ -41,7 +41,10 @@ const PAINT_ORDER: [number, TLiveStepKind][] = [
 /** A smaller enclosed area is quicker to brush than to fill. */
 const MIN_FILL = 10;
 
-/** Timing at 60 frames per second: about 8 s of drawing whatever the pixel count. */
+/**
+ * Timing at 60 frames per second: about 8 s of drawing, longer when a drawing has many strokes, so
+ * a stroke never paints faster than `minFramesPerPixel` allows.
+ */
 export const LIVE_TIMING = {
   intro: 30,
   draw: 480,
@@ -50,6 +53,7 @@ export const LIVE_TIMING = {
   bucketClick: 24,
   touch: 26,
   minStroke: 10,
+  minFramesPerPixel: 0.6,
   pause: 14,
   touchPause: 6,
   rest: 70,
@@ -284,7 +288,7 @@ export function planActions(steps: ILiveStep[], alive: ILiveAliveFrame[]): TLive
   const buckets = steps.filter((s) => s.tool === "bucket");
   const strokePixels = strokes.reduce((sum, s) => sum + s.pixels.length, 0);
   const perPixel = Math.max(
-    0.1,
+    t.minFramesPerPixel,
     (t.draw - strokes.length * t.minStroke - buckets.length * t.bucket) / Math.max(1, strokePixels),
   );
   const actions: TLiveAction[] = [{ kind: "wait", frames: t.intro }];
@@ -293,7 +297,7 @@ export function planActions(steps: ILiveStep[], alive: ILiveAliveFrame[]): TLive
       step.tool === "bucket"
         ? t.bucket
         : step.kind === "touch"
-          ? t.touch
+          ? Math.max(t.touch, Math.round(step.pixels.length * t.minFramesPerPixel))
           : Math.max(t.minStroke, Math.round(step.pixels.length * perPixel));
     actions.push({ kind: "step", step, frames });
     const next = steps[i + 1];
