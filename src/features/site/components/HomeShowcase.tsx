@@ -26,7 +26,6 @@ export function HomeShowcase() {
     tools,
     swatches,
     pair,
-    cursorIcon,
     cursorVisible,
     status,
     hex,
@@ -84,9 +83,6 @@ export function HomeShowcase() {
               className={cx(homeShowcase.cursor, !cursorVisible && homeShowcase.cursorHidden)}
             >
               <span className={homeShowcase.cursorPixel} />
-              {cursorIcon ? (
-                <PublicMaskIcon src={cursorIcon} className={homeShowcase.cursorIcon} />
-              ) : null}
             </span>
           </div>
         </div>

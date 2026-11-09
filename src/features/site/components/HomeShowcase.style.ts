@@ -45,8 +45,6 @@ export const homeShowcase = {
   cursorHidden: "opacity-0",
   cursorPixel:
     "absolute inset-0 shadow-[0_0_0_1px_var(--color-loupe-edge-light),0_0_0_2px_var(--color-loupe-edge-dark)]",
-  cursorIcon:
-    "absolute -top-5 left-full size-5 text-loupe-edge-dark drop-shadow-[0_0_1px_var(--color-loupe-edge-light)]",
   statusRow: "flex min-h-10 items-center justify-between gap-3 text-xs text-muted",
   status: "min-w-0 truncate text-fg-secondary",
   hex: "ml-1.5 font-mono font-medium text-fg",

@@ -1,7 +1,6 @@
 /**
  * Purpose:
- * Static parts of the Home live canvas: the toolbar's tools, the starter palette, and the icon the
- * cursor carries for each tool.
+ * Static parts of the Home live canvas: the toolbar's tools and the starter palette.
  *
  * Notes:
  * The swatch colors are artwork data (Sweetie 16, the palette every new artwork starts with), not
@@ -10,7 +9,6 @@
 
 import { DEFAULT_PALETTE } from "@/features/shared/artwork/defaultPalette";
 import { PUBLIC_ICONS } from "@/features/shared/constants/publicIcons";
-import type { TLiveTool } from "@/features/site/logic/liveCanvas.type";
 import type { IShowcaseTool } from "./HomeShowcase.type";
 
 export const SHOWCASE_TOOLS: IShowcaseTool[] = [
@@ -20,11 +18,6 @@ export const SHOWCASE_TOOLS: IShowcaseTool[] = [
   { tool: null, icon: PUBLIC_ICONS.pipette },
   { tool: null, icon: PUBLIC_ICONS.pan },
 ];
-
-export const SHOWCASE_CURSOR_ICONS: Record<TLiveTool, string> = {
-  brush: PUBLIC_ICONS.pencil,
-  bucket: PUBLIC_ICONS.bucket,
-};
 
 export const SHOWCASE_SWATCH_STYLES = DEFAULT_PALETTE.map((color) => ({
   key: color,

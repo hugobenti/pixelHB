@@ -21,12 +21,7 @@ import {
   prepareDrawing,
 } from "@/features/site/logic/liveCanvas";
 import type { ILivePreparedDrawing, TLiveAction } from "@/features/site/logic/liveCanvas.type";
-import {
-  SHOWCASE_CURSOR_ICONS,
-  SHOWCASE_SECONDARY,
-  SHOWCASE_SWATCH_STYLES,
-  SHOWCASE_TOOLS,
-} from "./HomeShowcase.data";
+import { SHOWCASE_SECONDARY, SHOWCASE_SWATCH_STYLES, SHOWCASE_TOOLS } from "./HomeShowcase.data";
 import type { IShowcaseView } from "./HomeShowcase.type";
 import { LIVE_DRAWINGS } from "./liveDrawings.data";
 
@@ -91,7 +86,7 @@ export function useHomeShowcase() {
       return () => cancelAnimationFrame(id);
     }
 
-    let drawingIndex = Math.floor(Math.random() * drawings.length);
+    let drawingIndex = 0;
     let drawing: ILivePreparedDrawing = drawings[drawingIndex];
     let pixels = new Uint8Array(drawing.pixels.length).fill(LIVE_EMPTY);
     let actionIndex = 0;
@@ -230,7 +225,6 @@ export function useHomeShowcase() {
       primary: { backgroundColor: DEFAULT_PALETTE[view.color] },
       secondary: { backgroundColor: DEFAULT_PALETTE[SHOWCASE_SECONDARY] },
     },
-    cursorIcon: view.tool ? SHOWCASE_CURSOR_ICONS[view.tool] : null,
     cursorVisible: view.cursorVisible,
     status: view.status,
     hex: view.cursorVisible ? DEFAULT_PALETTE[view.color] : "",
