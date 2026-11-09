@@ -38,6 +38,16 @@ export function HelpScreen() {
               {paragraph}
             </p>
           ))}
+          {section.subsections?.map((subsection) => (
+            <section key={subsection.id} id={subsection.id} className={helpScreen.subsection}>
+              <h3 className={helpScreen.subsectionTitle}>{subsection.title}</h3>
+              {subsection.paragraphs.map((paragraph) => (
+                <p key={paragraph} className={helpScreen.prose}>
+                  {paragraph}
+                </p>
+              ))}
+            </section>
+          ))}
           {section.id === "saving" && (
             <p className={helpScreen.prose}>
               <Link href="/privacy" className={helpScreen.link}>

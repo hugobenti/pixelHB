@@ -192,6 +192,8 @@ export interface IGalleryContent {
     heading: string;
     countLabel: (n: number) => string;
     storageLink: string;
+    /** Replaces `storageLink` while artworks live in this browser only; links to Help's backup steps. */
+    backupLink: string;
     importFile: string;
     /** Accessible name of the Import file button. */
     importLabel: string;
@@ -574,7 +576,13 @@ export interface IHelpContent {
   /** Accessible name of the table-of-contents landmark. */
   tocLabel: string;
   intro: string;
-  sections: { id: string; title: string; paragraphs: string[] }[];
+  /** A section's optional `subsections` render after its paragraphs, each with an `h3` and its own anchor. */
+  sections: {
+    id: string;
+    title: string;
+    paragraphs: string[];
+    subsections?: { id: string; title: string; paragraphs: string[] }[];
+  }[];
   shortcutsTitle: string;
   shortcutsIntro: string;
   shortcutColumns: { action: string; keys: string };

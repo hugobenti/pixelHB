@@ -11,7 +11,8 @@ export const siteType = {
   lead: "text-lg text-muted",
   section: "text-xl font-semibold text-fg",
   pageTitle: "text-2xl font-semibold text-fg",
-  prose: "max-w-prose text-base text-fg-secondary",
+  /** `max-w-lg` (32rem) keeps body lines near 70 characters; `max-w-prose` ran to ~90 in this face. */
+  prose: "max-w-lg text-base text-fg-secondary",
   link: cx("rounded-sm text-fg underline underline-offset-4 hover:text-fg-soft", focusRing),
   /** A link that stands alone (not inside a sentence): 44px tall on touch screens. */
   linkStandalone: cx(

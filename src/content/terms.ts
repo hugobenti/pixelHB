@@ -7,7 +7,7 @@ export const terms: ITermsContent = {
     "The terms for using PixelHB, the free pixel art editor: your art stays yours, fair use, and no guarantees.",
   h1: "Terms",
   intro: "The short, plain rules for using PixelHB.",
-  updated: "Last updated: October 29, 2026",
+  updated: "Last updated: November 9, 2026",
   sections: [
     {
       id: "about",
@@ -46,7 +46,7 @@ export const terms: ITermsContent = {
       title: "No guarantees",
       paragraphs: [
         "To the extent the law allows, PixelHB is provided as is, without warranties of any kind.",
-        `Keep your own backups with Download JSON (Download PNG saves an image only). To the extent the law allows, neither PixelHB nor ${site.author} is liable for lost or damaged work, or for any indirect damage.`,
+        `Keep your own backups by downloading the artwork file (a PNG saves an image only). To the extent the law allows, neither PixelHB nor ${site.author} is liable for lost or damaged work, or for any indirect damage.`,
       ],
     },
     {

@@ -1,49 +1,50 @@
 import type { IHomeContent } from "./content.type";
 
 export const home: IHomeContent = {
-  metaTitle: { absolute: "PixelHB · Pixel art, right in your browser" },
+  metaTitle: { absolute: "PixelHB · Pixel art editor for sprites, tiles and icons" },
   metaDescription:
-    "Free online pixel art editor. Draw sprites, icons and tiles with layers and palettes up to 256 colors, then export PNG. No account needed, and your art is always yours.",
-  h1: "Pixel art, right in your browser.",
-  lead: "Draw sprites, icons and tiles with layers, a reference image and your own palette. No account needed. Sign in to keep your art in your own Google Drive.",
+    "Free pixel art editor in your browser. Draw sprites, tiles and icons with layers and palettes of up to 256 colors, then export pixel-perfect PNGs. No account needed.",
+  /** U+2011 (non-breaking hyphen) keeps "pixel‑perfect" on one line. */
+  h1: "Draw sprites and tiles. Export pixel\u2011perfect PNGs.",
+  lead: "A focused pixel-art editor for your browser, on a computer or a phone: layers, a palette you control and a reference image to draw from. No account needed, and your art stays yours.",
   primary: "Start drawing",
   secondary: "Read the guide",
   promises: [
     {
-      title: "Open it and draw",
-      text: "No sign-up and no download. Pick a canvas size and start.",
+      title: "Start in seconds",
+      text: "No sign-up and no install. Pick a canvas size, from 16 × 16 up to 1000 × 1000, and draw.",
     },
     {
       title: "Your art is yours",
-      text: "It saves automatically in this browser, or in your own Google Drive when you sign in. PixelHB keeps no copies.",
+      text: "It saves as you draw, in this browser or in your own Google Drive when you sign in. PixelHB never keeps a copy.",
     },
     {
       title: "Ready for your game",
-      text: "Export crisp PNGs up to 1000 × 1000 pixels, with palettes of up to 256 colors.",
+      text: "Download a PNG at its real size for your engine, or scaled up for a store page or a post.",
     },
   ],
-  insideLabel: "What’s inside",
-  insideIntro: "Everything you need for sprites, icons and tiles.",
+  insideLabel: "In the editor",
+  insideIntro: "The tools you reach for in every piece.",
   inside: [
     { title: "Layers", text: "Add, hide, reorder and duplicate." },
-    { title: "Reference image", text: "Trace over any picture." },
-    { title: "Your palette", text: "Up to 256 colors, all yours." },
-    { title: "Fill", text: "One tap fills an area." },
-    { title: "Shift pixels", text: "Move everything; edges wrap around." },
-    { title: "Grid and guides", text: "Pixel grid on G, center lines." },
+    { title: "Reference image", text: "Load a picture to draw from, right on the canvas." },
+    { title: "Indexed palette", text: "Up to 256 colors. Change one and every pixel using it follows." },
+    { title: "Fill", text: "Fill a connected area in one tap." },
+    { title: "Shift pixels", text: "Nudge your art. Edges wrap, so you can check a tile repeats cleanly." },
+    { title: "Grid and guides", text: "A pixel grid (press G) and center lines for symmetry." },
     { title: "Undo and redo", text: "Step back and forth through your edits." },
-    { title: "PNG export", text: "Crisp images, ready for your game." },
+    { title: "PNG export", text: "The visible layers as one image, at 1× or scaled up." },
   ],
   stepsTitle: "How it works",
   steps: [
-    { title: "Create a canvas", text: "Any size up to 1000 × 1000." },
-    { title: "Draw", text: "Use a mouse, a trackpad or your finger." },
-    { title: "Export", text: "A crisp PNG for your game or portfolio." },
+    { title: "Create a canvas", text: "Pick a preset or any size up to 1000 × 1000." },
+    { title: "Draw", text: "With a mouse, a trackpad or your finger." },
+    { title: "Export", text: "A PNG for your game, or an artwork file to keep editing." },
   ],
   storageNote:
-    "Signed out, your artworks live in this browser, and clearing your browsing data deletes them. Signed in, they’re kept in your Google Drive too.",
+    "Signed out, your artworks live in this browser, and clearing your browsing data deletes them. Signed in, they’re also kept in your Google Drive.",
   storageLink: "Where your work is saved",
-  closingTitle: "Ready to draw?",
-  closingText: "Your first canvas is one click away. No sign-up needed.",
+  closingTitle: "Make your first sprite",
+  closingText: "Pick a canvas size and start drawing. No account, no install.",
   closingCta: "Start drawing",
 };
