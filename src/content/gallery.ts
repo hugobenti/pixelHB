@@ -7,6 +7,7 @@ export const gallery: IGalleryContent = {
     heading: "Your artworks",
     countLabel: (n) => (n === 1 ? "1 artwork" : `${n} artworks`),
     storageLink: "Learn more",
+    backupLink: "How to keep a copy",
     importFile: "Import file",
     importLabel: "Import file (.json)",
     newArtwork: "New artwork",
@@ -14,7 +15,7 @@ export const gallery: IGalleryContent = {
   },
   grid: {
     emptyTitle: "No artworks yet",
-    emptyText: "Create your first canvas, or open an artwork file you exported before.",
+    emptyText: "Start a new canvas, or import an artwork file to keep editing it.",
   },
   card: {
     clone: "Duplicate",
@@ -46,12 +47,12 @@ export const gallery: IGalleryContent = {
   },
   import: {
     success: "Artwork imported.",
-    failed: "This file isn’t a PixelHB artwork.",
+    failed: "This file isn’t a PixelHB artwork. Choose an artwork file downloaded from the editor.",
   },
   errors: {
     load: "Couldn’t open your artworks. Reload the page to try again.",
     create: "Couldn’t create the artwork. Try again.",
-    import: "This file isn’t a PixelHB artwork.",
+    import: "This file isn’t a PixelHB artwork. Choose an artwork file downloaded from the editor.",
     rename: "Couldn’t rename the artwork. Try again.",
     clone: "Couldn’t duplicate the artwork. Try again.",
     delete: "Couldn’t delete the artwork. Try again.",

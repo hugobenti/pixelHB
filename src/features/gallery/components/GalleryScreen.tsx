@@ -87,8 +87,8 @@ export function GalleryScreen() {
             <span role="status" className={galleryScreen.noteText}>
               {storageNote.tone === "attention" ? storageNote.text : null}
             </span>
-            <Link href="/help#saving" className={siteType.linkStandalone}>
-              {gallery.screen.storageLink}
+            <Link href={storageNote.link.href} className={siteType.linkStandalone}>
+              {storageNote.link.label}
             </Link>
           </p>
         </div>

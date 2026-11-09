@@ -1,6 +1,6 @@
 /**
  * Purpose:
- * Classes for HelpScreen: the reading layout, table of contents and shortcuts table.
+ * Classes for HelpScreen: the reading layout, table of contents, section subheads and shortcuts table.
  */
 
 import { siteType } from "@/features/shared/site/siteType.style";
@@ -13,6 +13,9 @@ export const helpScreen = {
   toc: "flex flex-wrap gap-x-5 gap-y-2",
   section: "flex scroll-mt-24 flex-col gap-4",
   sectionTitle: siteType.section,
+  /** More room above a subhead than below it, so each block reads as its own group. */
+  subsection: "mt-2 flex scroll-mt-24 flex-col gap-3",
+  subsectionTitle: "text-base font-semibold text-fg",
   prose: siteType.prose,
   link: siteType.link,
   tocLink: siteType.linkStandalone,

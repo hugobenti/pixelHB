@@ -18,6 +18,7 @@ import { clonePixelBuffer, ensureUint8PixelData } from "@/features/shared/utils/
 import { MAX_PALETTE_ENTRIES, validateDimensions } from "./artworkLimits";
 import { deletionStamp, nextUpdatedAt } from "./updatedAtStamp";
 import type { ICreateArtworkInput } from "./artworkService.type";
+import { DEFAULT_PALETTE } from "./defaultPalette";
 
 const CANON_HEX6 = /^#[0-9A-F]{6}$/;
 
@@ -57,30 +58,6 @@ function editedRowSync(owner: string | null, stored: IArtworkSyncState): IArtwor
 
 /** Pixel value for "no color": any value at or above the palette length draws nothing; 255 is the one written. */
 export const TRANSPARENT_PIXEL_INDEX = 255;
-
-/**
- * Starter palette for new artworks: Sweetie 16 by GrafxKid. Index 0 (darkest) is the primary
- * painting slot and index 1 (lightest) the secondary slot and default background; the rest follow
- * the palette's warm-to-cool order.
- */
-export const DEFAULT_PALETTE: string[] = [
-  "#1A1C2C",
-  "#F4F4F4",
-  "#5D275D",
-  "#B13E53",
-  "#EF7D57",
-  "#FFCD75",
-  "#A7F070",
-  "#38B764",
-  "#257179",
-  "#29366F",
-  "#3B5DC9",
-  "#41A6F6",
-  "#73EFF7",
-  "#94B0C2",
-  "#566C86",
-  "#333C57",
-];
 
 function newId(): string {
   return crypto.randomUUID();

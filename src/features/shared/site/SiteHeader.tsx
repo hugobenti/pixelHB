@@ -21,8 +21,16 @@ import type { ISiteHeaderProps } from "./SiteShell.type";
 import { useSiteHeader } from "./useSiteHeader";
 
 export function SiteHeader({ primaryAction }: ISiteHeaderProps) {
-  const { navItems, menuItems, menuOpen, openMenu, closeMenu, themeReady, themeButton } =
-    useSiteHeader();
+  const {
+    navItems,
+    menuItems,
+    menuOpen,
+    openMenu,
+    closeMenu,
+    themeReady,
+    themeButton,
+    showPrimaryAction,
+  } = useSiteHeader();
 
   const labels = (
     <>
@@ -61,11 +69,12 @@ export function SiteHeader({ primaryAction }: ISiteHeaderProps) {
           />
         </span>
         <AccountControl placement="bar" />
-        {primaryAction.kind === "link" ? (
+        {showPrimaryAction && primaryAction.kind === "link" ? (
           <Link href={primaryAction.href} className={siteHeader.primary}>
             {labels}
           </Link>
-        ) : (
+        ) : null}
+        {showPrimaryAction && primaryAction.kind === "button" ? (
           <Button
             type="button"
             onClick={primaryAction.onClick}
@@ -73,7 +82,7 @@ export function SiteHeader({ primaryAction }: ISiteHeaderProps) {
           >
             {labels}
           </Button>
-        )}
+        ) : null}
         <IconButton
           icon={PUBLIC_ICONS.menu}
           label={shell.menu.open}

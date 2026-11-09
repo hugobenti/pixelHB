@@ -72,7 +72,7 @@ export const galleryMetadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-/** The home tab reads "PixelHB · Pixel art, right in your browser" (no template suffix). */
+/** The home tab reads "PixelHB · Pixel art editor for sprites, tiles and icons" (no template suffix). */
 export const homeMetadata = pageMetadata("/", home.metaTitle, home.metaDescription);
 export const aboutMetadata = pageMetadata("/about", about.metaTitle, about.metaDescription);
 export const privacyMetadata = pageMetadata("/privacy", privacy.metaTitle, privacy.metaDescription);

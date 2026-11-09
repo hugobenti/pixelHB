@@ -197,7 +197,8 @@ html {
 }
 
 /**
- * Transparency checkerboard for DOM previews (layer previews, gallery thumbnails, transparent chip, loupe);
+ * Transparency checkerboard for DOM previews (layer previews, gallery thumbnails, transparent chip, loupe,
+ * the Home showcase canvas);
  * the editor canvas draws its own in canvasBackdrop.ts.
  */
 @layer utilities {
@@ -218,37 +219,5 @@ html {
       0 calc(var(--checker-size, 20px) / 2),
       calc(var(--checker-size, 20px) / 2) calc(var(--checker-size, 20px) / -2),
       calc(var(--checker-size, 20px) / -2) 0;
-  }
-}
-
-/**
- * Faint pixel grid with two consumers. The Home hero banner: the cell matches the banner's whole-number scale: 8px
- * from lg (400px banner), 6px below (300px banner), 5px under 360px (250px banner, which fits a
- * 320px screen). The banner is centered, and half its width is a whole number of cells, so grid
- * lines run through the panel's horizontal center (`50% + cell / 2`); its height is 7 cells, so the
- * default vertical `50%` lands on the pencil's rows too. The Home closing panel: a decorative
- * backdrop only; its grid is not aligned to the 2× pencil logo.
- */
-@layer utilities {
-  .pixel-grid-panel {
-    background-image:
-      linear-gradient(var(--color-line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
-    background-size: 6px 6px;
-    background-position: calc(50% + 3px) 50%;
-  }
-
-  @media (max-width: 359px) {
-    .pixel-grid-panel {
-      background-size: 5px 5px;
-      background-position: calc(50% + 2.5px) 50%;
-    }
-  }
-
-  @media (min-width: 64rem) {
-    .pixel-grid-panel {
-      background-size: 8px 8px;
-      background-position: calc(50% + 4px) 50%;
-    }
   }
 }

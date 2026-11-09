@@ -23,8 +23,8 @@ export const about: IAboutContent = {
       title: "Why PixelHB exists",
       paragraphs: [
         "I was working on an art project and needed a complete pixel tool: layers I could organize, a reference image to draw from, a palette I fully control, and nothing to install. Every editor I tried was missing something, so I built my own.",
-        "Now PixelHB is for anyone who loves pixels: artists, designers, game makers, and everyone who simply enjoys drawing.",
-        "It’s made by an artist, for artists, and it grows with your feedback. Tell me what’s missing, and let’s build the best pixel tool together.",
+        "Now PixelHB is for anyone who makes things a pixel at a time: artists drawing for the joy of it, and developers making sprites and tiles for their games.",
+        "It grows with your feedback. If something gets between you and your art, or a tool you need is missing, tell me.",
       ],
     },
     {

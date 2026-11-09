@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { db } from "@/features/shared/db/dexie.config";
 import * as artworkService from "./artworkService";
+import { DEFAULT_PALETTE } from "./defaultPalette";
 import * as syncStore from "./artworkSyncStore";
 
 const input = { title: "Cat", width: 2, height: 2, backgroundColor: "#1A1C2C" };
@@ -23,7 +24,7 @@ describe("createArtwork background", () => {
     expect(Array.from(art.layers[0].pixelData)).toEqual(
       new Array(4).fill(artworkService.TRANSPARENT_PIXEL_INDEX),
     );
-    expect(art.palette).toEqual(artworkService.DEFAULT_PALETTE);
+    expect(art.palette).toEqual(DEFAULT_PALETTE);
   });
 
   test("a hex background still fills with its palette index", async () => {

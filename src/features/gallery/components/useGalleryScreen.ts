@@ -109,10 +109,17 @@ export function useGalleryScreen() {
 
   return {
     artworks: cards,
-    /** `text` is null while the account loads: the gallery then shows only the "Learn more" link. */
+    /**
+     * `text` is null while the account loads: the gallery then shows only the link. While artworks
+     * live in this browser only, the link points to Help's backup steps instead of the overview.
+     */
     storageNote: {
       text: message ? syncStatusText(message) : null,
       tone: message?.tone ?? "neutral",
+      link:
+        message?.key === "thisBrowserOnly"
+          ? { href: "/help#backup", label: gallery.screen.backupLink }
+          : { href: "/help#saving", label: gallery.screen.storageLink },
     },
     now,
     loaded,
