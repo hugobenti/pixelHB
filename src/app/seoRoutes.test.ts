@@ -8,7 +8,6 @@ describe("sitemap", () => {
     const urls = sitemap().map((entry) => entry.url);
     expect(urls.map((url) => new URL(url).pathname)).toEqual([
       "/",
-      "/gallery",
       "/help",
       "/about",
       "/contact",
@@ -17,7 +16,7 @@ describe("sitemap", () => {
     ]);
     for (const url of urls) {
       expect(url).toMatch(/^https:\/\/[^/]+(\/[^/]*)?$/);
-      expect(url).not.toContain("/editor");
+      expect(url).not.toMatch(/\/(editor|gallery)/);
     }
   });
 });
