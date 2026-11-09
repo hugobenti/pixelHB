@@ -5,7 +5,7 @@
  */
 
 import type { IBrandLockupPart } from "./brandPixels.type";
-import { BANNER_LOCKUP, BRAND_FIXED_COLORS, HORIZONTAL_LOCKUP, PENCIL_LOCKUP } from "./brandArt";
+import { BRAND_FIXED_COLORS, HORIZONTAL_LOCKUP, PENCIL_LOCKUP } from "./brandArt";
 import type { IBrandLogoDrawing } from "./BrandLogo.type";
 import { lockup } from "./brandPixels";
 
@@ -31,5 +31,4 @@ export function logoDrawing(parts: readonly IBrandLockupPart[]): IBrandLogoDrawi
 }
 
 export const HORIZONTAL_LOGO = logoDrawing(HORIZONTAL_LOCKUP);
-export const BANNER_LOGO = logoDrawing(BANNER_LOCKUP);
 export const PENCIL_LOGO = logoDrawing(PENCIL_LOCKUP);
