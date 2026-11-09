@@ -470,6 +470,15 @@ export interface IHomeContent {
   lead: string;
   primary: string;
   secondary: string;
+  /** The hero's editor illustration: an illustrative sprite on a miniature of the editor. */
+  showcase: {
+    /** Accessible name of the illustration as a whole. */
+    label: string;
+    artworkTitle: string;
+    caption: string;
+    size: string;
+    spriteAlt: string;
+  };
   promises: IHomeBlurb[];
   insideLabel: string;
   insideIntro: string;

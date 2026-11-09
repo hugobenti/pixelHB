@@ -9,6 +9,13 @@ export const home: IHomeContent = {
   lead: "A focused pixel-art editor for your browser, on a computer or a phone: layers, a palette you control and a reference image to draw from. No account needed, and your art stays yours.",
   primary: "Start drawing",
   secondary: "Read the guide",
+  showcase: {
+    label: "Illustration: a slime sprite open in the PixelHB editor, with the palette above the canvas.",
+    artworkTitle: "Slime",
+    caption: "Illustrative sample. Exported at ×1, the PNG is",
+    size: "32 × 32 px",
+    spriteAlt: "The slime sprite at its real size",
+  },
   promises: [
     {
       title: "Start in seconds",

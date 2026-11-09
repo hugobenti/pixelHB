@@ -46,6 +46,8 @@ export function useSiteHeader() {
     openMenu: () => setOpenedOn(pathname),
     closeMenu: () => setOpenedOn(null),
     themeReady,
+    /** Home's hero carries the same "Start drawing" call; the header drops its copy there (one primary per view). */
+    showPrimaryAction: pathname !== "/",
     themeButton: {
       icon: isDark ? PUBLIC_ICONS.sun : PUBLIC_ICONS.moon,
       label: isDark ? shell.theme.toLight : shell.theme.toDark,

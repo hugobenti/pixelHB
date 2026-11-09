@@ -1,7 +1,7 @@
 /**
  * Purpose:
- * Home page: hero with the banner pencil, the three promises, what's inside, how it works, the
- * storage note and the closing call to action.
+ * Home page: hero with the editor illustration, the three promises, the editor's tools, how it
+ * works, the storage note and the closing call to action.
  */
 
 import Link from "next/link";
@@ -11,6 +11,7 @@ import { BrandLogo } from "@/features/shared/brand/BrandLogo";
 import { PublicMaskIcon } from "@/features/shared/components/PublicMaskIcon";
 import { HOME_FEATURE_ICONS, HOME_PROMISE_ICONS, HOME_STEP_NUMBERS } from "./HomeScreen.data";
 import { homeScreen } from "./HomeScreen.style";
+import { HomeShowcase } from "./HomeShowcase";
 
 export function HomeScreen() {
   return (
@@ -28,9 +29,7 @@ export function HomeScreen() {
             </Link>
           </div>
         </div>
-        <div className={homeScreen.art}>
-          <BrandLogo variant="banner" decorative className={homeScreen.banner} />
-        </div>
+        <HomeShowcase />
       </section>
 
       <section className={homeScreen.promises}>
