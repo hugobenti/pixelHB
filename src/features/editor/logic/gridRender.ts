@@ -60,8 +60,8 @@ export function renderPixelGrid(
   }
   ctx.stroke();
 
-  const centerFactor = options.centerLineWidthFactor ?? 1.45;
-  const guideWidth = Math.max(baseLineWidth * centerFactor, 1e-6);
+  // A one-CSS-pixel guide stays legible without overpowering the artwork.
+  const guideWidth = 1 / viewport.scale;
   const haloWidth = guideWidth + 2 / viewport.scale;
   const cx = worldWidth / 2;
   const cy = worldHeight / 2;

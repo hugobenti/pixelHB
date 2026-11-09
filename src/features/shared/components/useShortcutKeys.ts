@@ -12,8 +12,8 @@ import { useSyncExternalStore } from "react";
 
 import { help } from "@/content/help";
 import type { IKeyCombo } from "@/content/content.type";
-import { formatKeyCombo } from "../logic/keyCombo";
-import type { TKeyPlatform } from "../logic/keyCombo.type";
+import { formatKeyCombo } from "@/features/shared/logic/keyCombo";
+import type { TKeyPlatform } from "@/features/shared/logic/keyCombo.type";
 
 const APPLE_PLATFORM = /mac|iphone|ipad|ipod/i;
 

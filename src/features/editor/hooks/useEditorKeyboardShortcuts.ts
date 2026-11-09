@@ -18,6 +18,7 @@ import type { IUseEditorKeyboardShortcutsParams } from "./useEditorKeyboardShort
 
 export function useEditorKeyboardShortcuts({
   onTogglePixelGrid,
+  onToggleShortcuts,
   onToggleEraser,
   onSwitchSlot,
   onSelectBrush,
@@ -38,6 +39,10 @@ export function useEditorKeyboardShortcuts({
         return;
       }
       e.preventDefault();
+      if (shortcut === "toggleShortcuts") {
+        onToggleShortcuts();
+        return;
+      }
       if (shortcut === "toggleGrid") {
         onTogglePixelGrid();
       } else if (shortcut === "toggleEraser") {
@@ -63,6 +68,7 @@ export function useEditorKeyboardShortcuts({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [
+    onToggleShortcuts,
     onTogglePixelGrid,
     onToggleEraser,
     onSwitchSlot,

@@ -5,10 +5,10 @@
 "use client";
 
 import type { IKeyCombo } from "@/content/content.type";
-import { helpScreen } from "./HelpScreen.style";
+import { shortcutKeys } from "./ShortcutKeys.style";
 import { useShortcutKeys } from "./useShortcutKeys";
 
 export function ShortcutKeys({ combo }: { combo: IKeyCombo }) {
   const keys = useShortcutKeys(combo);
-  return <kbd className={helpScreen.keys}>{keys}</kbd>;
+  return <kbd className={shortcutKeys.keys}>{keys}</kbd>;
 }

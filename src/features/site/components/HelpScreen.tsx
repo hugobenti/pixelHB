@@ -8,7 +8,7 @@ import Link from "next/link";
 import { help } from "@/content/help";
 import { HELP_TOC, SHORTCUTS_ID } from "./HelpScreen.data";
 import { helpScreen } from "./HelpScreen.style";
-import { ShortcutKeys } from "./ShortcutKeys";
+import { ShortcutKeys } from "@/features/shared/components/ShortcutKeys";
 
 export function HelpScreen() {
   return (

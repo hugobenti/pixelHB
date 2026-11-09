@@ -8,6 +8,4 @@ export interface IPixelGridRenderOptions {
   /** Halo stroked 2 CSS px wider than the guide under each center guide, read from `--color-guide-halo` (transparent in light: no halo). */
   centerHaloColor?: string;
   lineWidthWorld?: number;
-  /** Optional extra thickness multiplier for center guides (defaults to 1.45). */
-  centerLineWidthFactor?: number;
 }

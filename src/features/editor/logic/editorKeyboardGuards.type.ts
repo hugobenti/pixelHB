@@ -6,6 +6,7 @@ export interface IKeyboardTargetLike {
 
 export type TEditorShortcut =
   | "toggleGrid"
+  | "toggleShortcuts"
   | "toggleEraser"
   | "switchSlot"
   | "selectBrush"

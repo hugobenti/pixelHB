@@ -35,6 +35,8 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
     onOpenExport,
     settingsDrawerOpen,
     onToggleSettingsDrawer,
+    shortcutsOpen,
+    onToggleShortcuts,
   } = props;
   const { syncStatus } = useEditorActionsBar(props);
   const { toolbar } = editor;
@@ -81,6 +83,14 @@ export function EditorActionsBar(props: IEditorActionsBarProps) {
           icon={PUBLIC_ICONS.download}
           label={toolbar.export.label}
           onClick={onOpenExport}
+        />
+        <IconButton
+          icon={PUBLIC_ICONS.keyboard}
+          label={toolbar.shortcuts.label}
+          shortcut={toolbar.shortcuts.shortcut}
+          pressed={shortcutsOpen}
+          className={editorActionsBar.shortcutsButton}
+          onClick={onToggleShortcuts}
         />
         <IconButton
           icon={PUBLIC_ICONS.cog}

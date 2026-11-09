@@ -9,7 +9,7 @@ import { cx } from "@/features/shared/utils/cx";
 
 export const colorPairChip = {
   base: cx(
-    "inline-flex h-10 w-11 shrink-0 touch-manipulation items-center justify-center rounded-lg border border-control-border bg-surface p-0 text-fg pointer-coarse:h-11",
+    "inline-flex h-10 w-11 shrink-0 touch-manipulation items-center justify-center rounded-lg border border-control-border bg-surface p-0 text-fg max-md:h-11 pointer-coarse:h-11",
     "transition-colors hover:bg-surface-muted",
     focusRing,
   ),

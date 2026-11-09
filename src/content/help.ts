@@ -66,9 +66,18 @@ export const help: IHelpContent = {
   shortcutColumns: { action: "Action", keys: "Keys" },
   keyNames: { ctrl: "Ctrl", shift: "Shift", space: "Space", arrows: "Arrow keys", alt: "Alt" },
   shortcuts: [
+    {
+      action: "Show or hide keyboard shortcuts",
+      combo: { key: "?", shift: true },
+      effect: "toggleShortcuts",
+    },
     { action: "Undo", combo: { key: "z", mod: true }, effect: "undo" },
     { action: "Redo", combo: { key: "z", mod: true, shift: true }, effect: "redo" },
-    { action: "Turn the eraser on or off (paints transparent)", combo: { key: "e" }, effect: "toggleEraser" },
+    {
+      action: "Turn the eraser on or off (paints transparent)",
+      combo: { key: "e" },
+      effect: "toggleEraser",
+    },
     { action: "Use the brush", combo: { key: "b" }, effect: "selectBrush" },
     { action: "Turn the paint bucket on or off", combo: { key: "f" }, effect: "toggleBucket" },
     { action: "Turn the color picker on or off", combo: { key: "i" }, effect: "togglePicker" },

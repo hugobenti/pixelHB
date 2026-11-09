@@ -14,7 +14,7 @@ const key = (
     altKey: boolean;
     shiftKey: boolean;
     repeat: boolean;
-  }> = {}
+  }> = {},
 ) => ({
   key: k,
   ctrlKey: false,
@@ -29,26 +29,30 @@ describe("isTextEntryTarget", () => {
     "treats <%s> as text entry",
     (tagName) => {
       expect(isTextEntryTarget({ tagName })).toBe(true);
-    }
+    },
   );
 
   it("treats contenteditable elements as text entry", () => {
-    expect(isTextEntryTarget({ tagName: "DIV", isContentEditable: true })).toBe(
-      true
-    );
+    expect(isTextEntryTarget({ tagName: "DIV", isContentEditable: true })).toBe(true);
   });
 
   it("does not treat buttons, plain elements or null as text entry", () => {
     expect(isTextEntryTarget({ tagName: "BUTTON" })).toBe(false);
-    expect(isTextEntryTarget({ tagName: "DIV", isContentEditable: false })).toBe(
-      false
-    );
+    expect(isTextEntryTarget({ tagName: "DIV", isContentEditable: false })).toBe(false);
     expect(isTextEntryTarget(null)).toBe(false);
     expect(isTextEntryTarget({})).toBe(false);
   });
 });
 
 describe("editorShortcutForKey", () => {
+  it("claims Shift+/ only outside text entry and without other modifiers or repeat", () => {
+    expect(editorShortcutForKey(key("?", { shiftKey: true }), false)).toBe("toggleShortcuts");
+    expect(editorShortcutForKey(key("?", { shiftKey: true }), true)).toBeNull();
+    expect(editorShortcutForKey(key("?", { shiftKey: true, repeat: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("?", { shiftKey: true, ctrlKey: true }), false)).toBeNull();
+    expect(editorShortcutForKey(key("?"), false)).toBeNull();
+  });
+
   it("maps bare g to the grid toggle", () => {
     expect(editorShortcutForKey(key("g"), false)).toBe("toggleGrid");
     expect(editorShortcutForKey(key("G"), false)).toBe("toggleGrid");
@@ -123,17 +127,13 @@ describe("editorShortcutForKey", () => {
   it("maps Ctrl/Cmd+Z to undo and with Shift to redo", () => {
     expect(editorShortcutForKey(key("z", { ctrlKey: true }), false)).toBe("undo");
     expect(editorShortcutForKey(key("z", { metaKey: true }), false)).toBe("undo");
-    expect(
-      editorShortcutForKey(key("Z", { metaKey: true, shiftKey: true }), false)
-    ).toBe("redo");
+    expect(editorShortcutForKey(key("Z", { metaKey: true, shiftKey: true }), false)).toBe("redo");
   });
 
   it("never claims keys while focus is in a text field", () => {
     expect(editorShortcutForKey(key("g"), true)).toBeNull();
     expect(editorShortcutForKey(key("z", { ctrlKey: true }), true)).toBeNull();
-    expect(
-      editorShortcutForKey(key("z", { metaKey: true, shiftKey: true }), true)
-    ).toBeNull();
+    expect(editorShortcutForKey(key("z", { metaKey: true, shiftKey: true }), true)).toBeNull();
   });
 
   it("leaves scrolling keys alone", () => {
@@ -149,15 +149,13 @@ describe("shouldClaimSpaceForCanvasPan", () => {
   const base = { code: "Space", target: body, canvas, pointerOverCanvas: false };
 
   it("claims Space on the page while the pointer is over the canvas viewport", () => {
-    expect(shouldClaimSpaceForCanvasPan({ ...base, pointerOverCanvas: true })).toBe(
-      true
-    );
+    expect(shouldClaimSpaceForCanvasPan({ ...base, pointerOverCanvas: true })).toBe(true);
     expect(
       shouldClaimSpaceForCanvasPan({
         ...base,
         target: { tagName: "HTML" },
         pointerOverCanvas: true,
-      })
+      }),
     ).toBe(true);
   });
 
@@ -180,9 +178,9 @@ describe("shouldClaimSpaceForCanvasPan", () => {
       { tagName: "A" },
       { tagName: "DIV" },
     ]) {
-      expect(
-        shouldClaimSpaceForCanvasPan({ ...base, target, pointerOverCanvas: true })
-      ).toBe(false);
+      expect(shouldClaimSpaceForCanvasPan({ ...base, target, pointerOverCanvas: true })).toBe(
+        false,
+      );
     }
   });
 
@@ -192,10 +190,8 @@ describe("shouldClaimSpaceForCanvasPan", () => {
         ...base,
         code: "ArrowDown",
         pointerOverCanvas: true,
-      })
+      }),
     ).toBe(false);
-    expect(
-      shouldClaimSpaceForCanvasPan({ ...base, code: "PageDown", target: canvas })
-    ).toBe(false);
+    expect(shouldClaimSpaceForCanvasPan({ ...base, code: "PageDown", target: canvas })).toBe(false);
   });
 });

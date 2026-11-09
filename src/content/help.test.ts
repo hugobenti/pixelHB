@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import { shouldStartPickHold } from "@/features/editor/logic/colorPicker";
-import { editorShortcutForKey, shouldClaimSpaceForCanvasPan } from "@/features/editor/logic/editorKeyboardGuards";
+import {
+  editorShortcutForKey,
+  shouldClaimSpaceForCanvasPan,
+} from "@/features/editor/logic/editorKeyboardGuards";
 import type { IShortcutKeyLike } from "@/features/editor/logic/editorKeyboardGuards.type";
 import { KEYBOARD_PAN_FAST_STEP_PX, keyboardPanDelta } from "@/features/editor/logic/keyboardPan";
 
 import { help } from "./help";
 
-function eventFor(combo: { key: string; mod?: boolean; shift?: boolean }, modifier: "ctrlKey" | "metaKey"): IShortcutKeyLike {
+function eventFor(
+  combo: { key: string; mod?: boolean; shift?: boolean },
+  modifier: "ctrlKey" | "metaKey",
+): IShortcutKeyLike {
   return {
     key: combo.key,
     ctrlKey: modifier === "ctrlKey" && Boolean(combo.mod),
@@ -19,23 +25,22 @@ function eventFor(combo: { key: string; mod?: boolean; shift?: boolean }, modifi
 
 describe("help shortcuts match the editor's key handling", () => {
   it("documents every effect", () => {
-    expect(help.shortcuts.map((s) => s.effect).sort()).toEqual(
-      [
-        "altPick",
-        "arrowPan",
-        "redo",
-        "selectBrush",
-        "spacePan",
-        "switchSlot",
-        "toggleBucket",
-        "toggleEraser",
-        "toggleGrid",
-        "togglePicker",
-        "undo",
-        "zoomIn",
-        "zoomOut",
-      ],
-    );
+    expect(help.shortcuts.map((s) => s.effect).sort()).toEqual([
+      "altPick",
+      "arrowPan",
+      "redo",
+      "selectBrush",
+      "spacePan",
+      "switchSlot",
+      "toggleBucket",
+      "toggleEraser",
+      "toggleGrid",
+      "togglePicker",
+      "toggleShortcuts",
+      "undo",
+      "zoomIn",
+      "zoomOut",
+    ]);
   });
 
   for (const shortcut of help.shortcuts) {
@@ -44,6 +49,7 @@ describe("help shortcuts match the editor's key handling", () => {
         case "undo":
         case "redo":
         case "toggleGrid":
+        case "toggleShortcuts":
         case "toggleEraser":
         case "switchSlot":
         case "selectBrush":
@@ -52,7 +58,9 @@ describe("help shortcuts match the editor's key handling", () => {
         case "zoomIn":
         case "zoomOut":
           for (const modifier of ["ctrlKey", "metaKey"] as const) {
-            expect(editorShortcutForKey(eventFor(shortcut.combo, modifier), false)).toBe(shortcut.effect);
+            expect(editorShortcutForKey(eventFor(shortcut.combo, modifier), false)).toBe(
+              shortcut.effect,
+            );
           }
           break;
         case "spacePan":
