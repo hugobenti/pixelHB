@@ -2,7 +2,15 @@ import { describe, expect, it } from "vitest";
 
 import { LIVE_DRAWINGS } from "@/features/site/components/liveDrawings.data";
 
-import { LIVE_EMPTY, buildSteps, decodeDrawing, floodRegion, replaySteps } from "./liveCanvas";
+import {
+  LIVE_EMPTY,
+  LIVE_TIMING,
+  buildSteps,
+  decodeDrawing,
+  floodRegion,
+  planActions,
+  replaySteps,
+} from "./liveCanvas";
 
 describe.each(LIVE_DRAWINGS.map((d) => [d.id, d] as const))("live drawing %s", (_id, drawing) => {
   const size = drawing.rows.length;
@@ -40,5 +48,16 @@ describe.each(LIVE_DRAWINGS.map((d) => [d.id, d] as const))("live drawing %s", (
     const touch = new Set(drawing.touch);
     const early = steps.slice(0, firstTouch).flatMap((s) => s.pixels.map((p) => [p, s.color]));
     expect(early.filter(([p, color]) => touch.has(p) && color === finished[p])).toEqual([]);
+  });
+
+  it("never brushes faster than the minimum pace, however many strokes it has", () => {
+    const strokes = planActions(steps, drawing.alive).flatMap((a) =>
+      a.kind === "step" && a.step.tool === "brush" ? [a] : [],
+    );
+    for (const { step, frames } of strokes) {
+      expect(frames).toBeGreaterThanOrEqual(
+        Math.round(step.pixels.length * LIVE_TIMING.minFramesPerPixel),
+      );
+    }
   });
 });

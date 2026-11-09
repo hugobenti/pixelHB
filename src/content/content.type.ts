@@ -482,9 +482,9 @@ export interface IHomeContent {
     /** Accessible name of the illustration as a whole. */
     label: string;
     /** Toolbar title of each drawing. */
-    drawings: { cat: string; robin: string; pitbull: string; plant: string; cactus: string };
+    drawings: { cat: string; robin: string; pitbull: string };
     /** Status-line name of each drawing's final touch. */
-    touch: { cat: string; robin: string; pitbull: string; plant: string; cactus: string };
+    touch: { cat: string; robin: string; pitbull: string };
     tools: { brush: string; bucket: string };
     parts: { outline: string; fill: string; shadow: string; color: string; light: string };
     status: (tool: string, part: string) => string;

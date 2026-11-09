@@ -10,14 +10,14 @@ export interface ILiveDrawing {
   id: TLiveDrawingId;
   /** One string per row: `.` is transparent, a hex digit is a starter-palette index. */
   rows: string[];
-  /** Pixel indices painted last, the drawing's final touch (eyes, a last leaf, a flower). */
+  /** Pixel indices painted last, the drawing's final touch (the eyes). */
   touch: number[];
   /** True when the final touch is a shape of its own, outlined and filled after the rest. */
   touchSeparate: boolean;
   alive: ILiveAliveFrame[];
 }
 
-export type TLiveDrawingId = "cat" | "robin" | "pitbull" | "plant" | "cactus";
+export type TLiveDrawingId = "cat" | "robin" | "pitbull";
 
 export type TLiveTool = "brush" | "bucket";
 
