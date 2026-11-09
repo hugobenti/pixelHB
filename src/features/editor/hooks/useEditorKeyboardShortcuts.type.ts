@@ -1,4 +1,5 @@
 export interface IUseEditorKeyboardShortcutsParams {
+  onToggleShortcuts: () => void;
   onTogglePixelGrid: () => void;
   onToggleEraser: () => void;
   onSwitchSlot: () => void;

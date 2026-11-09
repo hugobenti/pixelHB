@@ -30,6 +30,7 @@ export const PUBLIC_ICONS = {
   zoomOut: "/icons/zoom-out.svg",
   zoomIn: "/icons/zoom-in.svg",
   cog: "/icons/cog.svg",
+  keyboard: "/icons/keyboard.svg",
   grid: "/icons/grid.svg",
   photo: "/icons/photo.svg",
   download: "/icons/download.svg",

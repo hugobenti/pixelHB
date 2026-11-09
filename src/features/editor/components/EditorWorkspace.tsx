@@ -13,6 +13,7 @@ import { ColorPickerOverlay } from "@/features/editor/components/ColorPickerOver
 import { ColorSelectionRow } from "@/features/editor/components/ColorSelectionRow";
 import { EditorActionsBar } from "@/features/editor/components/EditorActionsBar";
 import { EditorSettingsDrawer } from "@/features/editor/components/EditorSettingsDrawer";
+import { EditorShortcutsSheet } from "@/features/editor/components/EditorShortcutsSheet";
 import { EditorToolBar } from "@/features/editor/components/EditorToolBar";
 import { LayersDrawer } from "@/features/editor/components/LayersDrawer";
 import { PaletteEditModal } from "@/features/editor/components/PaletteEditModal";
@@ -73,6 +74,9 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
     toggleSettingsDrawer,
     openExportDrawer,
     closeSettingsDrawer,
+    shortcutsOpen,
+    toggleShortcuts,
+    closeShortcuts,
     handleApplyCanvasSize,
     viewport,
     cssSize,
@@ -103,6 +107,8 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           settingsDrawerOpen={settingsDrawerOpen}
           onOpenExport={openExportDrawer}
           onToggleSettingsDrawer={toggleSettingsDrawer}
+          shortcutsOpen={shortcutsOpen}
+          onToggleShortcuts={toggleShortcuts}
         />
         <EditorToolBar
           primaryColor={primaryColor}
@@ -199,6 +205,8 @@ export function EditorWorkspace(props: IEditorWorkspaceProps) {
           onClose={closeSettingsDrawer}
         />
       ) : null}
+
+      <EditorShortcutsSheet open={shortcutsOpen} onClose={closeShortcuts} />
 
       <ShiftDirectionOverlay
         open={pixelShift.shiftOverlayOpen}

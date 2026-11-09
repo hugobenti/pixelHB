@@ -292,6 +292,12 @@ export interface IEditorContent {
     back: string;
     groupLabel: string;
     toolsGroupLabel: string;
+    viewGroupLabel: string;
+    editGroupLabel: string;
+    colorsGroupLabel: string;
+    shortcuts: IIconControl;
+    shortcutsHelp: string;
+    phoneLabels: Record<"brush" | "eraser" | "bucket" | "picker" | "pan" | "shift", string>;
     undo: IIconControl;
     redo: IIconControl;
     brush: IIconControl;
@@ -370,9 +376,10 @@ export interface IEditorContent {
       percent: (value: number) => string;
     };
     export: {
-      hint: string;
-      downloadSectionLabel: string;
-      shareSectionLabel: string;
+      pngTitle: string;
+      pngDescription: string;
+      artworkTitle: string;
+      artworkDescription: string;
       downloadPng: string;
       /** The size Share produces; `strip` is whether the PixelHB strip is drawn. */
       shareSize: (width: number, height: number, strip: boolean) => string;
@@ -553,6 +560,7 @@ export interface IHelpShortcut {
     | "undo"
     | "redo"
     | "toggleGrid"
+    | "toggleShortcuts"
     | "toggleEraser"
     | "switchSlot"
     | "selectBrush"

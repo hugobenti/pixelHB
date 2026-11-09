@@ -27,12 +27,13 @@ export function EditorSettingsImportExportPanel({
 }: IEditorSettingsImportExportPanelProps) {
   return (
     <div className={editorSettingsImportExportPanel.root}>
-      <p className={editorSettingsImportExportPanel.hint}>{editor.settings.export.hint}</p>
-
-      <section
-        className={editorSettingsImportExportPanel.section}
-        aria-label={editor.settings.export.downloadSectionLabel}
-      >
+      <section className={editorSettingsImportExportPanel.section}>
+        <h3 className={editorSettingsImportExportPanel.heading}>
+          {editor.settings.export.pngTitle}
+        </h3>
+        <p className={editorSettingsImportExportPanel.supportingText}>
+          {editor.settings.export.pngDescription}
+        </p>
         <p className={editorSettingsImportExportPanel.scaleLabel}>
           {editor.settings.export.scaleLabel}
         </p>
@@ -79,14 +80,7 @@ export function EditorSettingsImportExportPanel({
             {editor.settings.export.downloadPng}
           </Button>
         </div>
-      </section>
-
-      <section
-        className={editorSettingsImportExportPanel.section}
-        aria-label={editor.settings.export.shareSectionLabel}
-      >
-        <p className={editorSettingsImportExportPanel.shareHint}>{shareSizeLabel}</p>
-        <div className={editorSettingsImportExportPanel.actions}>
+        <div className={editorSettingsImportExportPanel.shareRow}>
           <Button
             type="button"
             variant="outline"
@@ -96,19 +90,28 @@ export function EditorSettingsImportExportPanel({
           >
             {shareLabel}
           </Button>
+          <p className={editorSettingsImportExportPanel.shareHint}>{shareSizeLabel}</p>
         </div>
       </section>
 
-      <div className={editorSettingsImportExportPanel.actions}>
-        <Button
-          type="button"
-          variant="outline"
-          className={editorSettingsImportExportPanel.button}
-          onClick={onExportJson}
-        >
-          {editor.settings.export.json}
-        </Button>
-      </div>
+      <section className={editorSettingsImportExportPanel.section}>
+        <h3 className={editorSettingsImportExportPanel.heading}>
+          {editor.settings.export.artworkTitle}
+        </h3>
+        <p className={editorSettingsImportExportPanel.supportingText}>
+          {editor.settings.export.artworkDescription}
+        </p>
+        <div className={editorSettingsImportExportPanel.actions}>
+          <Button
+            type="button"
+            variant="outline"
+            className={editorSettingsImportExportPanel.button}
+            onClick={onExportJson}
+          >
+            {editor.settings.export.json}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 }

@@ -10,6 +10,7 @@ export const editorActionsBar = {
   bar: "flex items-center gap-2 [grid-area:title] md:flex-wrap md:py-2",
   leftCluster: "flex min-w-0 flex-1 flex-wrap items-center gap-x-3 md:min-w-32 md:flex-nowrap",
   actions: "flex shrink-0 items-center justify-end gap-0.5 md:gap-1 lg:gap-2",
+  shortcutsButton: "max-md:hidden",
   /** Icon + label link with a 40px target (44px on coarse pointers); the negative margin keeps the label on the page edge. */
   backLink: cx(
     "-ml-2 inline-flex min-h-10 min-w-10 shrink-0 touch-manipulation items-center justify-center gap-1 rounded-lg px-2 text-sm font-medium text-fg-soft transition-colors pointer-coarse:min-h-11 pointer-coarse:min-w-11",

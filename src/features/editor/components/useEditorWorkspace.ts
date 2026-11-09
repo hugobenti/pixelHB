@@ -52,6 +52,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const [layersDrawerOpen, setLayersDrawerOpen] = useState(false);
   const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
   const [settingsInitialView, setSettingsInitialView] = useState<TEditorSettingsView>("menu");
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [bucketMode, setBucketMode] = useState(false);
   const [eraserMode, setEraserMode] = useState(false);
   const [pickerArmed, setPickerArmed] = useState(false);
@@ -249,6 +250,7 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
   const togglePicker = useCallback(() => runToolAction("togglePicker"), [runToolAction]);
 
   useEditorKeyboardShortcuts({
+    onToggleShortcuts: () => setShortcutsOpen((open) => !open),
     onTogglePixelGrid: togglePixelGrid,
     onToggleEraser: toggleEraserMode,
     onSwitchSlot: paletteUi.toggleActiveSlot,
@@ -384,6 +386,9 @@ export function useEditorWorkspace({ initialArtwork }: IEditorWorkspaceProps) {
       layersState.addLayer();
     },
     settingsDrawerOpen,
+    shortcutsOpen,
+    toggleShortcuts: () => setShortcutsOpen((open) => !open),
+    closeShortcuts: () => setShortcutsOpen(false),
     settingsInitialView,
     toggleSettingsDrawer: () => {
       setSettingsInitialView("menu");

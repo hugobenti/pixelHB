@@ -20,4 +20,6 @@ export interface IEditorActionsBarProps {
   onOpenExport: () => void;
   settingsDrawerOpen: boolean;
   onToggleSettingsDrawer: () => void;
+  shortcutsOpen: boolean;
+  onToggleShortcuts: () => void;
 }
