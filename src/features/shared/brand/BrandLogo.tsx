@@ -1,7 +1,7 @@
 /**
  * Purpose:
  * The PixelHB logo as an inline SVG named "PixelHB": the horizontal lockup (stamped pencil + pixel
- * wordmark) or the plain pencil.
+ * wordmark), the plain pencil or the square icon (pencil end).
  *
  * Notes:
  * Pencil colors are fixed; the wordmark and the drawn pixel use theme tokens, so the logo follows the

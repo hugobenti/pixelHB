@@ -1,16 +1,17 @@
 /**
  * Purpose:
- * About page: what PixelHB is, the principle that the art belongs to the artist, the maker's story and the
- * source code link.
+ * About page: what PixelHB is, where an artwork lives signed out and signed in, why it exists, and
+ * the maker's signature with a way back to drawing.
  */
 
 import Link from "next/link";
 
 import { about } from "@/content/about";
-import { site } from "@/content/site";
+import { BrandLogo } from "@/features/shared/brand/BrandLogo";
 import { aboutScreen } from "./AboutScreen.style";
 
 export function AboutScreen() {
+  const { ownership, story } = about;
   return (
     <div className={aboutScreen.page}>
       <header className={aboutScreen.header}>
@@ -18,40 +19,66 @@ export function AboutScreen() {
         <p className={aboutScreen.intro}>{about.intro}</p>
       </header>
 
-      {about.sections.map((section) => (
-        <section key={section.id} id={section.id} className={aboutScreen.section}>
-          <h2 className={aboutScreen.sectionTitle}>{section.title}</h2>
-          {section.paragraphs.map((paragraph) => (
-            <p key={paragraph} className={aboutScreen.prose}>
-              {paragraph}
-            </p>
+      <section id={ownership.id} className={aboutScreen.section}>
+        <h2 className={aboutScreen.sectionTitle}>{ownership.title}</h2>
+        {ownership.paragraphs.map((paragraph) => (
+          <p key={paragraph} className={aboutScreen.prose}>
+            {paragraph}
+          </p>
+        ))}
+        <ul className={aboutScreen.outcomes}>
+          {ownership.outcomes.map((outcome) => (
+            <li key={outcome.title} className={aboutScreen.outcome}>
+              <h3 className={aboutScreen.outcomeTitle}>{outcome.title}</h3>
+              {outcome.paragraphs.map((paragraph) => (
+                <p key={paragraph} className={aboutScreen.outcomeText}>
+                  {paragraph}
+                </p>
+              ))}
+            </li>
           ))}
-          {section.id === "why" && (
-            <>
-              <p className={aboutScreen.prose}>
-                <Link href="/contact" className={aboutScreen.link}>
-                  {about.feedbackLink}
-                </Link>
-              </p>
-              <p className={aboutScreen.signature}>{about.signature}</p>
-            </>
-          )}
-          {section.id === "ownership" && (
-            <p className={aboutScreen.prose}>
-              <Link href="/privacy" className={aboutScreen.link}>
-                {about.privacyLink}
-              </Link>
-            </p>
-          )}
-          {section.id === "source" && (
-            <p className={aboutScreen.prose}>
-              <a href={site.repoUrl} className={aboutScreen.link}>
-                {about.githubLink}
+        </ul>
+        <p className={aboutScreen.prose}>{ownership.exports}</p>
+        <p className={aboutScreen.links}>
+          {ownership.links.map((link) => (
+            <Link key={link.href} href={link.href} className={aboutScreen.link}>
+              {link.label}
+            </Link>
+          ))}
+        </p>
+      </section>
+
+      <section id={story.id} className={aboutScreen.section}>
+        <h2 className={aboutScreen.sectionTitle}>{story.title}</h2>
+        {story.paragraphs.map((paragraph) => (
+          <p key={paragraph} className={aboutScreen.prose}>
+            {paragraph}
+          </p>
+        ))}
+        <p className={aboutScreen.links}>
+          {story.links.map((link) =>
+            link.external ? (
+              <a key={link.href} href={link.href} className={aboutScreen.link}>
+                {link.label}
               </a>
-            </p>
+            ) : (
+              <Link key={link.href} href={link.href} className={aboutScreen.link}>
+                {link.label}
+              </Link>
+            ),
           )}
-        </section>
-      ))}
+        </p>
+      </section>
+
+      <div className={aboutScreen.close}>
+        <p className={aboutScreen.signature}>
+          <BrandLogo variant="icon" decorative />
+          {about.signature}
+        </p>
+        <Link href={about.closingCta.href} className={aboutScreen.closingCta}>
+          {about.closingCta.label}
+        </Link>
+      </div>
     </div>
   );
 }
