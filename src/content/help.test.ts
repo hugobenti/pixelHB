@@ -23,9 +23,11 @@ function eventFor(
   };
 }
 
+const shortcuts = help.shortcutGroups.flatMap((group) => group.shortcuts);
+
 describe("help shortcuts match the editor's key handling", () => {
-  it("documents every effect", () => {
-    expect(help.shortcuts.map((s) => s.effect).sort()).toEqual([
+  it("documents every effect once", () => {
+    expect(shortcuts.map((s) => s.effect).sort()).toEqual([
       "altPick",
       "arrowPan",
       "redo",
@@ -43,7 +45,7 @@ describe("help shortcuts match the editor's key handling", () => {
     ]);
   });
 
-  for (const shortcut of help.shortcuts) {
+  for (const shortcut of shortcuts) {
     it(`${shortcut.action} (${shortcut.effect})`, () => {
       switch (shortcut.effect) {
         case "undo":
