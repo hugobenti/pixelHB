@@ -123,3 +123,8 @@ export const BANNER_LOCKUP: readonly IBrandLockupPart[] = [{ grid: BRAND_PENCIL_
 
 /** The 33 × 7 pencil alone. */
 export const PENCIL_LOCKUP: readonly IBrandLockupPart[] = [{ grid: PENCIL_GRID, x: 0, y: 0 }];
+
+/** The 16 × 16 square icon (pencil end), for square spots such as an avatar. */
+export const PENCIL_END_LOCKUP: readonly IBrandLockupPart[] = [
+  { grid: PENCIL_END_GRID, x: 0, y: 0 },
+];

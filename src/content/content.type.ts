@@ -508,17 +508,43 @@ export interface IHomeContent {
   closingCta: string;
 }
 
+/** A link on the About page; `external` leaves the site and renders as a plain anchor. */
+export interface IAboutLink {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+/** One of the two places an artwork can live, under the ownership section. */
+export interface IAboutOutcome {
+  title: string;
+  paragraphs: string[];
+}
+
 /** Copy for the About page. */
 export interface IAboutContent {
   metaTitle: string;
   metaDescription: string;
   h1: string;
   intro: string;
-  sections: { id: string; title: string; paragraphs: string[] }[];
-  feedbackLink: string;
-  githubLink: string;
-  privacyLink: string;
+  ownership: {
+    id: string;
+    title: string;
+    paragraphs: string[];
+    /** Signed out, then signed in: shown side by side from `sm`. */
+    outcomes: IAboutOutcome[];
+    exports: string;
+    links: IAboutLink[];
+  };
+  story: {
+    id: string;
+    title: string;
+    paragraphs: string[];
+    links: IAboutLink[];
+  };
+  /** The maker's name, signed under the story. */
   signature: string;
+  closingCta: IAboutLink;
 }
 
 /** Copy for the Privacy page. */

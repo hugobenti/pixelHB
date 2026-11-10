@@ -12,8 +12,9 @@ export const consentBanner = {
     "fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface shadow-lg",
     "pb-[env(safe-area-inset-bottom)]",
   ),
+  /** Tighter on phones, where the banner stays on screen while the page is read. */
   inner:
-    "mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:gap-4",
+    "mx-auto flex w-full max-w-6xl flex-col gap-2.5 px-4 py-2.5 sm:flex-row sm:items-center sm:gap-4 sm:py-3",
   text: "min-w-0 flex-1 text-sm text-fg-secondary",
   link: siteType.link,
   actions: "flex shrink-0 gap-2",

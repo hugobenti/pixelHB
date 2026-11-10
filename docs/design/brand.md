@@ -190,6 +190,7 @@ xxxxx.xx.xxx.x.x..xxxxxx.xxx.....
 - Editor: no logo. Its top bar stays a tool surface; the "Gallery" back link is unchanged.
 - README: brand pencil banner at the top.
 - The shared site header and footer (`SiteHeader`, `SiteFooter`) use the same logo component; the footer uses the "pencil alone" mark (`variant="pencil"`).
+- The About page signs off with the square icon as the author's avatar (`variant="icon"`, 3×).
 
 ## Rename rules
 

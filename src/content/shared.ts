@@ -74,7 +74,7 @@ export const shared: ISharedContent = {
   analytics: {
     bannerLabel: "Analytics choice",
     bannerText:
-      "Help improve PixelHB? With your OK, it collects anonymous usage events, heatmaps and session replays, with typing and your canvas hidden. Stored in the EU.",
+      "Help improve PixelHB? Allow anonymous usage events, heatmaps and session replays, with typing and your canvas hidden. Stored in the EU.",
     privacyLink: "Privacy details",
     accept: "Accept",
     decline: "Decline",

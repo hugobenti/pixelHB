@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { BRAND_FIXED_COLORS } from "./brandArt";
-import { HORIZONTAL_LOGO, PENCIL_LOGO } from "./logoDrawing";
+import { HORIZONTAL_LOGO, PENCIL_END_LOGO, PENCIL_LOGO } from "./logoDrawing";
 
 describe("logo drawings", () => {
   it("sizes each viewBox to its lockup", () => {
     expect(HORIZONTAL_LOGO.viewBox).toBe("0 0 74 7");
     expect(PENCIL_LOGO.viewBox).toBe("0 0 33 7");
+    expect(PENCIL_END_LOGO.viewBox).toBe("0 0 16 16");
   });
 
   it("fills the pencil with fixed brand colors or the foreground token only", () => {
