@@ -23,16 +23,23 @@ export function EditorShortcutsSheet({ open, onClose }: IEditorShortcutsSheetPro
       }
     >
       <div className={editorShortcutsSheet.list}>
-        {help.shortcuts.map((shortcut) => (
-          <div key={shortcut.effect} className={editorShortcutsSheet.row}>
-            <div>
-              <p className={editorShortcutsSheet.action}>{shortcut.action}</p>
-              {shortcut.note ? <p className={editorShortcutsSheet.note}>{shortcut.note}</p> : null}
-            </div>
-            <span className={editorShortcutsSheet.key}>
-              <ShortcutKeys combo={shortcut.combo} />
-            </span>
-          </div>
+        {help.shortcutGroups.map((group) => (
+          <section key={group.title} className={editorShortcutsSheet.group}>
+            <h3 className={editorShortcutsSheet.groupTitle}>{group.title}</h3>
+            {group.shortcuts.map((shortcut) => (
+              <div key={shortcut.effect} className={editorShortcutsSheet.row}>
+                <div>
+                  <p className={editorShortcutsSheet.action}>{shortcut.action}</p>
+                  {shortcut.note ? (
+                    <p className={editorShortcutsSheet.note}>{shortcut.note}</p>
+                  ) : null}
+                </div>
+                <span className={editorShortcutsSheet.key}>
+                  <ShortcutKeys combo={shortcut.combo} />
+                </span>
+              </div>
+            ))}
+          </section>
         ))}
       </div>
     </Modal>

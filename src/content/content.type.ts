@@ -620,6 +620,37 @@ export interface IHelpShortcut {
   note?: string;
 }
 
+/** A titled group of shortcuts; Help and the editor's shortcuts sheet list them group by group. */
+export interface IHelpShortcutGroup {
+  title: string;
+  shortcuts: IHelpShortcut[];
+}
+
+/** A link under a Help section. */
+export interface IHelpLink {
+  label: string;
+  href: string;
+}
+
+/** A Help subsection: an `h3` with its own anchor, listed under its section in the table of contents. */
+export interface IHelpSubsection {
+  id: string;
+  title: string;
+  /** A short warning set apart from the paragraphs, right under the title. */
+  note?: { title: string; text: string };
+  paragraphs: string[];
+}
+
+export interface IHelpSection {
+  id: string;
+  title: string;
+  paragraphs: string[];
+  /** Render after the paragraphs. */
+  subsections?: IHelpSubsection[];
+  /** Render last, after the subsections. */
+  links?: IHelpLink[];
+}
+
 /** Copy for the Help page. */
 export interface IHelpContent {
   metaTitle: string;
@@ -628,22 +659,16 @@ export interface IHelpContent {
   /** Accessible name of the table-of-contents landmark. */
   tocLabel: string;
   intro: string;
-  /** A section's optional `subsections` render after its paragraphs, each with an `h3` and its own anchor. */
-  sections: {
-    id: string;
-    title: string;
-    paragraphs: string[];
-    subsections?: { id: string; title: string; paragraphs: string[] }[];
-  }[];
+  sections: IHelpSection[];
   shortcutsTitle: string;
   shortcutsIntro: string;
   shortcutColumns: { action: string; keys: string };
   /** Display names of the keys that have no glyph. */
   keyNames: { ctrl: string; shift: string; space: string; arrows: string; alt: string };
-  shortcuts: IHelpShortcut[];
+  shortcutGroups: IHelpShortcutGroup[];
   contactPrompt: string;
   contactLink: string;
-  privacyLink: string;
+  closingCta: IHelpLink;
 }
 
 /** Copy for the 404 and error pages. */
