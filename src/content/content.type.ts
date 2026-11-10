@@ -531,7 +531,7 @@ export interface IAboutContent {
     id: string;
     title: string;
     paragraphs: string[];
-    /** Signed out, then signed in: shown side by side from `sm`. */
+    /** Signed in, then signed out: shown side by side from `sm`. */
     outcomes: IAboutOutcome[];
     exports: string;
     links: IAboutLink[];

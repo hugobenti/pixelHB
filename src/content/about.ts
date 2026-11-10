@@ -15,16 +15,16 @@ export const about: IAboutContent = {
     ],
     outcomes: [
       {
-        title: "If you’re signed out",
+        title: "If you’re signed in with Google",
         paragraphs: [
-          "Your artworks stay in this browser on this device. Clearing your browsing data deletes them, so download the artwork file to keep a copy.",
+          "Signing in is optional. Your artworks are saved in this browser and in a PixelHB folder in your own Google Drive, so you can open them on any device.",
+          "On the way, they pass through PixelHB’s server, which only forwards them and never stores them. PixelHB can see only the files it created, nothing else in your Drive.",
         ],
       },
       {
-        title: "If you’re signed in with Google",
+        title: "If you’re signed out",
         paragraphs: [
-          "Signing in is optional. Your artworks are also saved to a PixelHB folder in your own Google Drive, so you can open them on any device.",
-          "On the way, they pass through PixelHB’s server, which only forwards them and never stores them. PixelHB can see only the files it created, nothing else in your Drive.",
+          "Your artworks stay in this browser on this device. Clearing your browsing data deletes them, so download the artwork file to keep a copy.",
         ],
       },
     ],
